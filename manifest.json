@@ -60,7 +60,7 @@
         "default": "Ctrl+Shift+I",
         "mac": "Command+Shift+I"
       },
-      "description": "Open DOM Inspector side panel"
+      "description": "Open DOM Inspector"
     }
   },
   "icons": {
