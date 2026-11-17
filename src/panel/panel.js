@@ -1087,6 +1087,50 @@
     return header.concat(methods.flatMap((method) => [method, ""])).concat(["}"]).join("\n") + "\n";
   };
 
+  const importSavedJson = async (file) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const incoming = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.saved) ? parsed.saved : null);
+      if (!incoming) throw new Error("Expected a saved locator array or an exported JSON object.");
+      const existing = new Set(state.saved.map((entry) => entry.key || (entry.type + "::" + (entry.testValue || entry.value))));
+      const added = [];
+      for (const raw of incoming.slice(0, 500)) {
+        if (!raw || typeof raw !== "object" || typeof raw.value !== "string" || !raw.value.trim()) continue;
+        const type = typeof raw.type === "string" && raw.type ? raw.type : "css";
+        const testValue = typeof raw.testValue === "string" ? raw.testValue : null;
+        const key = typeof raw.key === "string" && raw.key ? raw.key : (type + "::" + (testValue || raw.value));
+        if (existing.has(key)) continue;
+        existing.add(key);
+        added.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          key,
+          name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Imported locator",
+          scope: typeof raw.scope === "string" ? raw.scope : "Imported",
+          type,
+          value: raw.value,
+          testType: typeof raw.testType === "string" ? raw.testType : null,
+          testValue,
+          count: typeof raw.count === "number" ? raw.count : null,
+          label: typeof raw.label === "string" ? raw.label : "",
+          url: typeof raw.url === "string" ? raw.url : "",
+          savedAt: typeof raw.savedAt === "number" ? raw.savedAt : Date.now()
+        });
+      }
+      if (!added.length) return toast("No new saved locators to import", "bad");
+      state.saved = added.concat(state.saved);
+      persistSaved();
+      renderSaved();
+      refreshSaveButtons();
+      toast(`Imported ${added.length} saved locator${added.length === 1 ? "" : "s"}`, "ok");
+    } catch (error) {
+      toast("Import failed: " + (error.message || error), "bad");
+    } finally {
+      $("di-saved-import-file").value = "";
+    }
+  };
+
   const exportSavedPom = () => {
     const entries = state.saved.filter((entry) => entry.testType && entry.testValue);
     if (!entries.length) return toast("Save a testable locator first", "bad");
@@ -2080,6 +2124,8 @@
       });
     }
 
+    $("di-saved-import").addEventListener("click", () => $("di-saved-import-file").click());
+    $("di-saved-import-file").addEventListener("change", (event) => importSavedJson(event.target.files && event.target.files[0]));
     $("di-saved-pom").addEventListener("click", exportSavedPom);
     $("di-saved-json").addEventListener("click", exportSavedJson);
     $("di-saved-csv").addEventListener("click", exportSavedCsv);

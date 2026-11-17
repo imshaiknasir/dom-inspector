@@ -292,6 +292,7 @@
             <span class="section-meta" id="di-saved-meta">0</span>
           </div>
           <div class="saved-tools">
+            <button id="di-saved-import" class="btn small subtle" type="button" title="Import saved locators from JSON">Import</button>
             <button id="di-saved-pom" class="btn small subtle" type="button" title="Download a Playwright page-object snippet from saved locators">POM</button>
             <button id="di-saved-json" class="btn small subtle" type="button" title="Download saved locators as JSON">JSON</button>
             <button id="di-saved-csv" class="btn small subtle" type="button" title="Download saved locators as CSV">CSV</button>
@@ -299,6 +300,7 @@
           </div>
         </div>
         <div class="section-body">
+          <input id="di-saved-import-file" type="file" accept=".json,application/json" hidden />
           <div id="di-saved" class="rows saved-rows"></div>
           <p class="hint" id="di-saved-empty">Use the star on any locator to keep it here. Saved locators are stored locally and survive panel reloads.</p>
         </div>
