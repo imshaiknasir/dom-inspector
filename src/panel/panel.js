@@ -51,7 +51,8 @@
     star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg>',
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 6-6 6 6"/></svg>',
-    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 10 6 6 6-6"/></svg>'
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 10 6 6 6-6"/></svg>',
+    fix: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5a4 4 0 0 0-5.4 5.4L4 15v5h5l5.1-5.1a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.9-2.9 2.5-3.7Z"/></svg>'
   };
 
   const state = {
@@ -1133,6 +1134,11 @@
 
       const actions = el("div", "loc-actions");
       const target = savedTestTarget(entry);
+      if (target && entry.error) {
+        const fix = iconButton("fix", "Fix saved locator with the repair engine", () => fixSavedEntry(entry));
+        fix.disabled = state.savedBusy;
+        actions.appendChild(fix);
+      }
       if (target) {
         const test = iconButton("test", "Test & highlight", () => testSavedEntry(entry));
         test.disabled = state.savedBusy;
@@ -1192,6 +1198,86 @@
     persistSaved();
     renderSaved();
     refreshSaveButtons();
+  };
+
+  const fixSavedEntry = async (entry) => {
+    if (!entry || state.savedBusy) return;
+    const target = savedTestTarget(entry);
+    if (!target) return toast("Saved snippet is not a testable locator", "bad");
+    state.savedBusy = true;
+    renderSaved();
+    setStatus("Fixing saved locator…");
+    try {
+      const repair = await repairSelector(target.value);
+      if (!repair || !repair.ok || !repair.fixed) {
+        const message = (repair && repair.error) || "No matching element found";
+        const live = state.saved.find((item) => item.id === entry.id);
+        if (!live) return toast("Saved locator was removed", "bad");
+        live.error = message;
+        persistSaved();
+        toast("Fix failed: " + message, "bad");
+        setStatus("Fix failed", "bad");
+        return;
+      }
+      const candidates = [];
+      const seen = new Set();
+      const addCandidate = (value, type) => {
+        if (!value || seen.has(value)) return;
+        seen.add(value);
+        candidates.push({ value, type: type || detectType(value) });
+      };
+      addCandidate(repair.fixed, repair.type);
+      const locators = repair.locators || {};
+      addCandidate(locators.css, "css");
+      addCandidate(locators.xpath, "xpath");
+      addCandidate(locators.playwright, "playwright");
+      let verified = null;
+      let verifyError = "";
+      for (const candidate of candidates) {
+        const result = await healVerify(candidate.value);
+        if (result && result.ok && result.count === 1) {
+          verified = { value: candidate.value, type: result.type || candidate.type };
+          break;
+        }
+        if (result && result.error && !verifyError) verifyError = result.error;
+      }
+      const live = state.saved.find((item) => item.id === entry.id);
+      if (!live) return toast("Saved locator was removed", "bad");
+      if (!verified) {
+        live.error = verifyError ? "No unique fix verified: " + verifyError : "No candidate fix was unique.";
+        persistSaved();
+        renderSaved();
+        toast("Fix failed: no unique replacement", "bad");
+        setStatus("Fix failed", "bad");
+        return;
+      }
+      live.type = verified.type;
+      live.testType = verified.type;
+      live.testValue = verified.value;
+      live.value = verified.type === "playwright"
+        ? convertPlaywright(verified.value, state.settings.lang, state.settings.await)
+        : verified.value;
+      const nextKey = verified.type + "::" + verified.value;
+      const keyTaken = state.saved.some((item) => item.id !== live.id && item.key === nextKey);
+      if (!keyTaken) live.key = nextKey;
+      live.count = 1;
+      live.error = "";
+      persistSaved();
+      refreshSaveButtons();
+      toast("Saved locator fixed", "ok");
+      setStatus("Fixed saved locator · 1 match", "ok");
+    } catch (error) {
+      const live = state.saved.find((item) => item.id === entry.id);
+      if (live) {
+        live.error = friendlyError(error);
+        persistSaved();
+      }
+      toast("Fix failed", "bad");
+      setStatus("Fix failed", "bad");
+    } finally {
+      state.savedBusy = false;
+      renderSaved();
+    }
   };
 
   const checkSaved = async () => {
