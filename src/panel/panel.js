@@ -1048,13 +1048,22 @@
     saved: state.saved
   });
 
+  const matchesSavedFilter = (entry) => {
+    const filter = state.savedFilter.trim().toLowerCase();
+    if (!filter) return true;
+    return [entry.name, entry.type, entry.value, entry.url, entry.scope, entry.label]
+      .filter(Boolean).join(" ").toLowerCase().includes(filter);
+  };
+
   const moveSaved = (entry, delta) => {
-    const index = state.saved.findIndex((item) => item.id === entry.id);
-    const target = index + delta;
-    if (index < 0 || target < 0 || target >= state.saved.length) return;
+    const from = state.saved.indexOf(entry);
+    const visible = state.saved.filter(matchesSavedFilter);
+    const visibleIndex = visible.indexOf(entry);
+    const neighbour = visible[visibleIndex + delta];
+    const to = neighbour ? state.saved.indexOf(neighbour) : -1;
+    if (from < 0 || to < 0) return;
     const next = state.saved.slice();
-    const [item] = next.splice(index, 1);
-    next.splice(target, 0, item);
+    [next[from], next[to]] = [next[to], next[from]];
     state.saved = next;
     persistSaved();
     renderSaved();
@@ -1070,19 +1079,15 @@
     empty.hidden = state.saved.length > 0;
 
     if (!state.saved.length && state.savedFilter) state.savedFilter = "";
-    const filter = state.savedFilter.trim().toLowerCase();
     const filterInput = $("di-saved-filter");
     filterInput.hidden = state.saved.length === 0;
     if (filterInput.value !== state.savedFilter) filterInput.value = state.savedFilter;
-    const entries = state.saved.filter((entry) => !filter ||
-      [entry.name, entry.type, entry.value, entry.url, entry.scope, entry.label]
-        .filter(Boolean).join(" ").toLowerCase().includes(filter)
-    );
+    const entries = state.saved.filter(matchesSavedFilter);
     if (!entries.length && state.saved.length) {
       list.appendChild(el("div", "rows-empty", "No saved locators match the filter."));
     }
     for (const entry of entries) {
-      const index = state.saved.indexOf(entry);
+      const visibleIndex = entries.indexOf(entry);
       const row = el("div", "loc-row saved-row");
       const main = el("div", "loc-main");
 
@@ -1131,10 +1136,10 @@
       }
       actions.appendChild(iconButton("copy", "Copy locator", () => copyText(entry.value, "Copied saved locator")));
       const up = iconButton("up", "Move up", () => moveSaved(entry, -1));
-      up.disabled = index === 0;
+      up.disabled = visibleIndex === 0;
       actions.appendChild(up);
       const down = iconButton("down", "Move down", () => moveSaved(entry, 1));
-      down.disabled = index === state.saved.length - 1;
+      down.disabled = visibleIndex === entries.length - 1;
       actions.appendChild(down);
       actions.appendChild(iconButton("trash", "Delete saved locator", () => {
         state.saved = state.saved.filter((item) => item.id !== entry.id);
