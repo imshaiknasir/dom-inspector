@@ -39,3 +39,11 @@ test('panel: HTML only loads local scripts that exist', () => {
     assert.ok(fs.existsSync(path.join(path.dirname(PANEL_HTML), src)), 'missing ' + src);
   }
 });
+
+test('panel: section toggles control existing bodies', () => {
+  const html = fs.readFileSync(PANEL_HTML, 'utf8');
+  const ids = elementIds(html);
+  const targets = [...html.matchAll(/aria-controls="([^"]+)"/g)].map((match) => match[1]);
+  assert.ok(targets.length >= 5);
+  assert.deepEqual(targets.filter((id) => !ids.has(id)), []);
+});
