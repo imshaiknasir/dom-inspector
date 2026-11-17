@@ -2593,6 +2593,13 @@
     if (pageChanged) {
       state.reference = null;
       state.repairInjected = false;
+      if (state.liveTimer) {
+        clearTimeout(state.liveTimer);
+        state.liveTimer = null;
+      }
+      state.liveSeq += 1;
+      const live = $("di-live-badge");
+      if (live) live.hidden = true;
     }
     if (pageChanged && (state.healRows.length || state.healBusy)) {
       state.healRows = [];
