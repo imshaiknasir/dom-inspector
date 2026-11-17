@@ -883,19 +883,21 @@ test('panel re-checks saved locators and records counts and errors', async () =>
 
   const entries = [
     { id: 'check-a', key: 'css::#save', name: 'Valid save', type: 'css', value: '#save', testType: 'css', testValue: '#save', count: null },
-    { id: 'check-b', key: 'css::#missing', name: 'Broken save', type: 'css', value: '#missing', testType: 'css', testValue: '#missing', count: null }
+    { id: 'check-b', key: 'css::#missing', name: 'Broken save', type: 'css', value: '#missing', testType: 'css', testValue: '#missing', count: null },
+    { id: 'check-c', key: 'css::.rowbtn', name: 'Duplicate rows', type: 'css', value: '.rowbtn', testType: 'css', testValue: '.rowbtn', count: null }
   ];
   await extensionPage.evaluate((value) => chrome.storage.local.set({ 'di:panel:saved': value }), entries);
   await extensionPage.reload();
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-saved .saved-row').length
-  ), { timeout: 10000 }).toBe(2);
+  ), { timeout: 10000 }).toBe(3);
 
   await extensionPage.evaluate(() => document.getElementById('di-saved-check').click());
   await expect.poll(() => extensionPage.evaluate(() =>
     document.getElementById('di-status').textContent
-  ), { timeout: 10000 }).toContain('Checked 2 saved locators');
+  ), { timeout: 10000 }).toContain('Checked 3 saved locators');
   await expect(extensionPage.locator('#di-status')).toContainText('1 unique');
+  await expect(extensionPage.locator('#di-status')).toContainText('1 not unique');
   await expect(extensionPage.locator('#di-status')).toContainText('1 broken');
   await expect(extensionPage.locator('#di-saved')).toContainText('No elements matched');
 
@@ -908,6 +910,8 @@ test('panel re-checks saved locators and records counts and errors', async () =>
   expect(byId['check-a'].error).toBe('');
   expect(byId['check-b'].count).toBe(0);
   expect(byId['check-b'].error).toMatch(/no elements matched/i);
+  expect(byId['check-c'].count).toBe(2);
+  expect(byId['check-c'].error).toBe('');
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
