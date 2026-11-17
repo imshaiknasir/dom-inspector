@@ -1446,6 +1446,7 @@
     for (const raw of incoming.slice(0, 500)) {
       if (!raw || typeof raw !== "object" || typeof raw.value !== "string" || !raw.value.trim()) continue;
       const type = typeof raw.type === "string" && raw.type ? raw.type : "css";
+      const testType = ["css", "xpath", "playwright"].includes(raw.testType) ? raw.testType : null;
       const testValue = typeof raw.testValue === "string" && raw.testValue ? raw.testValue : null;
       const key = typeof raw.key === "string" && raw.key ? raw.key : (type + "::" + (testValue || raw.value));
       if (existing.has(key)) continue;
@@ -1457,12 +1458,12 @@
         scope: typeof raw.scope === "string" ? raw.scope : "Imported",
         type,
         value: raw.value,
-        testType: typeof raw.testType === "string" && raw.testType ? raw.testType : null,
+        testType,
         testValue,
-        count: typeof raw.count === "number" ? raw.count : null,
+        count: typeof raw.count === "number" && Number.isFinite(raw.count) ? raw.count : null,
         label: typeof raw.label === "string" ? raw.label : "",
         url: typeof raw.url === "string" ? raw.url : "",
-        savedAt: typeof raw.savedAt === "number" ? raw.savedAt : Date.now()
+        savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now()
       });
     }
     if (!added.length) {
