@@ -2871,8 +2871,8 @@
             removeStore("di:panel:focus");
             return;
           }
-          const target = applyFocusPayload(focus, true);
-          if (target) removeStore("di:panel:focus");
+          applyFocusPayload(focus, true);
+          removeStore("di:panel:focus");
         }
       });
     }
