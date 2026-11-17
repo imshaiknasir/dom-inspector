@@ -29,7 +29,15 @@
         const text = U.normalizeText(el.textContent);
         if (exact ? text === value : text.includes(value)) {
           const id = el.getAttribute("for");
-          const target = id ? document.getElementById(id) : el.querySelector("input, select, textarea");
+          const root = el.getRootNode ? el.getRootNode() : document;
+          let target = null;
+          if (id) {
+            target = (root.getElementById && root.getElementById(id)) ||
+              U.deepQueryAll("#" + U.cssEscape(id), root)[0] ||
+              document.getElementById(id);
+          } else {
+            target = el.querySelector("input, select, textarea");
+          }
           if (target) out.add(target);
         }
       }

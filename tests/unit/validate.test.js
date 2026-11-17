@@ -136,7 +136,7 @@ test('validate: index XPath is detected and counted', async () => {
   assert.equal(out.result.count, 1);
 });
 
-test('validate: getByLabel resolves form controls inside shadow roots', { todo: 'BLOCKERS.md — labelTargets uses document.getElementById for shadow labels (src/content/validate.js:25-33)' }, async () => {
+test('validate: getByLabel resolves form controls inside shadow roots', async () => {
   const out = await page.evaluate(() => {
     const host = document.createElement('div');
     host.id = 'label-host';
