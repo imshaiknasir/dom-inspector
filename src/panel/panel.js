@@ -597,7 +597,7 @@
       }
       const tone = response.ok ? "ok" : "bad";
       const message = response.ok
-        ? `${response.type.toUpperCase()} · ${response.count} match${response.count === 1 ? "" : "es"} · highlighted`
+        ? `Valid ${response.type}: ${response.count} match${response.count === 1 ? "" : "es"} · highlighted`
         : `Invalid: ${response.error || "no match"}`;
       showResult(message, tone);
       setStatus(message, tone);
@@ -1132,7 +1132,7 @@
       if (!response) throw new Error("No response from the page.");
       const tone = response.ok ? "ok" : "bad";
       showResult(response.ok
-        ? `Valid ${response.type.toUpperCase()} · ${response.count} match${response.count === 1 ? "" : "es"} · highlighted`
+        ? `Valid ${response.type}: ${response.count} match${response.count === 1 ? "" : "es"} · highlighted`
         : `Invalid ${response.type || ""} locator: ${response.error || "no match"}`, tone);
       setStatus(response.ok ? `${response.count} match${response.count === 1 ? "" : "es"} · highlighted` : "No match", tone);
       const badge = $("di-live-badge");
