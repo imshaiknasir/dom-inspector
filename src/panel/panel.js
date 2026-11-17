@@ -2630,6 +2630,7 @@
     state.settings = Object.assign({}, DEFAULT_SETTINGS, { collapsed: {} });
     state.filter = "";
     state.previousPayload = null;
+    state.autoCounted = new Set();
     state.savedFilter = "";
     if ($("di-saved-filter")) $("di-saved-filter").value = "";
     state.healRows = [];
