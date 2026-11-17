@@ -602,7 +602,7 @@
       const inputType = (attr(target, "type") || "text").toLowerCase();
       const editable = !target.disabled && !target.readOnly;
       result.typable = editable && (tagOf(target) === "textarea" ||
-        (tagOf(target) === "input" && !["checkbox", "radio", "file", "submit", "button", "reset", "hidden"].includes(inputType)) ||
+        (tagOf(target) === "input" && !["checkbox", "radio", "range", "color", "file", "image", "submit", "button", "reset", "hidden"].includes(inputType)) ||
         !!target.isContentEditable);
 
       if (!perform) return result;
