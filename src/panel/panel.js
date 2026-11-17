@@ -741,10 +741,12 @@
         live.className = "pill live " + tone;
         live.textContent = response.ok ? `${response.type} · ${response.count}` : "no match";
       }
+      return response;
     } catch (error) {
       const message = friendlyError(error);
       showResult(message, "bad");
       setStatus(message, "bad");
+      return null;
     }
   };
 
@@ -1127,16 +1129,13 @@
       row.appendChild(main);
 
       const actions = el("div", "loc-actions");
-      if (entry.testType) {
-        actions.appendChild(iconButton("test", "Test & highlight", () => testRow({
-          key: entry.key, scope: entry.scope, type: entry.type,
-          testType: entry.testType, testValue: entry.testValue,
-          value: entry.value, count: entry.count
-        }, null)));
+      const target = savedTestTarget(entry);
+      if (target) {
+        actions.appendChild(iconButton("test", "Test & highlight", () => testSavedEntry(entry)));
         actions.appendChild(iconButton("edit", "Edit in tester", () => fillTester({
           key: entry.key, scope: entry.scope, type: entry.type,
-          testType: entry.testType, testValue: entry.testValue,
-          value: entry.value, raw: entry.testValue, count: entry.count
+          testType: target.type, testValue: target.value,
+          value: entry.value, raw: target.value, count: entry.count
         })));
       }
       actions.appendChild(iconButton("copy", "Copy locator", () => copyText(entry.value, "Copied saved locator")));
@@ -1158,6 +1157,34 @@
     }
   };
 
+  const savedTestTarget = (entry) => {
+    if (!entry) return null;
+    const type = entry.testType || (["css", "xpath", "playwright"].includes(entry.type) ? entry.type : null);
+    const value = entry.testValue || entry.value;
+    if (!type || !value) return null;
+    return { type, value };
+  };
+
+  const testSavedEntry = async (entry) => {
+    const target = savedTestTarget(entry);
+    if (!target) return toast("Saved snippet is not a testable locator", "bad");
+    const response = await testRow({
+      key: entry.key,
+      scope: entry.scope,
+      type: entry.type,
+      testType: target.type,
+      testValue: target.value,
+      value: entry.value,
+      count: entry.count
+    }, null);
+    if (!response) return;
+    entry.count = typeof response.count === "number" ? response.count : 0;
+    entry.error = response.ok ? "" : (response.error || "No match");
+    persistSaved();
+    renderSaved();
+    refreshSaveButtons();
+  };
+
   const checkSaved = async () => {
     if (!state.saved.length) return toast("No saved locators to check", "bad");
     setStatus("Checking saved locators…");
@@ -1167,13 +1194,18 @@
     let unique = 0;
     let many = 0;
     let broken = 0;
+    let skipped = 0;
     try {
       for (const entry of state.saved) {
-        const type = entry.testType || entry.type || detectType(entry.value);
-        const value = entry.testValue || entry.value;
-        if (!value) continue;
+        const target = savedTestTarget(entry);
+        if (!target) {
+          entry.count = null;
+          entry.error = "";
+          skipped += 1;
+          continue;
+        }
         try {
-          const response = await sendToTab({ type: "DI_TEST", locatorType: type, value, highlight: false });
+          const response = await sendToTab({ type: "DI_TEST", locatorType: target.type, value: target.value, highlight: false });
           if (!response) throw new Error("No response from the page");
           entry.count = typeof response.count === "number" ? response.count : 0;
           entry.error = response.ok ? "" : (response.error || "No match");
@@ -1190,6 +1222,7 @@
       const notes = [`${unique} unique`];
       if (many) notes.push(`${many} not unique`);
       if (broken) notes.push(`${broken} broken`);
+      if (skipped) notes.push(`${skipped} not testable`);
       const message = `Checked ${state.saved.length} saved locator${state.saved.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
       toast(message, broken ? "bad" : "ok");
       setStatus(message, broken || many ? "warn" : "ok");
@@ -2145,6 +2178,7 @@
     state.previousPayload = !restored && previous && previous.url === payload.url ? previous : null;
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
+    if (!restored) recordHistory(payload);
     renderAll();
     const rows = allRows();
     const element = payload.element || {};
