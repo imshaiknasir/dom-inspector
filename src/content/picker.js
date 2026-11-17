@@ -76,6 +76,12 @@
     if (event.key === "Escape" && active) stop();
   };
 
+  // Keep the highlight attached to the hovered element while the page scrolls.
+  const onScroll = () => {
+    if (!active || !lastTarget || !lastTarget.isConnected) return;
+    paint(lastTarget);
+  };
+
   const safe = (fn, fallback) => {
     try {
       return fn();
@@ -171,6 +177,7 @@
     document.removeEventListener("mousemove", onMove, true);
     document.removeEventListener("click", onClick, true);
     document.removeEventListener("keydown", onKey, true);
+    document.removeEventListener("scroll", onScroll, true);
   };
 
   const start = () => {
@@ -182,6 +189,7 @@
     document.addEventListener("mousemove", onMove, true);
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKey, true);
+    document.addEventListener("scroll", onScroll, true);
   };
 
   const stop = () => {
