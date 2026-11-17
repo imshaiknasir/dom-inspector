@@ -139,21 +139,29 @@
     try { localStorage.removeItem(key); } catch (_) { /* ignore */ }
   };
 
+  const scrollCardBelowHeader = (card, smooth) => {
+    if (!card) return;
+    const top = document.querySelector(".di-top");
+    const offset = (top ? top.getBoundingClientRect().height : 0) + 8;
+    const y = window.scrollY + card.getBoundingClientRect().top - offset;
+    window.scrollTo({ top: Math.max(0, y), behavior: smooth ? "smooth" : "auto" });
+  };
+
   const applyFocusPayload = (value, smooth) => {
     const target = value && typeof value === "object" ? value.target : value;
     if (target === "heal") {
       ensureExpanded("di-heal-card");
-      $("di-heal-card").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
-      $("di-heal-input").focus();
+      scrollCardBelowHeader($("di-heal-card"), smooth);
+      $("di-heal-input").focus({ preventScroll: true });
     } else if (target === "tester") {
       ensureExpanded("di-tester-card");
-      $("di-tester-card").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+      scrollCardBelowHeader($("di-tester-card"), smooth);
       if (value && typeof value === "object" && typeof value.value === "string" && value.value.trim()) {
         $("di-input").value = value.value;
         $("di-type").value = ["css", "xpath", "playwright"].includes(value.type) ? value.type : "auto";
         scheduleLiveTest();
       }
-      $("di-input").focus();
+      $("di-input").focus({ preventScroll: true });
     }
     return target;
   };
