@@ -221,7 +221,9 @@
       }
       const css = safe(() => DI.css.best(el), null);
       const xp = safe(() => DI.xpath.best(el), null);
-      const value = (css && css.selector) || (xp && xp.xpath) || "";
+      const value = css && css.count === 1 ? css.selector
+        : xp && xp.count === 1 ? xp.xpath
+          : (css && css.selector) || (xp && xp.xpath) || "";
       if (!value) {
         sendResponse({ ok: false, error: "No locator generated" });
         return true;
