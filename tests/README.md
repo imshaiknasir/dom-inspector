@@ -31,7 +31,9 @@ and a user-data directory.
 - `unit/` — CSS, XPath, Playwright, testRigor, Selenium/Cypress/JS, validation,
   utilities, manifest/popup/devtools contracts, service-worker routing and the
   repair loop (single, batch, same-origin frames). Every generated count is
-  resolved against the live DOM.
+  resolved against the live DOM. `playwright-semantics.test.js` cross-checks
+  role/text counts against real Playwright locators; cases that still diverge
+  are marked todo and tracked in the workspace-root `BLOCKERS.md`.
 - `e2e/extension.spec.js` — loads the unpacked extension over HTTP, checks the
   panel is error-free, drives the real picker (`DI_START` → mouse click), and
   verifies the cached payload for CSS, XPath, Playwright, Selenium, testRigor,
@@ -40,6 +42,6 @@ and a user-data directory.
   the driver template, single-locator Fix, batch healing and JSON/POM exports,
   plus the background `DI_GET_LAST` cache.
 
-All 183 unit cases and 30 e2e cases pass. The workspace-root
+All 191 unit cases (187 pass, 4 tracked todo) and 30 e2e cases pass. The workspace-root
 `../../BLOCKERS.md` tracks any defect that would require editing files owned
 by another agent.
