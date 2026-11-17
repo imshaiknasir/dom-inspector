@@ -1099,7 +1099,12 @@
     extension: "DOM Inspector",
     version: "1.0.0",
     exportedAt: new Date().toISOString(),
-    page: state.payload ? { url: state.payload.url, frame: state.payload.frame, shadow: state.payload.shadow } : null,
+    page: state.payload ? {
+      url: state.payload.url,
+      topUrl: state.payloadTopUrl || "",
+      frame: state.payload.frame,
+      shadow: state.payload.shadow
+    } : null,
     element: state.payload ? state.payload.element : null,
     locators: allRows().map((row) => ({
       scope: row.scope,
