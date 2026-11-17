@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { launchBrowser, openFixture } = require('../helpers/harness');
+const { launchBrowser, openFixture, injectGenerators } = require('../helpers/harness');
 
 let browser;
 let page;
@@ -179,4 +179,23 @@ test('testRigor: control whitespace stays a valid JS string literal', async () =
   });
   assert.equal(out.value, '"Line one\\nLine two"');
   assert.equal(out.parsed, 'Line one\nLine two');
+});
+
+
+test('formats: frame snippets switch into the enclosing iframe', async () => {
+  const frame = page.frames().find((candidate) => candidate !== page.mainFrame());
+  assert.ok(frame);
+  await frame.waitForSelector('#inner');
+  await injectGenerators(frame);
+  const out = await frame.evaluate(() => {
+    const el = document.getElementById('inner');
+    return {
+      selenium: DI.formats.generate(el).map((row) => row.type),
+      frame: DI.formats.formats(el).find((row) => row.type === 'selenium-frame')
+    };
+  });
+  assert.ok(out.selenium.includes('cssSelector'));
+  assert.ok(out.frame);
+  assert.match(out.frame.code, /switchTo\(\)\.frame/);
+  assert.match(out.frame.code, /#frame/);
 });
