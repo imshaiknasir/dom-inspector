@@ -45,6 +45,27 @@
       out.push({ type: "cypress-xpath", code: `cy.xpath(${q(xp)})` });
       out.push({ type: "js-xpath", code: `document.evaluate(${q(xp)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue` });
     }
+
+    const frames = U.iframeChain();
+    if (frames.length) {
+      const frameCss = frames.map((frame) => {
+        const id = U.attr(frame, "id");
+        if (id) return `#${U.cssEscape(id)}`;
+        const name = U.attr(frame, "name");
+        return name ? `[name="${name.replace(/"/g, '\\"')}"]` : "iframe";
+      });
+      out.push({ type: "selenium-frame", code: frameCss.map((sel) => `driver.switchTo().frame(driver.findElement(By.cssSelector(${q(sel)})))`).join("\n") });
+    }
+
+    const hosts = DI.css.shadowChain(el);
+    if (hosts.length && css) {
+      let code = "";
+      hosts.forEach((hostCss, index) => {
+        code += `${index === 0 ? "SearchContext" : "root" + index} root${index + 1} = driver.findElement(By.cssSelector(${q(hostCss)})).getShadowRoot();\n`;
+      });
+      code += `root${hosts.length}.findElement(By.cssSelector(${q(css)}))`;
+      out.push({ type: "selenium-shadow", code });
+    }
     return out;
   };
 
