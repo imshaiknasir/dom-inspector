@@ -341,6 +341,28 @@ test('continuous picking survives multiple picks and Escape cancels it', async (
   await expect.poll(() => fixturePage.evaluate(() => !document.getElementById('di-picker-overlay')), { timeout: 5000 }).toBe(true);
 });
 
+test('reference mode adds axes locators to the next pick', async () => {
+  await fixturePage.bringToFront();
+  const referenceStart = await sendToFixture({ type: 'DI_START', mode: 'reference' });
+  expect(referenceStart.ok).toBe(true);
+  await clickElement(fixturePage.locator('label[for="email"]'));
+  await fixturePage.waitForTimeout(150);
+
+  await startPicking();
+  await clickElement(fixturePage.locator('#email'));
+
+  const payload = await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    const value = stored['di:lastPick'];
+    return value && value.element.id === 'email' ? value : null;
+  }, 10000);
+  expect(payload).toBeTruthy();
+  expect(payload.reference).toMatchObject({ tag: 'label', text: 'Email address' });
+  expect(payload.axes.length).toBeGreaterThan(0);
+  expect(payload.axes.some((axis) => axis.strategy === 'following-sibling' && axis.count > 0)).toBe(true);
+  await sendToFixture({ type: 'DI_STOP' });
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
