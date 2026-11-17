@@ -872,6 +872,44 @@ test('panel filters saved locators and hides the filter when empty', async () =>
   ), { timeout: 10000 }).toBe(true);
 });
 
+test('panel re-checks saved locators and records counts and errors', async () => {
+  await fixturePage.goto(baseURL);
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await fixturePage.bringToFront();
+  await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+
+  const entries = [
+    { id: 'check-a', key: 'css::#save', name: 'Valid save', type: 'css', value: '#save', testType: 'css', testValue: '#save', count: null },
+    { id: 'check-b', key: 'css::#missing', name: 'Broken save', type: 'css', value: '#missing', testType: 'css', testValue: '#missing', count: null }
+  ];
+  await extensionPage.evaluate((value) => chrome.storage.local.set({ 'di:panel:saved': value }), entries);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+
+  await extensionPage.evaluate(() => document.getElementById('di-saved-check').click());
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-status').textContent
+  ), { timeout: 10000 }).toContain('Checked 2 saved locators');
+  await expect(extensionPage.locator('#di-status')).toContainText('1 unique');
+  await expect(extensionPage.locator('#di-status')).toContainText('1 broken');
+  await expect(extensionPage.locator('#di-saved')).toContainText('No elements matched');
+
+  const stored = await extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return data['di:panel:saved'];
+  });
+  const byId = Object.fromEntries(stored.map((entry) => [entry.id, entry]));
+  expect(byId['check-a'].count).toBe(1);
+  expect(byId['check-a'].error).toBe('');
+  expect(byId['check-b'].count).toBe(0);
+  expect(byId['check-b'].error).toMatch(/no elements matched/i);
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
