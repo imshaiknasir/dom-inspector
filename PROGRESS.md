@@ -105,7 +105,7 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 161/161 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 164/164 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
 | Extension e2e suites | done | 26/26 checks, including popup, axes, tester Fix, POM export/import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
@@ -146,8 +146,8 @@ not shipped). Last updated 17 Nov 2026.
 
 ## Next candidates
 
-1. Multi-column POM grid with reorder and spreadsheet import.
-2. Attribute filter and per-row visibility controls.
-3. Aggregate match counts across frames and a choose-frame flow for actions.
+1. Multi-column POM grid and XLS import/export (reorder, JSON/CSV already done).
+2. Per-attribute generation filter and per-row visibility controls.
+3. Aggregate Playwright counts across frames and a choose-frame action flow.
 4. Popup history paging beyond the latest four distinct picks.
 5. Optional locator diffing between consecutive picks.
