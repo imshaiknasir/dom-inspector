@@ -201,3 +201,24 @@ test('css: shadowChain lists nested hosts from innermost to outermost', async ()
   assert.equal(out.best.count, 1);
   assert.deepEqual(out.chain, ['#inner-host', '#outer-host']);
 });
+
+test('css: control whitespace in attribute values stays escaped', async () => {
+  const out = await escaping.evaluate(() => {
+    const rows = [];
+    for (const id of ['multiline', 'carriage']) {
+      const el = document.getElementById(id);
+      rows.push(...DI.css.candidates(el).map((candidate) => ({
+        id,
+        selector: candidate.selector,
+        strategy: candidate.strategy,
+        resolves: (() => {
+          try { return document.querySelector(candidate.selector) === el; } catch (_) { return false; }
+        })()
+      })));
+    }
+    return rows;
+  });
+  const attributeRows = out.filter((row) => row.strategy.startsWith('attr:'));
+  assert.equal(attributeRows.length, 3);
+  for (const row of attributeRows) assert.equal(row.resolves, true, row.selector);
+});

@@ -119,3 +119,18 @@ test('svg helpers distinguish SVG nodes from HTML', async () => {
   assert.equal(out.circleChild, true);
   assert.equal(out.divChild, false);
 });
+
+test('cssAttr escapes backslashes, quotes and control whitespace', async () => {
+  const out = await page.evaluate(() => ({
+    plain: DI.util.cssAttr('a"b'),
+    backslash: DI.util.cssAttr('a\\b'),
+    newline: DI.util.cssAttr('a\nb'),
+    carriage: DI.util.cssAttr('a\rb'),
+    formfeed: DI.util.cssAttr('a\fb')
+  }));
+  assert.equal(out.plain, 'a\\"b');
+  assert.equal(out.backslash, 'a\\\\b');
+  assert.equal(out.newline, 'a\\a b');
+  assert.equal(out.carriage, 'a\\d b');
+  assert.equal(out.formfeed, 'a\\c b');
+});
