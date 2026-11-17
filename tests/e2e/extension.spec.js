@@ -894,6 +894,38 @@ test('panel tester resolves CSS selectors inside same-origin frames', async () =
   await extensionPage.evaluate(() => document.getElementById('di-clear').click());
 });
 
+test('panel action runner types, reports success and handles no matches', async () => {
+  await fixturePage.bringToFront();
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#email';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'css';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('di-type-text').value = 'runner@example.com';
+    document.getElementById('di-type-action').click();
+  });
+  await expect.poll(() => fixturePage.evaluate(() => document.getElementById('email').value), { timeout: 8000 }).toBe('runner@example.com');
+  await expect(extensionPage.locator('#di-result')).toContainText('Typed into <input>');
+  await expect(extensionPage.locator('#di-status')).toContainText('Typed into <input>');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#does-not-exist';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-click').click();
+  });
+  await expect(extensionPage.locator('#di-result')).toContainText('No elements matched');
+  await expect(extensionPage.locator('#di-status')).toContainText('No elements matched');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+});
+
 test('panel tester Fix repairs, accepts valid and reports unfixable locators', async () => {
   await fixturePage.bringToFront();
 
