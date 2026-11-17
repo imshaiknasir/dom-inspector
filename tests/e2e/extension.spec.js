@@ -669,6 +669,12 @@ test('picker reports iframe depth and Playwright frameLocator', async () => {
   expect(payload.frame.chain[0]).toMatchObject({ tag: 'iframe', id: 'frame' });
   expect(payload.playwright.some((item) => item.selector.includes('frameLocator(') && item.selector.includes("getByTestId('inner-btn')"))).toBe(true);
 
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:history');
+    return (data['di:panel:history'] || [])[0] ? data['di:panel:history'][0].url : '';
+  }), { timeout: 5000 }).toBe(baseURL);
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:history'));
+
   await extensionPage.evaluate(() => {
     const button = document.querySelector('#di-css .icon-btn[data-save-key]');
     if (button) button.click();
