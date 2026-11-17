@@ -74,6 +74,7 @@ not shipped). Last updated 17 Nov 2026.
 | Export all locators to JSON | done | includes element, counts, raw values, saved list |
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator reorder | done | up/down controls; order drives POM method order |
+| Saved locator filter | done | name/type/value/URL filter; empty-state feedback |
 | Saved locator import / export | done | JSON/CSV import with dedupe + JSON/CSV export |
 | Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries |
 | Saved locator delete / clear | done | confirm before clearing all |
