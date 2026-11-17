@@ -1455,6 +1455,7 @@
     let otherPage = 0;
     const list = state.saved;
     const pageUrl = await currentPageUrl();
+    const before = new Map(list.map((entry) => [entry.id, { count: entry.count, error: entry.error }]));
     try {
       for (const entry of list) {
         const target = savedTestTarget(entry);
@@ -1483,6 +1484,20 @@
         else if (typeof entry.count === "number" && entry.count > 1) many += 1;
         else broken += 1;
         renderSaved();
+      }
+      const endPage = await currentPageUrl();
+      if (!samePage(pageUrl, endPage)) {
+        for (const live of state.saved) {
+          const prev = before.get(live.id);
+          if (!prev) continue;
+          live.count = prev.count;
+          live.error = prev.error;
+        }
+        persistSaved();
+        renderSaved();
+        setStatus("Saved check stopped: the page changed.", "warn");
+        toast("Saved check stopped: the page changed.", "warn");
+        return;
       }
       if (state.saved === list) {
         persistSaved();
@@ -2316,6 +2331,7 @@
       element: null
     }));
     renderHeal();
+    const pageUrl = await currentPageUrl();
     for (const row of state.healRows) {
       if (sequence !== state.healSeq) return;
       row.status = "checking";
@@ -2339,6 +2355,14 @@
       renderHeal();
     }
     if (sequence !== state.healSeq) return;
+    const endPage = await currentPageUrl();
+    if (!samePage(pageUrl, endPage)) {
+      state.healRows = [];
+      state.healBusy = false;
+      renderHeal();
+      setStatus("Batch check stopped: the page changed.", "warn");
+      return;
+    }
     state.healBusy = false;
     renderHeal();
     const broken = state.healRows.filter((row) => row.status === "broken").length;
@@ -2357,6 +2381,7 @@
     const sequence = state.healSeq;
     state.healBusy = true;
     renderHeal();
+    const pageUrl = await currentPageUrl();
     for (const row of targets) {
       if (sequence !== state.healSeq) return;
       row.status = "checking";
@@ -2422,6 +2447,14 @@
       renderHeal();
     }
     if (sequence !== state.healSeq) return;
+    const endPage = await currentPageUrl();
+    if (!samePage(pageUrl, endPage)) {
+      state.healRows = [];
+      state.healBusy = false;
+      renderHeal();
+      setStatus("Healing stopped: the page changed.", "warn");
+      return;
+    }
     state.healBusy = false;
     renderHeal();
     const fixed = state.healRows.filter((row) => row.status === "fixed").length;
