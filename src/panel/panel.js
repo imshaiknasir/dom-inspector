@@ -1414,6 +1414,13 @@
   };
 
   const repairSelector = async (value) => {
+    try {
+      const response = await sendToTab({ type: "DI_FIX", value });
+      if (response && typeof response === "object" &&
+          !/repair unavailable/i.test(response.error || "")) {
+        return response;
+      }
+    } catch (_) { /* fall back to direct scripting */ }
     if (!api || !api.scripting || !api.scripting.executeScript) {
       return { ok: false, error: "Scripting API unavailable in this context" };
     }
