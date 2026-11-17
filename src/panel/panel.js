@@ -1014,6 +1014,9 @@
     }).join("");
     if (!name) name = "locator";
     if (/^[0-9]/.test(name)) name = "locator" + name;
+    if (["constructor", "prototype", "__proto__", "hasOwnProperty", "toString", "valueOf"].includes(name)) {
+      name = "locator" + name.charAt(0).toUpperCase() + name.slice(1);
+    }
     let unique = name;
     let suffix = 2;
     while (used.has(unique)) {
@@ -2047,13 +2050,29 @@
   /* Boot                                                             */
   /* ---------------------------------------------------------------- */
 
+  const sanitizeSettings = (stored) => {
+    const merged = Object.assign({}, DEFAULT_SETTINGS, stored && typeof stored === "object" ? stored : {});
+    if (!["js", "python", "java", "csharp"].includes(merged.lang)) merged.lang = "js";
+    merged.await = !!merged.await;
+    merged.unique = !!merged.unique;
+    merged.continuous = !!merged.continuous;
+    merged.driverBase = merged.driverBase === "xpath" ? "xpath" : "css";
+    merged.driver = typeof merged.driver === "string" ? merged.driver : "";
+    merged.healText = typeof merged.healText === "string" ? merged.healText : "";
+    merged.collapsed = merged.collapsed && typeof merged.collapsed === "object"
+      ? Object.keys(merged.collapsed).reduce((out, key) => {
+        out[key] = !!merged.collapsed[key];
+        return out;
+      }, {})
+      : {};
+    return merged;
+  };
+
   const init = async () => {
     try {
       const storedSettings = await readStore(STORE_SETTINGS);
       if (storedSettings && typeof storedSettings === "object") {
-        state.settings = Object.assign({}, DEFAULT_SETTINGS, storedSettings);
-        state.settings.collapsed = storedSettings.collapsed && typeof storedSettings.collapsed === "object"
-          ? storedSettings.collapsed : {};
+        state.settings = sanitizeSettings(storedSettings);
       }
       const storedSaved = await readStore(STORE_SAVED);
       if (Array.isArray(storedSaved)) {
