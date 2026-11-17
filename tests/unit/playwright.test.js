@@ -380,3 +380,37 @@ test('playwright: icon-only controls generate named role locators', async () => 
     await local.close();
   }
 });
+
+test('playwright: nested frameLocator chains resolve and validate', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <iframe id="outer" srcdoc="<!doctype html><body>
+        <iframe id='inner' srcdoc='<!doctype html><button id=deep data-testid=deep-btn>Deep</button>'></iframe>
+      </body>"></iframe>
+    </body></html>`);
+    await local.waitForTimeout(400);
+    const frames = local.frames();
+    const deepest = frames[frames.length - 1];
+    await injectGenerators(deepest);
+    const out = await deepest.evaluate(() => {
+      const generated = DI.playwright.generate(document.getElementById('deep'));
+      return {
+        chain: DI.util.iframeChain().map((frame) => frame.id),
+        selectors: generated.map((item) => item.selector),
+        counts: generated.map((item) => item.count)
+      };
+    });
+    assert.deepEqual(out.chain, ['outer', 'inner']);
+    const nested = "page.frameLocator('#outer').frameLocator('#inner').getByTestId('deep-btn')";
+    assert.ok(out.selectors.includes(nested));
+    assert.equal(out.counts[out.selectors.indexOf(nested)], 1);
+
+    await injectGenerators(local);
+    const validated = await local.evaluate((expr) => DI.validate.test('playwright', expr), nested);
+    assert.equal(validated.ok, true);
+    assert.equal(validated.count, 1);
+  } finally {
+    await local.close();
+  }
+});
