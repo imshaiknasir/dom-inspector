@@ -157,7 +157,7 @@
     }
     if (/getByRole\(/.test(expr)) {
       const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
-      const regex = expr.match(/name:\s*\/(.+?)\/([gimsuy]*)/);
+      const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]([^'"]+)['"]/);
       const exact = /exact:\s*true/.test(expr);
       if (!role) return 0;

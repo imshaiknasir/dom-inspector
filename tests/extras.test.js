@@ -243,3 +243,18 @@ test('playwright: shadow elements get a host-scoped locator chain', async () => 
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: regex role names containing a slash are counted', async () => {
+  const out = await page.evaluate(() => {
+    const b = document.createElement('button');
+    b.textContent = 'Save / continue';
+    document.body.appendChild(b);
+    const expr = "page.getByRole('button', { name: /Save \\/ continue/i })";
+    const count = DI.playwright.countExpr(expr);
+    const validated = DI.validate.test('playwright', expr);
+    b.remove();
+    return { count, validated };
+  });
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});
