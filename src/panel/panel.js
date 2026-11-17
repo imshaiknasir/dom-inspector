@@ -161,9 +161,40 @@
     removeStore("di:panel:focus");
   };
 
-  const sanitizeSaved = (list) => (Array.isArray(list)
-    ? list.filter((entry) => entry && entry.id && typeof entry.value === "string" && entry.value)
-    : []);
+  const sanitizeSaved = (list) => {
+    if (!Array.isArray(list)) return [];
+    const out = [];
+    const seen = new Set();
+    for (const raw of list) {
+      if (!raw || typeof raw !== "object") continue;
+      const value = typeof raw.value === "string" ? raw.value : "";
+      if (!value) continue;
+      const type = typeof raw.type === "string" && raw.type ? raw.type : "css";
+      const testType = ["css", "xpath", "playwright"].includes(raw.testType) ? raw.testType : null;
+      const testValue = typeof raw.testValue === "string" && raw.testValue ? raw.testValue : null;
+      const key = typeof raw.key === "string" && raw.key ? raw.key : type + "::" + (testValue || value);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        id: typeof raw.id === "string" && raw.id
+          ? raw.id
+          : Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "-" + out.length,
+        key,
+        name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Saved locator",
+        scope: typeof raw.scope === "string" ? raw.scope : "",
+        type,
+        value,
+        testType,
+        testValue,
+        count: typeof raw.count === "number" && Number.isFinite(raw.count) ? raw.count : null,
+        label: typeof raw.label === "string" ? raw.label : "",
+        error: typeof raw.error === "string" ? raw.error : "",
+        url: typeof raw.url === "string" ? raw.url : "",
+        savedAt: typeof raw.savedAt === "number" ? raw.savedAt : Date.now()
+      });
+    }
+    return out;
+  };
 
   const persistSaved = () => writeStore(STORE_SAVED, state.saved);
 
