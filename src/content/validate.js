@@ -120,6 +120,32 @@
     return [];
   };
 
+  const frameDocs = (doc = document, seen = new Set()) => {
+    const docs = [];
+    if (!doc || seen.has(doc)) return docs;
+    seen.add(doc);
+    for (const frame of doc.querySelectorAll("iframe, frame")) {
+      let child = null;
+      try { child = frame.contentDocument || frame.contentWindow.document; } catch (_) { continue; }
+      if (!child) continue;
+      docs.push(child);
+      docs.push(...frameDocs(child, seen));
+    }
+    return docs;
+  };
+
+  const queryAllWithFrames = (selector) => {
+    const out = U.deepQueryAll(selector);
+    for (const doc of frameDocs()) out.push(...U.deepQueryAll(selector, doc));
+    return out;
+  };
+
+  const xpathWithFrames = (xpath) => {
+    const out = DI.xpath.snapshot(xpath);
+    for (const doc of frameDocs()) out.push(...DI.xpath.snapshot(xpath, doc));
+    return out;
+  };
+
   const resolve = (type, value) => {
     const v = String(value || "").trim();
     if (!v) return { elements: [], error: "Empty locator" };
@@ -132,7 +158,7 @@
     }
     if (type === "xpath") {
       try {
-        const elements = DI.xpath.snapshot(v);
+        const elements = xpathWithFrames(v);
         if (!elements.length) {
           document.evaluate(v, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
         }
@@ -142,8 +168,8 @@
       }
     }
     try {
-      const probe = document.querySelectorAll(v);
-      return { elements: U.deepQueryAll(v), error: probe ? null : null };
+      document.querySelectorAll(v);
+      return { elements: queryAllWithFrames(v), error: null };
     } catch (error) {
       return { elements: [], error: error.message };
     }

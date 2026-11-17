@@ -68,3 +68,16 @@ test('validate: Playwright frameLocator resolves inside a same-origin frame', as
   assert.equal(out.ok, true);
   assert.equal(out.count, 1);
 });
+
+test('validate: CSS and XPath fall back into same-origin frames', async () => {
+  const frame = page.frames().find((f) => f !== page.mainFrame());
+  await frame.waitForSelector('#inner');
+  const out = await page.evaluate(() => ({
+    css: DI.validate.test('css', '#inner'),
+    xpath: DI.validate.test('xpath', "//button[@id='inner']")
+  }));
+  assert.equal(out.css.ok, true);
+  assert.equal(out.css.count, 1);
+  assert.equal(out.xpath.ok, true);
+  assert.equal(out.xpath.count, 1);
+});
