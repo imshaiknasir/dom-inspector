@@ -76,6 +76,37 @@ const clickElement = async (locator) => {
   await fixturePage.mouse.click(x, y);
 };
 
+/** Check one broken selector and one valid selector in the healing panel. */
+const startHealingExample = async () => {
+  await fixturePage.goto(baseURL);
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await fixturePage.bringToFront();
+  const ready = await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+  expect(ready).toBeTruthy();
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-heal-input');
+    input.value = '#sav\n#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-heal-check').click();
+  });
+
+  await expect.poll(() => extensionPage.evaluate(() => {
+    const rows = [...document.querySelectorAll('#di-heal-results .heal-row')];
+    return rows.length === 2 && rows.every((row) => !/status-(pending|checking)/.test(row.className));
+  }), { timeout: 15000 }).toBe(true);
+};
+
+/** Ask for verified fixes and wait for every healing row to settle. */
+const applyHealingFix = async () => {
+  await extensionPage.evaluate(() => document.getElementById('di-heal-fix').click());
+  await expect.poll(() => extensionPage.evaluate(() =>
+    [...document.querySelectorAll('#di-heal-results .heal-row')].every((row) => !/status-(pending|checking)/.test(row.className))
+  ), { timeout: 15000 }).toBe(true);
+};
+
 test.beforeAll(async () => {
   const html = fs.readFileSync(FIXTURE);
   server = http.createServer((request, response) => {
@@ -1068,25 +1099,7 @@ test('panel saves and removes a locator with the star action', async () => {
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
-  await fixturePage.goto(baseURL);
-  await fixturePage.waitForLoadState('domcontentloaded');
-  await fixturePage.bringToFront();
-  const ready = await waitFor(async () => {
-    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
-    return response && response.ok ? response : null;
-  }, 10000);
-  expect(ready).toBeTruthy();
-  await extensionPage.evaluate(() => {
-    const input = document.getElementById('di-heal-input');
-    input.value = '#sav\n#save';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    document.getElementById('di-heal-check').click();
-  });
-
-  await expect.poll(() => extensionPage.evaluate(() => {
-    const rows = [...document.querySelectorAll('#di-heal-results .heal-row')];
-    return rows.length === 2 && rows.every((row) => !/status-(pending|checking)/.test(row.className));
-  }), { timeout: 15000 }).toBe(true);
+  await startHealingExample();
 
   const checked = await extensionPage.evaluate(() => [...document.querySelectorAll('#di-heal-results .heal-row')].map((row) => ({
     className: row.className,
@@ -1095,10 +1108,7 @@ test('panel batch healing flags a broken selector and verifies its fix', async (
   expect(checked.some((row) => row.className.includes('status-broken'))).toBe(true);
   expect(checked.some((row) => row.className.includes('status-ok'))).toBe(true);
 
-  await extensionPage.evaluate(() => document.getElementById('di-heal-fix').click());
-  await expect.poll(() => extensionPage.evaluate(() =>
-    [...document.querySelectorAll('#di-heal-results .heal-row')].every((row) => !/status-(pending|checking)/.test(row.className))
-  ), { timeout: 15000 }).toBe(true);
+  await applyHealingFix();
 
   const healed = await extensionPage.evaluate(() => ({
     fixed: [...document.querySelectorAll('#di-heal-results .heal-row.status-fixed')].length,
@@ -1111,6 +1121,9 @@ test('panel batch healing flags a broken selector and verifies its fix', async (
 });
 
 test('panel healing exports a JSON report and clears the rows', async () => {
+  await startHealingExample();
+  await applyHealingFix();
+
   const downloadPromise = extensionPage.waitForEvent('download');
   await extensionPage.evaluate(() => document.getElementById('di-heal-json').click());
   const download = await downloadPromise;
