@@ -9,7 +9,7 @@ not shipped). Last updated 17 Nov 2026.
 |---|---|---|
 | MV3 shell (worker, content scripts, DevTools page) | done | `manifest.json`, `src/background.js`, `src/devtools/` |
 | DevTools Elements sidebar pane | done | `createSidebarPane` → `panel/panel.html` |
-| Chrome side panel | done | same panel; toolbar icon opens it |
+| Chrome side panel | done | same panel; the toolbar popup opens it (the icon itself opens the popup) |
 | Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
 | Recent pick history in popup | done | every new panel pick is recorded (restores are not duplicated); popup shows four with **Show all**, keeps the full count and can clear them |
 | Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `T` test best, `C` copy last |
