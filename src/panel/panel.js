@@ -2362,12 +2362,19 @@
   const handlePayload = (payload, restored) => {
     if (!payload) return;
     const previous = state.payload;
+    const pageChanged = !restored && previous && previous.url !== payload.url;
     state.payload = payload;
     state.payloadSeq += 1;
-    state.previousPayload = !restored && previous && previous.url === payload.url ? previous : null;
+    state.previousPayload = pageChanged ? null : (!restored && previous ? previous : null);
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
     if (!restored) recordHistory(payload);
+    if (pageChanged && (state.healRows.length || state.healBusy)) {
+      state.healRows = [];
+      state.healSeq += 1;
+      state.healBusy = false;
+      toast("Batch healing results cleared for the new page");
+    }
     renderAll();
     const rows = allRows();
     const element = payload.element || {};
