@@ -1319,13 +1319,17 @@
     try {
       const pageUrl = await currentPageUrl();
       if (!samePage(entry.url, pageUrl)) {
+        setStatus("Fix refused: saved locator belongs to another page", "warn");
         return toast("Saved locator belongs to another page: " + entry.url, "bad");
       }
       const repair = await repairSelector(target.value);
       if (!repair || !repair.ok || !repair.fixed) {
         const message = (repair && repair.error) || "No matching element found";
         const live = state.saved.find((item) => item.id === entry.id);
-        if (!live) return toast("Saved locator was removed", "bad");
+        if (!live) {
+          setStatus("Fix aborted: saved locator was removed", "warn");
+          return toast("Saved locator was removed", "bad");
+        }
         live.error = message;
         persistSaved();
         toast("Fix failed: " + message, "bad");
@@ -1355,7 +1359,10 @@
         if (result && result.error && !verifyError) verifyError = result.error;
       }
       const live = state.saved.find((item) => item.id === entry.id);
-      if (!live) return toast("Saved locator was removed", "bad");
+      if (!live) {
+        setStatus("Fix aborted: saved locator was removed", "warn");
+        return toast("Saved locator was removed", "bad");
+      }
       if (!verified) {
         live.error = verifyError ? "No unique fix verified: " + verifyError : "No candidate fix was unique.";
         persistSaved();
