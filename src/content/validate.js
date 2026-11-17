@@ -24,7 +24,8 @@
   const AXIS = /(?:^|[/(|\s])(ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self)::/;
 
   const detectType = (value) => {
-    const v = String(value || "").trim();
+    // Pasted snippets often start with `await page.…`; ignore the wrapper.
+    const v = String(value || "").trim().replace(/^await\s+/, "");
     if (!v) return "css";
     if (v.startsWith("page.") || v.startsWith("getBy") || v.startsWith("locator(") || v.includes(".locator(")) return "playwright";
     if (v.startsWith("//") || v.startsWith("(/") || v.startsWith("./") || v.startsWith("(")) return "xpath";
