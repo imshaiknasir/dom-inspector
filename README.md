@@ -16,16 +16,19 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
 3. Click **Load unpacked** and select this folder (`dom-inspector-extension`).
 4. Open a normal `http(s)` page (not a blank tab, `chrome://` page or the Web
    Store, where content scripts cannot run).
-5. Click the toolbar icon to open the side panel, or open DevTools → Elements →
-   **DOM Inspector** sidebar pane.
+5. Click the toolbar icon to open the compact popup, or open DevTools → Elements
+   → **DOM Inspector** sidebar pane. The popup can open the side panel.
 6. Press **Pick element**, hover the page and click a node. Use **Stop** or
    `Esc` to cancel. Reload an already-open tab after installing or updating the
    extension so the content script is present.
 
 ## Panel tour
 
+- **Toolbar popup** — start picking, open the panel, jump to batch healing,
+  review the last picked element and recent saved locators, and copy any value.
 - **Selected element** — tag, id, classes, implicit role, accessible name, text,
-  visibility, URL, iframe depth, shadow-host chain and shadow CSS chain.
+  visibility, URL, iframe depth, shadow-host chain, shadow CSS chain and frame
+  XPath.
 - **Locator sections** — CSS, XPath, Playwright, Selenium and
   Cypress/JS/jQuery. Each row shows the generated value, its strategy, a live
   match count and `unique` / `no match` state. The best candidate is marked with
@@ -42,11 +45,21 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   against the page, searching open shadow roots and same-origin frames. Action
   testing is best-effort and reported honestly when a field is not typable or
   nothing matches.
+- **Axes reference** — press **Axes ref**, pick a reference element, then pick
+  the target. The panel lists axes XPath from the reference (descendant,
+  ancestor, siblings, following/preceding, common ancestor), with counts and a
+  clear-reference action.
+- **Batch selector healing** — paste one selector per line, check all against
+  the page, flag broken or non-unique rows, and run **Fix broken** to get a
+  verified replacement from the repair engine. Copy or export the report as
+  JSON/CSV.
 - **Driver command template** — build a runnable command from the best CSS or
   XPath using `{selector}` (legacy `xpathvalue` / `cssvalue` also work), with
   Selenium Java/Python, Cypress, Playwright and TestNG presets.
 - **Saved locators** — a small locator/POM list stored locally. Rename entries,
   re-test, edit, copy, delete, export JSON or CSV, or clear the list.
+- **Right-click copy** — the page context menu can pick an element or copy its
+  best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
   sections, driver template and saved locators survive panel reloads. The last
   pick is restored from the service worker/session storage.
@@ -78,8 +91,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   when nothing is unique. Counts come from a local DOM engine.
 - **Other formats:** Selenium `By.id`, `By.name`, `By.className`, `By.tagName`,
   `By.linkText`, `By.partialLinkText`, `By.cssSelector`, `By.xpath`; Cypress
-  `cy.get` / `cy.xpath`; JS `document.querySelector` and `document.evaluate`;
-  jQuery; Selenium frame-switch and open-shadow-root snippets.
+  `cy.get` / `cy.xpath` / shadow chain; testRigor label path; JS
+  `document.querySelector` and `document.evaluate`; jQuery; Selenium
+  frame-switch and open-shadow-root snippets.
 
 ## Architecture
 
@@ -93,27 +107,36 @@ manifest.json
     playwright.js   Playwright generation + local counting engine
     formats.js      Selenium/Cypress/JS/jQuery/frame/shadow snippets
     validate.js     detection, validation, highlighting
-    picker.js       overlay, picking, continuous mode, message bridge
+    repair.js       normalize + best-match selector repair loop
+    picker.js       overlay, picking, axes reference, message bridge
   devtools page → Elements sidebar pane
+  popup/
+    popup.html         toolbar popup markup
+    popup.css          compact popup styling
+    popup.js           pick/open panel/recent locators/copy
   panel/
     panel.html         shared DevTools + side-panel markup
     panel.css          responsive light/dark design
-    panel.js           panel controller and locator rendering
+    panel.js           panel controller, locator rendering, batch healing
     panel-converters.js Playwright language converters
     panel-actions.js   self-contained page action runner
 ```
 
-Messages used by the panel: `DI_START`, `DI_STOP`, `DI_TEST`, `DI_CLEAR`,
-`DI_PING` to the content script; `DI_ELEMENT` from content to the panel/worker;
-`DI_GET_LAST` to the worker. Panel state is stored under `di:panel:*` keys in
-`chrome.storage.local`; the last pick uses `chrome.storage.session`.
+Messages used by the panel/popup: `DI_START`, `DI_STOP`, `DI_TEST`, `DI_CLEAR`,
+`DI_CLEAR_REFERENCE`, `DI_PING` to the content script; `DI_ELEMENT` and
+`DI_REFERENCE` from content to the panel/worker; `DI_GET_LAST` to the worker;
+`DI_COPY_BEST` from the worker's context menu. Panel and popup state is stored
+under `di:panel:*` keys in `chrome.storage.local`; the last pick uses
+`chrome.storage.session`. Batch repair calls the content repair engine through
+`chrome.scripting` and verifies every suggested fix before showing it.
 
 ## Permissions and privacy
 
-`activeTab`, `scripting`, `storage`, `sidePanel`, `clipboardWrite` and host
-access to `<all_urls>` are needed to inspect the active page, run locator
-actions, open the side panel and copy results. Everything runs locally. There
-are no ads, accounts, analytics, remote code, licence checks or network calls.
+`activeTab`, `scripting`, `storage`, `sidePanel`, `clipboardWrite`,
+`contextMenus` and host access to `<all_urls>` are needed to inspect the active
+page, run locator actions, open the side panel, provide right-click actions and
+copy results. Everything runs locally. There are no ads, accounts, analytics,
+remote code, licence checks or network calls.
 
 ## Tests
 
@@ -136,15 +159,19 @@ integrity and the panel contract (every id used by `panel.js` exists in
 `panel.html`, no duplicate ids, local scripts exist). The e2e spec loads the
 unpacked extension, drives the real picker and checks the cached payload.
 
-The panel was additionally smoke-tested in headless Chrome with a stubbed
-extension API: rendering, counts, language switching, filtering,
-saved-locator actions, tester validation and page actions. Current status:
-80/80 unit checks and 7/7 extension e2e checks pass.
+The panel and popup were additionally smoke-tested in headless Chrome with a
+stubbed extension API: rendering, counts, language switching, filtering,
+saved-locator actions, tester validation, page actions, batch healing and
+popup copy. Current status: 98/98 non-background unit checks, 12/12 panel/
+manifest checks and 11/11 extension e2e checks pass, including real-extension
+coverage for the popup, right-click bridge and batch healing. One newly added
+worker unit test is tracked in `../BLOCKERS.md`.
 
 ## Known gaps
 
-- No batch XPath-healing import/export, recorder/TestCase Studio, login, ads or
-  cloud features (intentionally absent).
+- Batch healing accepts pasted lines and exports JSON/CSV, but does not import
+  spreadsheets. Recorder/TestCase Studio, login, ads and cloud features are
+  intentionally absent.
 - Saved locators are a lightweight POM list; there is no editable
   multi-column POM grid or spreadsheet import.
 - Java/C# Playwright option objects are best-effort translations, not compiler
@@ -153,6 +180,7 @@ saved-locator actions, tester validation and page actions. Current status:
   algorithm or Playwright actionability model; counts can differ from a real
   Playwright run.
 - Action testing runs in one matching frame and cannot reach cross-origin
-  frames or closed shadow roots.
+  frames or closed shadow roots. Batch repair uses heuristic token matching when
+  a selector cannot be normalized into a valid one.
 - Closed shadow roots and cross-origin iframes remain inaccessible, as in
   browsers generally.

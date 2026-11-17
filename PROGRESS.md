@@ -10,7 +10,7 @@ not shipped). Last updated 17 Nov 2026.
 | MV3 shell (worker, content scripts, DevTools page) | done | `manifest.json`, `src/background.js`, `src/devtools/` |
 | DevTools Elements sidebar pane | done | `createSidebarPane` → `panel/panel.html` |
 | Chrome side panel | done | same panel; toolbar icon opens it |
-| Toolbar action popup with menu toggles | todo | action opens side panel instead |
+| Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
 | Light/dark theme | done | `prefers-color-scheme` and responsive CSS |
@@ -26,7 +26,7 @@ not shipped). Last updated 17 Nov 2026.
 | Picks inside open shadow roots and same-origin iframes | done | all-frame content scripts; payload carries chain |
 | Closed shadow root / cross-origin iframe message | partial | refused by browsers; badge/hint only |
 | Restore last picked element | done | `DI_GET_LAST` + `chrome.storage.session` fallback |
-| Context-menu copy actions | todo | not in this build |
+| Context-menu pick and copy-best actions | done | worker context menus + content bridge |
 
 ## Locator generation
 
@@ -39,11 +39,11 @@ not shipped). Last updated 17 Nov 2026.
 | Relative XPath — text/contains/starts-with/own text | done | `xpath.js` |
 | Absolute XPath | done | `/html[1]/body[1]/…[n]` |
 | Index XPath / `(expr)[n]` | done | position retained in panel |
-| Axes XPath (parent/child/ancestor/descendant/following/preceding/sibling) | done | engine + reference-element helper |
+| Axes XPath (parent/child/ancestor/descendant/following/preceding/sibling) | done | engine + panel Axes ref flow and reference chip |
 | XPath in shadow DOM | n/a | explicitly unavailable, same as browsers |
 | SVG XPath (`local-name()` / `name()`) | done | engine |
 | Iframe/frame chain | done | context badge, frame list, `frameLocator`, Selenium switch |
-| testRigor path | todo | no generator in this clean-room build |
+| testRigor path | done | `formats.js`; displayed in the panel format rows |
 | Playwright test-id / role / label / placeholder | done | exact + regex role names |
 | Playwright text / alt / title / CSS / ID | done | plus `:visible`, `:has-text`, `:text-is`, `:text` |
 | Playwright nth/first/last fallback | done | `.nth()` fallback when nothing is unique |
@@ -78,9 +78,9 @@ not shipped). Last updated 17 Nov 2026.
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | todo | filter input covers text filtering only |
-| Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV export; no grid/import |
-| XPath Healing batch mode | todo | no pasted-script verifier/repair table |
-| Smart editor “Fix selector” repair loop | todo | invalid locators are reported, not repaired |
+| Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV export; no grid/spreadsheet import |
+| Batch selector healing | done | paste lines, check counts, flag broken, fix via repair engine, JSON/CSV report |
+| Fix-selector repair loop | done | `content/repair.js`; panel batch fix verifies every suggestion |
 | Recorder / TestCase Studio | todo | out of scope |
 | Ads / login / profile / premium gates | n/a | intentionally removed; everything is local |
 
@@ -100,9 +100,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 80/80 checks pass with `npm run test:unit` |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 98/98 non-background checks pass; worker test tracked in `../BLOCKERS.md` |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e picker test | done | 7/7 checks pass with `npm run test:e2e` |
+| Extension e2e suites | done | 11/11 checks, including popup, right-click bridge, repair and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
@@ -120,11 +120,14 @@ not shipped). Last updated 17 Nov 2026.
 - `c3eba97` docs
 - `70968af` docs commit references
 - `c4b36b2` panel expansion: polished UI, language output, saved/export, action tester
+- `8e797c0` panel axes reference flow + batch selector healing
+- `ab39b4f` toolbar popup with pick/open/recent/copy
+- `c16566b` testRigor and Cypress-shadow format labels
 
 ## Next candidates
 
-1. Batch XPath healing with paste/import/export and per-row verification.
-2. Multi-column POM grid with rename, reorder and spreadsheet import.
-3. Attribute filter and per-row visibility controls.
-4. Optional local “fix selector” repair loop with explicit, reviewed rules.
-5. Aggregate match counts across frames and a choose-frame flow for actions.
+1. Multi-column POM grid with rename, reorder and spreadsheet import.
+2. Attribute filter and per-row visibility controls.
+3. Optional single-locator “Fix selector” action in the tester (batch fix exists).
+4. Aggregate match counts across frames and a choose-frame flow for actions.
+5. Popup keyboard accelerators and a recent-locator history beyond the last pick.
