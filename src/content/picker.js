@@ -17,7 +17,8 @@
     overlay = document.createElement("div");
     overlay.id = "di-picker-overlay";
     overlay.setAttribute("aria-hidden", "true");
-    (document.documentElement || document.body).appendChild(overlay);
+    const parent = document.documentElement || document.body;
+    if (parent) parent.appendChild(overlay);
     return overlay;
   };
 
