@@ -1229,6 +1229,30 @@
     }
   };
 
+  const pageKey = (value) => {
+    try {
+      const url = new URL(value);
+      return url.origin + url.pathname + url.search;
+    } catch (_) {
+      return String(value || "");
+    }
+  };
+
+  const currentPageUrl = async () => {
+    if (api && api.tabs && api.tabs.get) {
+      const tabId = await resolveTabId(true);
+      if (tabId != null) {
+        try {
+          const tab = await api.tabs.get(tabId);
+          if (tab && tab.url && !/^chrome-extension:\/\//i.test(tab.url)) return tab.url;
+        } catch (_) { /* fall through */ }
+      }
+    }
+    return state.payload && state.payload.url ? state.payload.url : "";
+  };
+
+  const samePage = (left, right) => !left || !right || pageKey(left) === pageKey(right);
+
   const savedTestTarget = (entry) => {
     if (!entry) return null;
     const type = entry.testType || (["css", "xpath", "playwright"].includes(entry.type) ? entry.type : null);
@@ -1240,6 +1264,10 @@
   const testSavedEntry = async (entry) => {
     const target = savedTestTarget(entry);
     if (!target) return toast("Saved snippet is not a testable locator", "bad");
+    const pageUrl = await currentPageUrl();
+    if (!samePage(entry.url, pageUrl)) {
+      return toast("Saved locator belongs to another page: " + entry.url, "bad");
+    }
     const response = await testRow({
       key: entry.key,
       scope: entry.scope,
@@ -1261,6 +1289,10 @@
     if (!entry || state.savedBusy) return;
     const target = savedTestTarget(entry);
     if (!target) return toast("Saved snippet is not a testable locator", "bad");
+    const pageUrl = await currentPageUrl();
+    if (!samePage(entry.url, pageUrl)) {
+      return toast("Saved locator belongs to another page: " + entry.url, "bad");
+    }
     state.savedBusy = true;
     renderSaved();
     setStatus("Fixing saved locator…");
@@ -1350,7 +1382,9 @@
     let many = 0;
     let broken = 0;
     let skipped = 0;
+    let otherPage = 0;
     const list = state.saved;
+    const pageUrl = await currentPageUrl();
     try {
       for (const entry of list) {
         const target = savedTestTarget(entry);
@@ -1358,6 +1392,12 @@
           entry.count = null;
           entry.error = "";
           skipped += 1;
+          continue;
+        }
+        if (!samePage(entry.url, pageUrl)) {
+          entry.count = null;
+          entry.error = "";
+          otherPage += 1;
           continue;
         }
         try {
@@ -1389,9 +1429,10 @@
       const notes = [`${unique} unique`];
       if (many) notes.push(`${many} not unique`);
       if (broken) notes.push(`${broken} broken`);
+      if (otherPage) notes.push(`${otherPage} other page`);
       if (skipped) notes.push(`${skipped} not testable`);
-      const checked = list.length - skipped;
-      const scope = skipped ? `${checked} of ${list.length}` : String(list.length);
+      const checked = list.length - skipped - otherPage;
+      const scope = (skipped || otherPage) ? `${checked} of ${list.length}` : String(list.length);
       const message = `Checked ${scope} saved locator${list.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
       toast(message, broken ? "bad" : "ok");
       setStatus(message, broken || many ? "warn" : "ok");
