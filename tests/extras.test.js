@@ -220,3 +220,14 @@ test('xpath: candidates report whether they select the target node', async () =>
   assert.equal(out.hits, true);
   assert.equal(out.count, 1);
 });
+
+test('repair: closes quotes before brackets', async () => {
+  const out = await page.evaluate(() => ({
+    xpath: DI.repair.normalize("//a[text()='x"),
+    paren: DI.repair.normalize("//div[contains(text(),'x'"),
+    css: DI.repair.normalize("div[data-x='y'")
+  }));
+  assert.equal(out.xpath, "//a[text()='x']");
+  assert.equal(out.paren, "//div[contains(text(),'x')]");
+  assert.equal(out.css, "div[data-x='y']");
+});

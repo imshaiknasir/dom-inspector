@@ -21,13 +21,15 @@
     value = value.replace(/^[>+~]+/, "").trim();
     value = value.replace(/[;,]+$/g, "").trim();
     value = value.replace(/[>+\s]+$/g, "").trim();
-    // Balance quotes, brackets and parentheses.
-    for (const [open, close] of [["[", "]"], ["(", ")"], ["'", "'"], ['"', '"']]) {
+    // Balance in the order a human would close: quotes, parentheses, brackets.
+    for (const quote of ["'", '"']) {
+      const count = value.split(quote).length - 1;
+      if (count % 2 === 1) value += quote;
+    }
+    for (const [open, close] of [["(", ")"], ["[", "]"]]) {
       const opens = value.split(open).length - 1;
       const closes = value.split(close).length - 1;
-      if (opens > closes && !(open === close && opens % 2 === 0)) {
-        value += close.repeat(opens - closes);
-      }
+      if (opens > closes) value += close.repeat(opens - closes);
     }
     return value;
   };
