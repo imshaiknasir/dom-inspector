@@ -259,7 +259,7 @@
 
   const generate = (el) => {
     const out = [];
-    const prefix = framePrefix();
+    const prefix = framePrefix(el.ownerDocument && el.ownerDocument.defaultView ? el.ownerDocument.defaultView : window);
     const base = prefix.length ? `page.${prefix.join(".")}` : "page";
     const root = el.getRootNode ? el.getRootNode() : document;
     const stabilityFor = (type) => {

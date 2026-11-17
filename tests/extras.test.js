@@ -124,6 +124,7 @@ test('repair: reaches same-origin iframe elements when the top frame lacks them'
   assert.equal(out.element.id, 'inner');
   assert.deepEqual(out.locators.frameCss, ['#frame']);
   assert.ok(out.locators.frameXpath[0].includes("'frame'"));
+  assert.ok(out.locators.playwright.includes('frameLocator('));
 });
 
 test('repair: fixMany repairs a batch in order', async () => {
