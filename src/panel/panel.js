@@ -2506,6 +2506,11 @@
     if (button) button.textContent = anyCollapsed ? "Expand all" : "Collapse all";
   };
 
+  const syncBulkLabelAfterToggle = () => {
+    const states = SECTION_CARDS.map((id) => !!state.settings.collapsed[id]);
+    if (states.every(Boolean) || states.every((collapsed) => !collapsed)) syncExpandLabel();
+  };
+
   const applySettings = () => {
     $("di-lang").value = state.settings.lang;
     $("di-await").checked = !!state.settings.await;
@@ -2694,6 +2699,7 @@
           state.settings.collapsed[group.card] = next;
           card.classList.toggle("collapsed", next);
           toggle.setAttribute("aria-expanded", next ? "false" : "true");
+          syncBulkLabelAfterToggle();
           persistSettings();
         });
       }
@@ -2716,6 +2722,7 @@
         state.settings.collapsed[id] = next;
         card.classList.toggle("collapsed", next);
         toggle.setAttribute("aria-expanded", next ? "false" : "true");
+        syncBulkLabelAfterToggle();
         persistSettings();
       });
     }
