@@ -25,8 +25,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
 ## Panel tour
 
 - **Toolbar popup** — start picking, open the panel, jump to batch healing,
-  review the last picked element, the latest distinct picks and recent saved
-  locators, and copy any value. **Test** sends the best locator to the panel
+  review the last picked element, an expandable list of latest distinct picks
+  and recent saved locators, and copy any value. **Test** sends the best locator to the panel
   tester. Shortcuts: `P` pick, `O` open panel, `H` batch healing, `R` refresh,
   `T` test best, `C` copy all last locators.
 - **Selected element** — tag, id, classes, implicit role, accessible name, text,

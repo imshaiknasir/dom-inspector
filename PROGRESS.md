@@ -11,7 +11,7 @@ not shipped). Last updated 17 Nov 2026.
 | DevTools Elements sidebar pane | done | `createSidebarPane` → `panel/panel.html` |
 | Chrome side panel | done | same panel; toolbar icon opens it |
 | Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
-| Recent pick history in popup | done | panel stores the latest distinct picks; popup lists and clears them |
+| Recent pick history in popup | done | panel stores the latest distinct picks; popup pages through up to 12 and clears them |
 | Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `T` test best, `C` copy last |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
@@ -149,5 +149,5 @@ not shipped). Last updated 17 Nov 2026.
 1. Multi-column POM grid and XLS import/export (reorder, JSON/CSV already done).
 2. Per-attribute generation filter and per-row visibility controls.
 3. Aggregate Playwright counts across frames and a choose-frame action flow.
-4. Popup history paging beyond the latest four distinct picks.
-5. Optional locator diffing between consecutive picks.
+4. Optional locator diffing between consecutive picks.
+5. Per-attribute generation filter (needs richer payload attributes).
