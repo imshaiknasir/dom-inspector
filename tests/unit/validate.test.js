@@ -246,3 +246,11 @@ test('validate: non-element XPath is not a valid element locator', { todo: 'xpat
   assert.deepEqual({ ok: out.attribute.ok, count: out.attribute.count }, { ok: false, count: 0 });
   assert.deepEqual({ ok: out.text.ok, count: out.text.count }, { ok: false, count: 0 });
 });
+
+test('validate: bare XPath id() is detected', { todo: 'detectType treats id() as CSS' }, async () => {
+  const out = await page.evaluate(() => {
+    const result = DI.validate.test('auto', "id('save')");
+    return { type: DI.validate.detectType("id('save')"), ok: result.ok, count: result.count };
+  });
+  assert.deepEqual(out, { type: 'xpath', ok: true, count: 1 });
+});
