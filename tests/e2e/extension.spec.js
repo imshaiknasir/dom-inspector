@@ -1132,6 +1132,7 @@ test('panel filters saved locators and hides the filter when empty', async () =>
     document.querySelectorAll('#di-saved .saved-row').length
   ), { timeout: 5000 }).toBe(1);
   await expect(extensionPage.locator('#di-saved')).toContainText('#link');
+  await expect(extensionPage.locator('#di-saved')).toContainText('https://example.test/docs');
   await expect(extensionPage.locator('#di-saved')).not.toContainText('#save');
 
   await extensionPage.locator('#di-saved-filter').press('Escape');
