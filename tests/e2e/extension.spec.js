@@ -830,6 +830,60 @@ test('panel imports saved locators from JSON and skips duplicates', async () => 
   )).toBe(2);
 });
 
+test('panel exports saved locators as CSV and imports them back', async () => {
+  const entry = {
+    id: 'csv-round-trip',
+    key: 'css::#save',
+    name: 'Save, "main"',
+    scope: 'CSS',
+    type: 'css',
+    value: '#save',
+    testType: 'css',
+    testValue: '#save',
+    count: 1,
+    url: 'https://example.test/a,b',
+    savedAt: 1700000000000
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  const downloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-saved-csv').click());
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^dom-inspector-saved-.*\.csv$/);
+  const csvText = fs.readFileSync(await download.path(), 'utf8');
+  const [header, row] = csvText.trim().split(/\r?\n/);
+  expect(header).toBe('name,scope,type,value,testType,testValue,count,url,savedAt');
+  expect(row).toContain('"Save, ""main"""');
+  expect(row).toContain('"#save"');
+  expect(row).toContain('"https://example.test/a,b"');
+
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(0);
+
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'round-trip.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csvText)
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+  await expect(extensionPage.locator('#di-toast')).toContainText('Imported 1 saved locator');
+  const stored = await extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return data['di:panel:saved'];
+  });
+  expect(stored[0]).toMatchObject({ name: 'Save, "main"', type: 'css', value: '#save', count: 1 });
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel reorders saved locators with up/down controls', async () => {
   const entries = [
     { id: 'order-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
@@ -1068,6 +1122,17 @@ test('panel healing exports a JSON report and clears the rows', async () => {
   expect(Array.isArray(report.results)).toBe(true);
   expect(report.results.length).toBe(2);
   expect(report.results.some((row) => row.fixed === '#save' && row.status === 'fixed')).toBe(true);
+
+  const csvDownloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-heal-csv').click());
+  const csvDownload = await csvDownloadPromise;
+  expect(csvDownload.suggestedFilename()).toMatch(/^dom-inspector-healing-.*\.csv$/);
+  const csvText = fs.readFileSync(await csvDownload.path(), 'utf8');
+  const csvRows = csvText.trim().split(/\r?\n/);
+  expect(csvRows[0]).toBe('index,original,status,count,type,error,fixed,fixedType,score,elementTag,elementId');
+  expect(csvRows.length).toBe(3);
+  expect(csvText).toContain('"fixed"');
+  expect(csvText).toContain('"#save"');
 
   await extensionPage.evaluate(() => document.getElementById('di-heal-clear').click());
   await expect.poll(() => extensionPage.evaluate(() =>
