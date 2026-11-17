@@ -1601,7 +1601,8 @@
     const hasHeader = index("value") !== -1;
     const at = (cells, name, fallback) => {
       const position = hasHeader ? index(name) : fallback;
-      return position >= 0 && position < cells.length ? cells[position] : "";
+      const value = position >= 0 && position < cells.length ? cells[position] : "";
+      return /^'[=+\-@]/.test(value) ? value.slice(1) : value;
     };
     const entries = [];
     for (const cells of rows.slice(hasHeader ? 1 : 0)) {
