@@ -1619,6 +1619,32 @@ test('panel healing exports a JSON report and clears the rows', async () => {
   await expect(extensionPage.locator('#di-heal-empty')).toBeVisible();
 });
 
+test('panel persists language and picking toggles across reload', async () => {
+  await extensionPage.evaluate(() => {
+    const set = (id, value, event) => {
+      const node = document.getElementById(id);
+      if (node.type === 'checkbox') node.checked = value;
+      else node.value = value;
+      node.dispatchEvent(new Event(event, { bubbles: true }));
+    };
+    set('di-lang', 'csharp', 'change');
+    set('di-await', true, 'change');
+    set('di-unique', true, 'change');
+    set('di-continuous', true, 'change');
+  });
+  await extensionPage.waitForTimeout(300);
+  await extensionPage.reload();
+  const state = await extensionPage.evaluate(() => ({
+    lang: document.getElementById('di-lang').value,
+    await: document.getElementById('di-await').checked,
+    unique: document.getElementById('di-unique').checked,
+    continuous: document.getElementById('di-continuous').checked
+  }));
+  expect(state).toEqual({ lang: 'csharp', await: true, unique: true, continuous: true });
+  await extensionPage.evaluate(() => document.getElementById('di-reset').click());
+  await expect(extensionPage.locator('#di-lang')).toHaveValue('js');
+});
+
 test('panel Reset restores defaults and clears filters', async () => {
   await extensionPage.evaluate(() => {
     const lang = document.getElementById('di-lang');
