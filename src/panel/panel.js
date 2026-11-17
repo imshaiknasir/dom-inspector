@@ -1602,7 +1602,7 @@
     const at = (cells, name, fallback) => {
       const position = hasHeader ? index(name) : fallback;
       const value = position >= 0 && position < cells.length ? cells[position] : "";
-      return /^'[=+\-@]/.test(value) ? value.slice(1) : value;
+      return /^'[=+\-@\t\r\n]/.test(value) ? value.slice(1) : value;
     };
     const entries = [];
     for (const cells of rows.slice(hasHeader ? 1 : 0)) {
@@ -1665,7 +1665,7 @@
 
   const csvCell = (value) => {
     let text = String(value == null ? "" : value);
-    if (/^[=+\-@]/.test(text)) text = "'" + text;
+    if (/^[=+\-@\t\r\n]/.test(text)) text = "'" + text;
     return '"' + text.replace(/"/g, '""') + '"';
   };
 
