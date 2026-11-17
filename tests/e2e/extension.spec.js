@@ -641,6 +641,51 @@ test('continuous picking survives multiple picks and Escape cancels it', async (
   await expect.poll(() => fixturePage.evaluate(() => !document.getElementById('di-picker-overlay')), { timeout: 5000 }).toBe(true);
 });
 
+test('picker overlay follows nested scroll containers', async () => {
+  await fixturePage.goto(baseURL);
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await fixturePage.bringToFront();
+  try {
+    await fixturePage.evaluate(() => {
+      const scroller = document.createElement('div');
+      scroller.id = 'di-scroll-box';
+      scroller.style.cssText = 'height:120px;overflow:auto;border:1px solid #ccc';
+      const before = document.createElement('div');
+      before.style.height = '10px';
+      const target = document.createElement('button');
+      target.id = 'di-scroll-target';
+      target.textContent = 'Scroll target';
+      const after = document.createElement('div');
+      after.style.height = '400px';
+      scroller.append(before, target, after);
+      document.body.prepend(scroller);
+    });
+    await startPicking();
+    const box = await fixturePage.locator('#di-scroll-target').boundingBox();
+    expect(box).toBeTruthy();
+    await fixturePage.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const before = await fixturePage.evaluate(() =>
+      document.getElementById('di-picker-overlay').style.transform);
+    expect(before).toContain('translate');
+
+    await fixturePage.evaluate(() => { document.getElementById('di-scroll-box').scrollTop = 150; });
+    await expect.poll(() => fixturePage.evaluate(() => {
+      const overlay = document.getElementById('di-picker-overlay');
+      return overlay ? overlay.style.transform : '';
+    }), { timeout: 5000 }).not.toBe(before);
+  } finally {
+    await extensionPage.evaluate(async () => {
+      const tabs = await chrome.tabs.query({});
+      const tab = tabs.find((candidate) => candidate.url && candidate.url.startsWith('http://127.0.0.1'));
+      if (tab) await chrome.tabs.sendMessage(tab.id, { type: 'DI_STOP' }).catch(() => {});
+    });
+    await fixturePage.evaluate(() => {
+      const scroller = document.getElementById('di-scroll-box');
+      if (scroller) scroller.remove();
+    });
+  }
+});
+
 test('reference mode adds axes locators to the next pick', async () => {
   await fixturePage.bringToFront();
   const referenceStart = await sendToFixture({ type: 'DI_START', mode: 'reference' });
