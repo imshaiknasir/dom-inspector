@@ -149,7 +149,7 @@
         }
         return true;
       };
-      const named = (node) => !!(attr(node, "aria-label") || attr(node, "aria-labelledby"));
+      const named = (node) => !!(attr(node, "aria-label") || attr(node, "aria-labelledby") || attr(node, "title"));
       const implicitRole = (node) => {
         const explicit = (attr(node, "role") || "").split(/\s+/)[0];
         if (explicit) return explicit;
