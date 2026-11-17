@@ -61,7 +61,10 @@
         break;
       }
       const same = Array.from(parent.children).filter((c) => c.tagName === node.tagName);
-      parts.unshift(`${tag}[${same.indexOf(node) + 1}]`);
+      const segment = node.namespaceURI === "http://www.w3.org/2000/svg"
+        ? `*[local-name()=${xpathLiteral(tag)}][${same.indexOf(node) + 1}]`
+        : `${tag}[${same.indexOf(node) + 1}]`;
+      parts.unshift(segment);
       node = parent;
     }
     return "/" + parts.join("/");
@@ -80,12 +83,14 @@
       const id = usableValue(attr(node, "id"));
       if (id) {
         anchor = `//*[@id=${xpathLiteral(id)}]`;
+        parts.shift();
         break;
       }
       if (tagOf(node) === "body") break;
       node = parent;
     }
-    return anchor ? anchor + "/" + parts.join("/") : `//${parts.join("/")}`;
+    if (anchor) return parts.length ? anchor + "/" + parts.join("/") : `(${anchor})[1]`;
+    return `//${parts.join("/")}`;
   };
 
   const candidates = (el) => {

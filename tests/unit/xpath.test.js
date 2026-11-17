@@ -158,7 +158,7 @@ test('xpath: frameXPath names the iframe from inside a child frame', async () =>
   assert.equal(out.frameXPath.xpath, "//iframe[@id='frame']");
 });
 
-test('xpath: positional selector for an element with an id stays valid', { todo: 'BLOCKERS.md — positionalRelative appends the id element after its own anchor (src/content/xpath.js:70-88)' }, async () => {
+test('xpath: positional selector for an element with an id stays valid', async () => {
   const out = await page.evaluate(() => {
     const el = document.getElementById('save');
     const positional = DI.xpath.candidates(el).find((candidate) => candidate.strategy === 'positional');
@@ -169,7 +169,7 @@ test('xpath: positional selector for an element with an id stays valid', { todo:
   assert.equal(out.hits, true);
 });
 
-test('xpath: absolute SVG path resolves through local-name()', { todo: 'BLOCKERS.md — absoluteXPath uses HTML tag names for SVG nodes (src/content/xpath.js:52-68)' }, async () => {
+test('xpath: absolute SVG path resolves through local-name()', async () => {
   const out = await page.evaluate(() => {
     const el = document.getElementById('dot');
     const xpath = DI.xpath.absoluteXPath(el);
