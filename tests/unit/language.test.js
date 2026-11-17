@@ -6,6 +6,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SKIP = new Set(['node_modules', '.git', 'test-results', 'playwright-report']);
@@ -65,4 +66,13 @@ test('language: manifest keeps the default strict CSP', () => {
   assert.ok(!manifest.content_security_policy, 'must not override the MV3 CSP');
   assert.ok(!JSON.stringify(manifest).includes('unsafe-eval'));
   assert.ok(!JSON.stringify(manifest).includes('unsafe-inline'));
+});
+
+
+test('language: every extension script parses', () => {
+  const scripts = files.filter((item) => /[\\/]src[\\/].*\.js$/.test(item));
+  assert.ok(scripts.length >= 10);
+  for (const file of scripts) {
+    assert.doesNotThrow(() => new vm.Script(fs.readFileSync(file, 'utf8'), { filename: file }), path.relative(ROOT, file));
+  }
 });
