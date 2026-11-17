@@ -76,23 +76,11 @@ const openFixture = async (browser, name) => {
   return page;
 };
 
-/** Resolve a CSS selector against the element's own tree scope. */
-const resolveCss = (page, selector, elementId) => page.evaluate(({ selector, elementId }) => {
-  const el = elementId ? document.getElementById(elementId) : null;
-  const root = el && el.getRootNode ? el.getRootNode() : document;
-  try {
-    return Array.from(root.querySelectorAll(selector));
-  } catch (_) {
-    return [];
-  }
-}, { selector, elementId });
-
 module.exports = {
   ROOT,
   GENERATOR_SCRIPTS,
   fixtureUrl,
   launchBrowser,
   injectGenerators,
-  openFixture,
-  resolveCss
+  openFixture
 };
