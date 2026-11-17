@@ -6,6 +6,37 @@
   const DI = (globalThis.DI = globalThis.DI || {});
   const U = DI.util;
 
+  const attrValue = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
+  const bySelector = (kind, inner) => {
+    if (kind === "id") return "#" + U.cssEscape(inner);
+    if (kind === "name") return `[name="${attrValue(inner)}"]`;
+    if (kind === "className") return "." + U.cssEscape(String(inner).trim().split(/\s+/)[0] || "");
+    if (kind === "tagName") return String(inner).trim();
+    return inner;
+  };
+
+  /* Extract the raw locator from a pasted one-line client call. */
+  const unwrap = (value) => {
+    const nested = value.match(
+      /^(?:await\s+)?[\w$.]+\.findElement\(\s*By\.(cssSelector|xpath|id|name|className|tagName)\(\s*(['"])([\s\S]*?)\2\s*\)\s*\)\s*;?$/
+    );
+    if (nested) return bySelector(nested[1], nested[3]);
+    const by = value.match(
+      /^(?:await\s+)?By\.(cssSelector|xpath|id|name|className|tagName)\(\s*(['"])([\s\S]*?)\2\s*\)\s*;?$/
+    );
+    if (by) return bySelector(by[1], by[3]);
+    const idCall = value.match(/^(?:await\s+)?document\.getElementById\(\s*(['"])([\s\S]*?)\1\s*\)\s*;?$/);
+    if (idCall) return "#" + U.cssEscape(idCall[2]);
+    const call = value.match(
+      /^(?:await\s+)?(?:document\.querySelector(?:All)?|page\.locator|cy\.(?:get|xpath)|\$|jQuery)\(\s*(['"])([\s\S]*?)\1\s*\)(?:\[\s*\d+\s*\])?\s*;?$/
+    );
+    if (call) return call[2];
+    const testId = value.match(/^(?:await\s+)?page\.getByTestId\(\s*(['"])([\s\S]*?)\1\s*\)\s*;?$/);
+    if (testId) return `[data-testid="${attrValue(testId[2])}"]`;
+    return value;
+  };
+
   const normalize = (input) => {
     let value = String(input == null ? "" : input)
       .replace(/[\u2018\u2019]/g, "'")
@@ -14,6 +45,7 @@
       .replace(/\u00a0/g, " ")
       .trim();
     if (!value) return "";
+    value = unwrap(value).trim();
     const wrapped = value.match(/^(['"`])([\s\S]*)\1$/);
     if (wrapped) value = wrapped[2].trim();
     value = value.replace(/\/{3,}/g, "//");
@@ -75,7 +107,8 @@
     const id = U.attr(el, "id");
     const cls = U.attr(el, "class");
     const name = U.attr(el, "name");
-    const text = U.normalizeText(el.textContent);
+    const tag = U.tagOf(el);
+    const text = tag === "html" || tag === "body" ? "" : U.normalizeText(el.textContent);
     for (const { type, token } of list) {
       if (type === "id") total += id === token ? 60 : id.includes(token) ? 24 : 0;
       else if (type === "class") total += cls.split(/\s+/).includes(token) ? 20 : cls.includes(token) ? 8 : 0;
@@ -102,9 +135,20 @@
     return docs;
   };
 
+  const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "HEAD", "TITLE", "META", "LINK", "BASE"]);
+
+  const collect = (root, out) => {
+    for (const node of root.querySelectorAll("*")) {
+      if (SKIP_TAGS.has(node.tagName)) continue;
+      out.push(node);
+      if (node.shadowRoot) collect(node.shadowRoot, out);
+    }
+    return out;
+  };
+
   const allElements = () => {
-    const out = U.deepEveryElement(document, []);
-    for (const doc of frameDocs()) out.push(...U.deepEveryElement(doc, []));
+    const out = collect(document, []);
+    for (const doc of frameDocs()) collect(doc, out);
     return out;
   };
 
@@ -180,7 +224,7 @@
         };
       }
     }
-    const list = tokens(original);
+    const list = tokens(first || original);
     const found = bestElement(list);
     if (!found) {
       return { ok: false, fixed: first || original, error: "No matching element found", tokens: list };
