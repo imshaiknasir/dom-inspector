@@ -1336,6 +1336,30 @@ test('panel caps a single saved import at 500 entries', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
 });
 
+test('panel normalises duplicate saved locator ids', async () => {
+  const entries = [
+    { id: 'same-id', key: 'css::#save', name: 'First', type: 'css', value: '#save', savedAt: 3 },
+    { id: 'same-id', key: 'css::#link', name: 'Second', type: 'css', value: '#link', savedAt: 2 },
+    { id: 'same-id', key: 'css::#email', name: 'Third', type: 'css', value: '#email', savedAt: 1 }
+  ];
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), entries);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(3);
+
+  await extensionPage.evaluate(() => {
+    document.querySelector('#di-saved .saved-row button[title="Move down"]').click();
+  });
+  const ids = await extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return (data['di:panel:saved'] || []).map((entry) => entry.id);
+  });
+  expect(ids.length).toBe(3);
+  expect(new Set(ids).size).toBe(3);
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel reorders saved locators with up/down controls', async () => {
   const entries = [
     { id: 'order-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
