@@ -178,3 +178,30 @@ test('xpath: absolute SVG path resolves through local-name()', async () => {
   assert.equal(out.count, 1);
   assert.equal(out.hits, true);
 });
+
+test('xpath: optimize only returns paths that still match exactly one node', async () => {
+  const out = await page.evaluate(() => {
+    const inputs = [
+      '//body[1]/div[1]/input[1]',
+      '//html/body[1]/div[1]/input[1]',
+      '//body[1]/table[1]/tbody[1]/tr[1]/td[2]/button[1]'
+    ];
+    return inputs.map((xpath) => {
+      const optimized = DI.xpath.optimize(xpath);
+      return { xpath, optimized, count: DI.xpath.count(optimized) };
+    });
+  });
+  for (const item of out) {
+    assert.ok(item.optimized.startsWith('//'), item.optimized);
+    if (item.optimized !== item.xpath) assert.equal(item.count, 1, item.optimized);
+  }
+});
+
+test('xpath: inShadow reports tree scope', async () => {
+  const out = await page.evaluate(() => ({
+    shadow: DI.xpath.inShadow(document.querySelector('#host').shadowRoot.getElementById('shadowbtn')),
+    light: DI.xpath.inShadow(document.getElementById('save'))
+  }));
+  assert.equal(out.shadow, true);
+  assert.equal(out.light, false);
+});

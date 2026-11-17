@@ -237,3 +237,15 @@ test('playwright: submit inputs use their value as the accessible name', async (
   assert.equal(out.name, 'Send');
   assert.ok(out.generate.some((selector) => selector.includes("getByRole('button'") && selector.includes("name: 'Send'")));
 });
+
+test('playwright: best() returns a unique locator', async () => {
+  const out = await page.evaluate(() => ({
+    save: DI.playwright.best(document.getElementById('save')),
+    email: DI.playwright.best(document.getElementById('email'))
+  }));
+  assert.ok(out.save);
+  assert.equal(out.save.count, 1);
+  assert.ok(out.save.selector.includes('save'));
+  assert.ok(out.email);
+  assert.equal(out.email.count, 1);
+});

@@ -104,3 +104,18 @@ test('isVisible reflects display, visibility and layout', async () => {
 test('iframeChain is empty in the top document', async () => {
   assert.equal(await page.evaluate(() => DI.util.iframeChain().length), 0);
 });
+
+test('svg helpers distinguish SVG nodes from HTML', async () => {
+  const out = await page.evaluate(() => ({
+    circleSvg: DI.util.isSvg(document.getElementById('dot')),
+    svgRoot: DI.util.isSvg(document.getElementById('iconsvg')),
+    divSvg: DI.util.isSvg(document.getElementById('save')),
+    circleChild: DI.util.isSvgChild(document.getElementById('dot')),
+    divChild: DI.util.isSvgChild(document.getElementById('save'))
+  }));
+  assert.equal(out.circleSvg, true);
+  assert.equal(out.svgRoot, true);
+  assert.equal(out.divSvg, false);
+  assert.equal(out.circleChild, true);
+  assert.equal(out.divChild, false);
+});

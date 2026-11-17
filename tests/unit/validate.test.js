@@ -152,3 +152,21 @@ test('validate: getByLabel resolves form controls inside shadow roots', async ()
   assert.equal(out.validated.ok, true);
   assert.equal(out.validated.count, 1);
 });
+
+test('validate: resolve returns elements and parser errors directly', async () => {
+  const out = await page.evaluate(() => ({
+    css: DI.validate.resolve('css', '#save'),
+    badCss: DI.validate.resolve('css', 'div['),
+    xpath: DI.validate.resolve('xpath', '//button[@id="save"]'),
+    pw: DI.validate.resolve('playwright', "page.getByTestId('save-btn')")
+  }));
+  out.pwId = await page.evaluate(() => DI.validate.resolve('playwright', "page.getByTestId('save-btn')").elements[0].id);
+  assert.equal(out.css.error, null);
+  assert.equal(out.css.elements.length, 1);
+  assert.equal(out.badCss.elements.length, 0);
+  assert.ok(out.badCss.error);
+  assert.equal(out.xpath.elements.length, 1);
+  assert.equal(out.xpath.error, null);
+  assert.equal(out.pw.elements.length, 1);
+  assert.equal(out.pwId, 'save');
+});
