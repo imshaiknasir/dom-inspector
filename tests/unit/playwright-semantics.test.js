@@ -410,3 +410,25 @@ test('playwright: extended implicit roles agree with Playwright', async () => {
     await local.close();
   }
 });
+
+test('panel actions: extended implicit roles resolve', { todo: 'panel-actions lacks details/menu/dt/dd/output/meter/search roles' }, async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <details open><summary>More</summary>Body</details>
+      <menu><li>One</li><li>Two</li></menu>
+      <dl><dt>Term</dt><dd>Def</dd></dl>
+      <output>42</output>
+      <meter value="0.5" min="0" max="1">50%</meter>
+      <search><input></search>
+    </body></html>`);
+    await local.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
+    for (const role of ['group', 'list', 'term', 'definition', 'status', 'meter', 'search']) {
+      const panel = await local.evaluate((value) =>
+        DIPanel.pageAction('click', 'playwright', `page.getByRole('${value}')`, '', false).matched, role);
+      assert.equal(panel, await local.getByRole(role).count(), role);
+    }
+  } finally {
+    await local.close();
+  }
+});
