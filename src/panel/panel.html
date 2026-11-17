@@ -3,113 +3,257 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>DOM Inspector</title>
     <link rel="stylesheet" href="panel.css" />
   </head>
   <body>
-    <header class="di-header">
-      <div>
-        <h1>DOM Inspector</h1>
-        <p class="di-sub" id="di-status">Open a page, then start picking.</p>
-      </div>
-      <div class="di-actions">
-        <button id="di-pick" class="primary" type="button">Pick element</button>
-        <button id="di-stop" type="button">Stop</button>
-        <button id="di-add-batch" type="button" disabled>Add to batch</button>
-        <button id="di-save" type="button" disabled>Save pick</button>
-      </div>
-    </header>
-
-    <main>
-      <section class="card" id="di-info-card" hidden>
-        <h2>Selected element</h2>
-        <div id="di-info" class="kv"></div>
-        <div id="di-context" class="context"></div>
-      </section>
-
-      <section class="card" id="di-css-card" hidden>
-        <h2>CSS</h2>
-        <div id="di-css" class="rows"></div>
-      </section>
-
-      <section class="card" id="di-xpath-card" hidden>
-        <h2>XPath</h2>
-        <div id="di-xpath" class="rows"></div>
-      </section>
-
-      <section class="card" id="di-pw-card" hidden>
-        <div class="card-head">
-          <h2>Playwright</h2>
-          <select id="di-lang" aria-label="Playwright language">
-            <option value="js">JavaScript</option>
-            <option value="python">Python</option>
-            <option value="java">Java</option>
-            <option value="csharp">C#</option>
-          </select>
-        </div>
-        <div id="di-pw" class="rows"></div>
-      </section>
-
-      <section class="card" id="di-selenium-card" hidden>
-        <h2>Selenium / Cypress / JS</h2>
-        <div id="di-selenium" class="rows"></div>
-        <div id="di-formats" class="rows"></div>
-      </section>
-
-      <section class="card" id="di-batch-card" hidden>
-        <div class="card-head">
-          <h2>Batch / locators page</h2>
-          <div class="row-actions">
-            <button id="di-batch-copy" type="button">Copy all</button>
-            <button id="di-batch-json" type="button">Export JSON</button>
-            <button id="di-batch-csv" type="button">Export CSV</button>
-            <button id="di-batch-clear" type="button">Clear</button>
+    <div class="di-top">
+      <header class="di-header">
+        <div class="di-brand">
+          <span class="di-logo" aria-hidden="true">DI</span>
+          <div class="di-brand-text">
+            <h1>DOM Inspector</h1>
+            <p class="di-sub" id="di-status" role="status" aria-live="polite">Open a page, then pick an element.</p>
           </div>
         </div>
-        <div id="di-batch" class="rows"></div>
+        <div class="di-actions">
+          <button id="di-pick" class="btn primary" type="button">Pick element</button>
+          <button id="di-stop" class="btn" type="button">Stop</button>
+        </div>
+      </header>
+
+      <div class="di-toolbar" role="toolbar" aria-label="Locator tools">
+        <label class="check" title="Keep picking after each click">
+          <input id="di-continuous" type="checkbox" />
+          <span>Continuous</span>
+        </label>
+        <div class="filter-wrap">
+          <input id="di-filter" type="search" placeholder="Filter locators…" spellcheck="false" aria-label="Filter locators" />
+        </div>
+        <label class="check" title="Only show locators that match exactly one element">
+          <input id="di-unique" type="checkbox" />
+          <span>Unique only</span>
+        </label>
+        <div class="tool-buttons">
+          <button id="di-expand" class="btn small" type="button" title="Expand or collapse every section">Collapse all</button>
+          <button id="di-copy-all" class="btn small" type="button">Copy all</button>
+          <button id="di-export" class="btn small" type="button" title="Download every generated locator as JSON">Export</button>
+          <button id="di-reset" class="btn small" type="button" title="Reset panel settings">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <main class="di-main">
+      <section class="card empty" id="di-empty">
+        <div class="empty-mark" aria-hidden="true">DI</div>
+        <h2>Pick an element to begin</h2>
+        <p class="lede">
+          Click <strong>Pick element</strong>, hover the page, then click a node. Every locator is verified
+          against the live DOM with a match count.
+        </p>
+        <ul class="tips">
+          <li><span class="tip-key">Esc</span> cancels picking or clears highlights.</li>
+          <li>Works inside open shadow roots and same-origin iframes.</li>
+          <li>Reload the page after installing or updating the extension.</li>
+        </ul>
+        <p class="hint" id="di-hint" hidden></p>
       </section>
 
-      <section class="card" id="di-saved-card" hidden>
-        <div class="card-head">
-          <h2>Saved locators</h2>
-          <button id="di-saved-clear" type="button">Clear all</button>
+      <section class="card info-card" id="di-info-card" hidden>
+        <div class="section-head">
+          <div class="section-title">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Selected element</h2>
+            <span class="section-meta" id="di-stats"></span>
+          </div>
+          <button class="btn small subtle" id="di-info-copy" type="button" title="Copy element summary">Copy summary</button>
         </div>
-        <div id="di-saved" class="rows"></div>
+        <div class="section-body">
+          <dl class="kv" id="di-info"></dl>
+          <div id="di-context" class="context"></div>
+          <div id="di-paths" class="paths" hidden></div>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>Heal / verify a script</h2>
-        <p class="di-sub">Paste a script or locator list. Quoted XPath, CSS and Playwright locators are extracted heuristically and verified one by one.</p>
-        <textarea id="di-script" spellcheck="false" placeholder="await page.getByRole('button', { name: 'Save' }).click();&#10;driver.findElement(By.xpath(&quot;//input[@id='email']&quot;))"></textarea>
-        <div class="row-actions" style="margin-top:8px">
-          <button id="di-heal" type="button">Verify selectors</button>
-          <button id="di-heal-clear" type="button">Clear results</button>
+      <section class="card loc-card" id="di-css-card" hidden data-section="di-css-card">
+        <div class="section-head">
+          <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-css-body">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>CSS</h2>
+          </button>
+          <span class="section-meta" id="di-css-meta"></span>
+          <button class="btn small subtle" id="di-css-copy" type="button" title="Copy all visible CSS locators">Copy</button>
         </div>
-        <div id="di-heal-rows" class="rows"></div>
+        <div class="section-body" id="di-css-body">
+          <div id="di-css" class="rows"></div>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>Validate a locator</h2>
-        <div class="validator">
-          <select id="di-type" aria-label="Locator type">
-            <option value="auto">Auto</option>
-            <option value="css">CSS</option>
-            <option value="xpath">XPath</option>
-            <option value="playwright">Playwright</option>
-          </select>
-          <input id="di-input" type="text" spellcheck="false" placeholder="Paste CSS, XPath or page.getBy…" />
-          <button id="di-test" type="button">Test &amp; highlight</button>
-          <button id="di-clear" type="button">Clear</button>
+      <section class="card loc-card" id="di-xpath-card" hidden data-section="di-xpath-card">
+        <div class="section-head">
+          <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-xpath-body">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>XPath</h2>
+          </button>
+          <span class="section-meta" id="di-xpath-meta"></span>
+          <button class="btn small subtle" id="di-xpath-copy" type="button" title="Copy all visible XPath locators">Copy</button>
         </div>
-        <p id="di-result" class="result" role="status">No locator tested yet.</p>
+        <div class="section-body" id="di-xpath-body">
+          <div id="di-xpath" class="rows"></div>
+        </div>
+      </section>
+
+      <section class="card loc-card" id="di-pw-card" hidden data-section="di-pw-card">
+        <div class="section-head pw-head">
+          <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-pw-body">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Playwright</h2>
+          </button>
+          <div class="pw-controls">
+            <select id="di-lang" aria-label="Playwright language" title="Generated language">
+              <option value="js">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="csharp">C#</option>
+            </select>
+            <label class="check" title="Prefix JavaScript locators with await">
+              <input id="di-await" type="checkbox" />
+              <span>await</span>
+            </label>
+            <button class="btn small subtle" id="di-pw-copy" type="button" title="Copy all visible Playwright locators">Copy</button>
+          </div>
+        </div>
+        <div class="section-body" id="di-pw-body">
+          <div class="section-meta wrap" id="di-pw-meta"></div>
+          <div id="di-pw" class="rows"></div>
+        </div>
+      </section>
+
+      <section class="card loc-card" id="di-selenium-card" hidden data-section="di-selenium-card">
+        <div class="section-head">
+          <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-selenium-body">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Selenium</h2>
+          </button>
+          <span class="section-meta" id="di-selenium-meta"></span>
+          <button class="btn small subtle" id="di-selenium-copy" type="button" title="Copy all visible Selenium values">Copy</button>
+        </div>
+        <div class="section-body" id="di-selenium-body">
+          <div id="di-selenium" class="rows"></div>
+        </div>
+      </section>
+
+      <section class="card loc-card" id="di-formats-card" hidden data-section="di-formats-card">
+        <div class="section-head">
+          <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-formats-body">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Cypress &middot; JS &middot; jQuery</h2>
+          </button>
+          <span class="section-meta" id="di-formats-meta"></span>
+          <button class="btn small subtle" id="di-formats-copy" type="button" title="Copy all visible snippets">Copy</button>
+        </div>
+        <div class="section-body" id="di-formats-body">
+          <div id="di-formats" class="rows"></div>
+          <details class="driver" id="di-driver">
+            <summary>Driver command template</summary>
+            <div class="driver-grid">
+              <label class="field">
+                <span>Base</span>
+                <select id="di-driver-base">
+                  <option value="css">Best CSS</option>
+                  <option value="xpath">Best XPath</option>
+                </select>
+              </label>
+              <label class="field grow">
+                <span>Template</span>
+                <input id="di-driver-template" type="text" spellcheck="false" placeholder='driver.findElement(By.cssSelector("{selector}"))' />
+              </label>
+              <label class="field">
+                <span>Preset</span>
+                <select id="di-driver-preset">
+                  <option value="">Choose…</option>
+                  <option value="java-css">Selenium Java · CSS</option>
+                  <option value="java-xpath">Selenium Java · XPath</option>
+                  <option value="python-css">Selenium Python · CSS</option>
+                  <option value="python-xpath">Selenium Python · XPath</option>
+                  <option value="cypress">Cypress</option>
+                  <option value="playwright">Playwright</option>
+                  <option value="testng">TestNG @FindBy</option>
+                </select>
+              </label>
+            </div>
+            <div class="driver-out">
+              <code id="di-driver-output">&nbsp;</code>
+              <button id="di-driver-copy" class="btn small subtle" type="button">Copy</button>
+            </div>
+            <p class="hint">Use <code>{selector}</code> (or legacy <code>xpathvalue</code> / <code>cssvalue</code>) where the locator belongs.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="card" id="di-tester-card">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Test a locator</h2>
+          </div>
+          <span class="pill live" id="di-live-badge" hidden></span>
+        </div>
+        <div class="section-body">
+          <div class="tester-grid">
+            <select id="di-type" aria-label="Locator type">
+              <option value="auto">Auto</option>
+              <option value="css">CSS</option>
+              <option value="xpath">XPath</option>
+              <option value="playwright">Playwright</option>
+            </select>
+            <input id="di-input" type="text" spellcheck="false" autocomplete="off" placeholder="Paste CSS, XPath or page.getBy…" aria-label="Locator value" />
+            <button id="di-test" class="btn primary" type="button">Test &amp; highlight</button>
+            <button id="di-clear" class="btn" type="button">Clear</button>
+          </div>
+          <p id="di-result" class="result" role="status" aria-live="polite">No locator tested yet.</p>
+
+          <div class="action-row">
+            <span class="action-label">Run on page</span>
+            <button id="di-click" class="btn small" type="button" title="Click the first matching element">Click</button>
+            <button id="di-hover" class="btn small" type="button" title="Hover the first matching element">Hover</button>
+            <button id="di-type-action" class="btn small" type="button" title="Focus and type into the first matching field">Type</button>
+            <input id="di-type-text" class="type-text" type="text" placeholder="Text to type" aria-label="Text to type" />
+          </div>
+          <p class="hint">Live counts run as you type. Actions search the page, open shadow roots and same-origin frames.</p>
+        </div>
+      </section>
+
+      <section class="card" id="di-saved-card">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Saved locators</h2>
+            <span class="section-meta" id="di-saved-meta">0</span>
+          </div>
+          <div class="saved-tools">
+            <button id="di-saved-json" class="btn small subtle" type="button" title="Download saved locators as JSON">JSON</button>
+            <button id="di-saved-csv" class="btn small subtle" type="button" title="Download saved locators as CSV">CSV</button>
+            <button id="di-saved-clear" class="btn small subtle danger" type="button" title="Remove every saved locator">Clear</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <div id="di-saved" class="rows saved-rows"></div>
+          <p class="hint" id="di-saved-empty">Use the star on any locator to keep it here. Saved locators are stored locally and survive panel reloads.</p>
+        </div>
       </section>
     </main>
 
     <footer class="di-footer">
-      <span>CSS · XPath · Playwright · Selenium · Cypress</span>
-      <a href="https://github.com/" id="di-help" target="_blank" rel="noreferrer" hidden>Help</a>
+      <span>Local only &middot; no ads, accounts or remote code</span>
+      <span class="footer-right">v1.0.0 &middot; <kbd>Esc</kbd> clears</span>
     </footer>
 
+    <div id="di-toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="panel-converters.js"></script>
+    <script src="panel-actions.js"></script>
     <script src="panel.js"></script>
   </body>
 </html>

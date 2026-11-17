@@ -100,7 +100,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Browser-backed generator/validator tests | done | 16 tests, `node --test` |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | `npm run test:unit`; known generator gaps in `../BLOCKERS.md` |
+| Panel contract tests | done | ids, duplicate ids and local scripts checked |
+| Extension e2e picker test | done | `npm run test:e2e` loads the unpacked extension |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
