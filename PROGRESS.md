@@ -11,7 +11,7 @@ not shipped). Last updated 17 Nov 2026.
 | DevTools Elements sidebar pane | done | `createSidebarPane` → `panel/panel.html` |
 | Chrome side panel | done | same panel; toolbar icon opens it |
 | Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
-| Recent pick history in popup | done | panel stores distinct recent picks; popup shows four with **Show all**, keeps the full count and can clear them |
+| Recent pick history in popup | done | every new panel pick is recorded (restores are not duplicated); popup shows four with **Show all**, keeps the full count and can clear them |
 | Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `T` test best, `C` copy last |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
@@ -75,13 +75,14 @@ not shipped). Last updated 17 Nov 2026.
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator reorder | done | up/down controls; order drives POM method order |
 | Saved locator filter | done | name/type/value/URL filter; empty-state feedback; `Esc` clears it |
-| Re-check saved locators | done | re-tests all saved values, updates counts and shows per-row errors |
+| Re-check saved locators | done | re-tests all testable saved values, updates counts, shows per-row errors, and skips saved code snippets |
+| Saved locator repair | done | per-row **Fix** on a broken saved entry uses the repair engine and only keeps a replacement verified as unique |
 | Saved locator import / export | done | JSON/CSV import with dedupe + JSON/CSV export |
-| Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries |
+| Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries; comment labels are sanitised |
 | Saved locator delete / clear | done | confirm before clearing all |
 | Editable locator tester with live count | done | debounced, no highlight while typing |
 | Test & highlight + clear | done | scrolls first match into view |
-| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/modifiers; generator-aligned role/label/test-id matching |
+| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/modifiers/regex args; Playwright-aligned role, landmark, accessible-name and text rules |
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |
@@ -108,49 +109,38 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 184/184 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 194 checks: 187 pass, 7 tracked `todo` parity probes |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 30/30 checks, including popup, axes, tester Fix, saved filter/re-check/reorder, POM export, JSON/CSV import, settings recovery and batch healing |
+| Extension e2e suites | done | 32/32 checks, including popup history, axes, tester Fix, saved filter/re-check/reorder, POM export, JSON/CSV import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
 | No copied SelectorsHub code/names/branding | done | clean-room implementation |
 
-## Commit log (this repo)
+## Recent commit log (newest first)
 
-- `208e50c` MV3 shell, picker, CSS/XPath/Playwright generators
-- `a9bf045` panel UI, service worker routing, 16 tests
-- `3e7c6ad` CSS attribute escaping + Playwright nth fallback
-- `f64f6f8` Playwright `:has-text`/`:text-is` evaluation
-- `e7c1da5` Selenium frame/shadow snippets
-- `b8cad3d` regex role locator variant
-- `5a18693` continuous picking option
-- `c3eba97` docs
-- `70968af` docs commit references
-- `c4b36b2` panel expansion: polished UI, language output, saved/export, action tester
-- `8e797c0` panel axes reference flow + batch selector healing
-- `ab39b4f` toolbar popup with pick/open/recent/copy
-- `c16566b` testRigor and Cypress-shadow format labels
-- `4d718d9` tester result wording matches the validation contract
-- `d270c92` single-locator Fix action in the tester
-- `11ab1e4` recent pick history in the popup
-- `1382440` saved locators → Playwright page-object snippet
-- `ad3b49f` sanitize persisted settings and reserved POM method names
-- `683f880` strategy filter for locator rows
-- `5521d32` batch-fix non-unique selectors with verified unique candidates
-- `855a2cd` richer copied element summary
-- `15d29a1` saved-locator JSON import
-- `3328d0a` narrow-healing-header layout fix
-- `e154f6a` non-unique counts in healing summaries
-- `3de0e1c` saved-locator CSV import
-- `f7ce0aa` cross-surface saved/history sync
-- saved-locator reordering for stable POM output
-- `e47ee2b` popup keyboard shortcuts
-- `1382440` saved-locator POM export
-- `19df8da` saved-locator filter
-- `0ff7acd` saved-locator re-check
-- `15d29a1` / `3de0e1c` saved-locator JSON/CSV import
-- `4507095` action-runner locator chains and modifiers
+See `git log` for the complete history. Recent work across the team:
+
+- `0691e42` action-runner accessible names from roles and titles
+- `72142ce` pin Playwright validation and accessible-name gaps
+- `839c3df` action-runner roles for landmarks and inputs
+- `39e6aae` exact data-test counts and real `:visible` counts
+- `6885082` drop auto-count results after a newer pick
+- `50b5365` popup history show-all e2e coverage
+- `26667f7` picker listener cleanup and frame-scoped menu picks
+- `88f96d1` nested shadow chains outermost-first
+- `7b2f4d8` clarify saved-check summary when snippets are skipped
+- `e340bb0` Playwright role/text counting cross-checks
+- `7199da9` fix broken saved locators in place
+- `5333336` harden POM comments and saved re-check persistence
+- `dacca2e` lock saved and healing actions while a check runs
+- `b5d67bc` record pick history and persist saved test results
+- `3289353` keep saved tools disabled during a re-check
+- `8f0e87e` saved tools disable when empty (e2e)
+- `6121927` disable saved-locator actions when empty
+- `b80521e` document filter clearing and refresh checklist
+- `d1907c4` reorder saved locators among filtered rows
+- `c63c412` describe popup history show-all behavior
 
 ## Next candidates
 

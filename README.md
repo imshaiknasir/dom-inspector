@@ -49,9 +49,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   a debounced live count, and Test & highlight. **Fix** repairs a broken locator
   through the page repair engine, replaces the tester value and re-validates it.
   Click / Hover / Type actions run against the page, searching open shadow roots
-  and same-origin frames. They accept CSS, XPath, Playwright `getBy*`,
-  `locator()` chains, `.first()`, `.last()`, `.nth()` and
-  `.filter({hasText})`. Role/label/test-id matching follows the generator's
+  and same-origin frames. They accept CSS, XPath, Playwright `getBy*`
+  (including string/regex arguments), `locator()` chains, `.first()`,
+  `.last()`, `.nth()` and `.filter({hasText})`. Role/label/test-id matching follows the generator's
   accessible-name semantics. Action testing is best-effort and reported
   honestly when a field is not typable or nothing matches.
 - **Axes reference** — press **Axes ref**, pick a reference element, then pick
@@ -69,12 +69,17 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   filter, reorder, re-check every saved locator's live count, re-test, edit,
   copy, delete, import JSON/CSV, export JSON/CSV, clear the list, or download a
   Playwright page-object snippet (`POM`) generated from the saved locators.
+  When a re-check flags a broken entry, a **Fix** action repairs it in place
+  with a verified unique CSS/XPath/Playwright replacement. Saved code snippets
+  that are not locators (Cypress/JS/jQuery/frame helpers) are kept and exported
+  but skipped by Check.
 - **Right-click copy** — the page context menu can pick an element or copy its
   best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
-  sections, driver template and saved locators survive panel reloads. The last
-  pick is restored from the service worker/session storage, the panel keeps a
-  small history of recent picks for the popup, and open panel/popup surfaces
+  sections, driver template, batch-healing input and saved locators survive
+  panel reloads. The last pick is restored from the service worker/session
+  storage; every new pick is also added to a small recent-pick history used by
+  the popup (restored picks are not duplicated), and open panel/popup surfaces
   stay in sync through storage events.
 - **Themes** — light and dark follow the browser colour scheme.
 
@@ -178,16 +183,18 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 184/184 unit checks and 30/30 extension e2e checks
-pass, including real-extension coverage for the popup, axes reference,
-right-click bridge, repair and batch healing.
+popup copy. Current status: 194 unit checks (187 passing, 7 tracked as `todo`
+parity probes for the remaining Playwright engine work) and 32/32 extension
+e2e checks pass, including real-extension coverage for the popup, axes
+reference, right-click bridge, repair and batch healing.
 
 ## Known gaps
 
 - Batch healing accepts pasted lines and exports JSON/CSV, but does not import
   spreadsheets; its repair suggestions are heuristic when a selector cannot be
-  normalized. Recorder/TestCase Studio, login, ads and cloud features are
-  intentionally absent.
+  normalized. Saved-locator Fix uses the same repair engine and only reports a
+  replacement after re-validating it as unique. Recorder/TestCase Studio,
+  login, ads and cloud features are intentionally absent.
 - Saved locators are a lightweight POM list; there is no editable
   multi-column POM grid or spreadsheet import.
 - Java/C# Playwright option objects are best-effort translations, not compiler
