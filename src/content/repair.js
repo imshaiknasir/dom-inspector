@@ -214,10 +214,11 @@
     return out;
   };
 
-  const bestElement = (list) => {
+  const bestElement = (list, candidates) => {
     let best = null;
     let bestScore = 0;
-    for (const el of allElements()) {
+    const elements = candidates || allElements();
+    for (const el of elements) {
       const s = score(el, list);
       if (s > bestScore || (s === bestScore && s > 0 && best && U.isVisible(el) && !U.isVisible(best))) {
         best = el;
@@ -261,7 +262,7 @@
     };
   };
 
-  const fix = (input) => {
+  const fix = (input, candidates) => {
     const original = String(input == null ? "" : input).trim();
     const attempts = [];
     const hasRegex = /(?:name|hasText):\s*\//.test(original);
@@ -309,7 +310,7 @@
       }
     }
     const list = tokens(candidate);
-    const found = bestElement(list);
+    const found = bestElement(list, candidates);
     if (!found) {
       return { ok: false, fixed: first || original, error: "No matching element found", tokens: list };
     }
@@ -328,7 +329,13 @@
     };
   };
 
-  const fixMany = (values) => (Array.isArray(values) ? values : []).slice(0, 200).map(fix);
+  const fixMany = (values) => {
+    const list = Array.isArray(values) ? values.slice(0, 200) : [];
+    if (!list.length) return [];
+    // Scan the document once for the whole batch instead of once per value.
+    const candidates = allElements();
+    return list.map((value) => fix(value, candidates));
+  };
 
   DI.repair = { normalize, tokens, fix, fixMany };
 })();

@@ -281,18 +281,35 @@
         return true;
       }
       const done = () => sendResponse({ ok: true, value });
-      try {
-        navigator.clipboard.writeText(value).then(done, () => {
+      const fallback = () => {
+        try {
+          const host = document.body || document.documentElement;
+          if (!host) {
+            sendResponse({ ok: false, error: "Clipboard unavailable" });
+            return;
+          }
           const area = document.createElement("textarea");
           area.value = value;
-          document.body.appendChild(area);
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          host.appendChild(area);
           area.select();
           const copied = document.execCommand("copy");
           area.remove();
           sendResponse(copied ? { ok: true, value } : { ok: false, error: "Clipboard unavailable" });
-        });
+        } catch (_) {
+          sendResponse({ ok: false, error: "Clipboard unavailable" });
+        }
+      };
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          navigator.clipboard.writeText(value).then(done, fallback);
+        } else {
+          fallback();
+        }
       } catch (_) {
-        sendResponse({ ok: false, error: "Clipboard unavailable" });
+        fallback();
       }
       return true;
     }
