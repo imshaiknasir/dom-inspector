@@ -64,6 +64,12 @@
         }
         return out;
       };
+      const isNameHidden = (node) => {
+        if (node.hidden || attr(node, "aria-hidden") === "true") return true;
+        const view = node.ownerDocument && node.ownerDocument.defaultView;
+        const style = view ? view.getComputedStyle(node) : null;
+        return !!style && (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse");
+      };
       /* Accessible name from content also incorporates image alt text and
          embedded input values, unlike rendered text matching. */
       const contentName = (node) => {
@@ -71,7 +77,7 @@
         for (const child of node.childNodes) {
           if (child.nodeType === 3) { out += " " + child.nodeValue; continue; }
           if (child.nodeType !== 1 || ignoredText.includes(tagOf(child))) continue;
-          if (child.hidden || attr(child, "aria-hidden") === "true" || !isVisible(child)) continue;
+          if (isNameHidden(child)) continue;
           const tag = tagOf(child);
           if (tag === "img") { out += " " + attr(child, "alt"); continue; }
           if (tag === "input") {
