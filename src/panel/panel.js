@@ -770,6 +770,7 @@
     row.count = count;
     const node = state.countNodes.get(row.key);
     if (node) updateCountBadge(node.badge, count);
+    refreshRowVisibility(row.key);
     refreshStats();
     renderDiff();
   };
@@ -961,6 +962,21 @@
     card.classList.toggle("collapsed", !!state.settings.collapsed[group.card]);
     const toggle = card.querySelector(".section-toggle");
     if (toggle) toggle.setAttribute("aria-expanded", state.settings.collapsed[group.card] ? "false" : "true");
+  };
+
+  const syncToolbarCopy = () => {
+    const button = $("di-copy-all");
+    if (!button) return;
+    const any = !!state.payload && GROUPS.some((group) => visibleRows(state.groups[group.key] || []).length > 0);
+    button.disabled = !any;
+  };
+
+  const refreshRowVisibility = (key) => {
+    if (!state.settings.unique) return;
+    const group = GROUPS.find((item) => (state.groups[item.key] || []).some((row) => row.key === key));
+    if (!group) return;
+    renderGroup(group);
+    syncToolbarCopy();
   };
 
   /* ---------------------------------------------------------------- */
@@ -2545,6 +2561,7 @@
     renderSaved();
     refreshSaveButtons();
     refreshStats();
+    syncToolbarCopy();
     updatePickerUi();
     applyCollapsedState();
     syncExpandLabel();
@@ -2566,6 +2583,7 @@
             row.count = response.count;
             const node = state.countNodes.get(row.key);
             if (node) updateCountBadge(node.badge, response.count);
+            refreshRowVisibility(row.key);
             refreshStats();
             renderDiff();
           }
@@ -2757,6 +2775,7 @@
       state.countNodes = new Map();
       for (const group of GROUPS) renderGroup(group);
       refreshSaveButtons();
+      syncToolbarCopy();
     });
     $("di-filter").addEventListener("keydown", (event) => {
       if (event.key !== "Escape" || !event.target.value) return;
@@ -2766,6 +2785,7 @@
       state.countNodes = new Map();
       for (const group of GROUPS) renderGroup(group);
       refreshSaveButtons();
+      syncToolbarCopy();
     });
 
     $("di-unique").addEventListener("change", (event) => {
@@ -2774,6 +2794,7 @@
       state.countNodes = new Map();
       for (const group of GROUPS) renderGroup(group);
       refreshSaveButtons();
+      syncToolbarCopy();
     });
 
     $("di-strategy").addEventListener("change", (event) => {
@@ -2782,6 +2803,7 @@
       state.countNodes = new Map();
       for (const group of GROUPS) renderGroup(group);
       refreshSaveButtons();
+      syncToolbarCopy();
     });
 
     $("di-expand").addEventListener("click", () => {
