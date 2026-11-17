@@ -45,7 +45,8 @@ test('manifest: panel, devtools and worker files exist', () => {
   const files = [
     manifest.background.service_worker,
     manifest.side_panel.default_path,
-    manifest.devtools_page
+    manifest.devtools_page,
+    manifest.action.default_popup
   ];
   for (const file of files) {
     assert.ok(fs.existsSync(path.join(ROOT, file)), 'missing ' + file);
@@ -91,4 +92,12 @@ test('manifest: context menu copy permission and background handlers exist', () 
   assert.match(background, /contextMenus\.create/);
   assert.match(background, /["']di-copy-best["']/);
   assert.match(background, /DI_COPY_BEST/);
+});
+
+test('manifest: popup assets are local and present', () => {
+  const popup = manifest.action.default_popup;
+  const dir = path.dirname(path.join(ROOT, popup));
+  assert.ok(fs.existsSync(path.join(ROOT, popup)));
+  assert.ok(fs.existsSync(path.join(dir, 'popup.css')));
+  assert.ok(fs.existsSync(path.join(dir, 'popup.js')));
 });

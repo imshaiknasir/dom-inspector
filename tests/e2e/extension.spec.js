@@ -75,6 +75,11 @@ const clickElement = async (locator) => {
   await fixturePage.mouse.click(x, y);
 };
 
+const PLAIN = `<!doctype html><html><body>
+  <button id="save" data-testid="save-btn">Save changes</button>
+  <a id="link" href="/docs">Read the docs</a>
+</body></html>`;
+
 test.beforeAll(async () => {
   const html = fs.readFileSync(FIXTURE);
   server = http.createServer((request, response) => {
@@ -84,7 +89,7 @@ test.beforeAll(async () => {
       return;
     }
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    response.end(html);
+    response.end(request.url.startsWith('/plain') ? PLAIN : html);
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   baseURL = `http://127.0.0.1:${server.address().port}/`;
@@ -139,6 +144,37 @@ test('extension loads without runtime errors', async () => {
   expect(JSON.stringify(manifest)).not.toContain('SelectorsHub');
 
   expect(errors).toEqual([]);
+});
+
+test('toolbar popup renders the last picked locators', async () => {
+  const popup = await context.newPage();
+  collectErrors(popup, 'popup', errors);
+  await popup.goto(`chrome-extension://${extensionId}/src/popup/popup.html`);
+  await expect(popup).toHaveTitle('DOM Inspector');
+  await expect(popup.locator('#pop-pick')).toBeVisible();
+  await expect(popup.locator('#pop-open')).toBeVisible();
+
+  const payload = {
+    url: 'https://example.test/',
+    element: { tag: 'button', id: 'save', role: 'button', accessibleName: 'Save changes' },
+    css: { best: { selector: '#save', count: 1, strategy: 'id' } },
+    xpath: { best: { xpath: "//*[@id='save']", count: 1, strategy: 'id' }, absolute: '/html/body[1]/button[1]' },
+    playwright: [{ selector: "page.getByTestId('save-btn')", count: 1, type: 'getByTestId' }]
+  };
+  await popup.evaluate((value) => chrome.storage.session.set({ 'di:lastPick': value }), payload);
+  await popup.reload();
+
+  await expect(popup.locator('#pop-last-card')).toBeVisible();
+  await expect(popup.locator('#pop-status')).toContainText('Last pick: button#save');
+  await expect(popup.locator('#pop-last-element')).toContainText('#save');
+  await expect(popup.locator('#pop-last-element')).toContainText('Save changes');
+  const rows = await popup.locator('#pop-last-rows').innerText();
+  expect(rows).toContain('#save');
+  expect(rows).toContain("//*[@id='save']");
+  expect(rows).toContain("getByTestId('save-btn')");
+  expect(rows).toContain('/html/body[1]/button[1]');
+  expect(await popup.locator('#pop-last-rows .loc-row').count()).toBe(4);
+  await popup.close();
 });
 
 test('content script answers the picker bridge', async () => {
@@ -258,6 +294,49 @@ test('continuous picking survives multiple picks and Escape cancels it', async (
 
   await fixturePage.keyboard.press('Escape');
   await expect.poll(() => fixturePage.evaluate(() => !document.getElementById('di-picker-overlay')), { timeout: 5000 }).toBe(true);
+});
+
+test('panel batch healing flags a broken selector and verifies its fix', async () => {
+  await fixturePage.goto(baseURL + 'plain');
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await fixturePage.bringToFront();
+  const ready = await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+  expect(ready).toBeTruthy();
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-heal-input');
+    input.value = '#sav\n#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-heal-check').click();
+  });
+
+  await expect.poll(() => extensionPage.evaluate(() => {
+    const rows = [...document.querySelectorAll('#di-heal-results .heal-row')];
+    return rows.length === 2 && rows.every((row) => !/status-(pending|checking)/.test(row.className));
+  }), { timeout: 15000 }).toBe(true);
+
+  const checked = await extensionPage.evaluate(() => [...document.querySelectorAll('#di-heal-results .heal-row')].map((row) => ({
+    className: row.className,
+    text: row.textContent
+  })));
+  expect(checked.some((row) => row.className.includes('status-broken'))).toBe(true);
+  expect(checked.some((row) => row.className.includes('status-ok'))).toBe(true);
+
+  await extensionPage.evaluate(() => document.getElementById('di-heal-fix').click());
+  await expect.poll(() => extensionPage.evaluate(() =>
+    [...document.querySelectorAll('#di-heal-results .heal-row')].every((row) => !/status-(pending|checking)/.test(row.className))
+  ), { timeout: 15000 }).toBe(true);
+
+  const healed = await extensionPage.evaluate(() => ({
+    fixed: [...document.querySelectorAll('#di-heal-results .heal-row.status-fixed')].length,
+    fixes: [...document.querySelectorAll('#di-heal-results .heal-fix code')].map((node) => node.textContent),
+    meta: document.getElementById('di-heal-meta').textContent
+  }));
+  expect(healed.fixed).toBe(1);
+  expect(healed.fixes).toContain('#save');
+  expect(healed.meta).toContain('fixed');
 });
 
 test('no page errors accumulated during the run', async () => {
