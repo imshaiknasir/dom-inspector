@@ -2050,8 +2050,9 @@
     empty.hidden = rows.length > 0;
     meta.textContent = healSummary();
     const busy = state.healBusy;
+    const flagged = rows.some((row) => row.status === "broken" || row.status === "many" || row.status === "fix-failed");
     $("di-heal-check").disabled = busy;
-    $("di-heal-fix").disabled = busy;
+    $("di-heal-fix").disabled = busy || !flagged;
     for (const id of ["di-heal-copy", "di-heal-json", "di-heal-csv"]) {
       const button = $(id);
       if (button) button.disabled = busy || rows.length === 0;
