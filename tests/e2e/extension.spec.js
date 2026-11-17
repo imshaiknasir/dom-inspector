@@ -939,9 +939,6 @@ test('panel exports saved locators as a Playwright POM snippet', async () => {
 });
 
 test('panel POM export sanitises comment labels and the page field', async () => {
-  // Expected failure until src/panel/panel.js sanitises pomSource labels and
-  // reserves the instance field `page`; see ../../BLOCKERS.md.
-  test.fail(true, 'pomSource interpolates names into comments and method names');
   const saved = [
     {
       id: 'pom-unsafe', key: 'css::#save', name: 'Bad */ name', type: 'css',
@@ -1122,9 +1119,6 @@ test('panel exports saved locators as CSV and imports them back', async () => {
 });
 
 test('panel saved CSV export neutralises formula cells', async () => {
-  // Expected failure until src/panel/panel.js csvCell prefixes formula cells;
-  // see ../../BLOCKERS.md.
-  test.fail(true, 'csvCell does not neutralise =, +, - or @ prefixes');
   const entry = {
     id: 'csv-formula', key: 'css::#save', name: '=HYPERLINK("http://example.test")',
     scope: 'CSS', type: 'css', value: '#save', testType: 'css', testValue: '#save',
@@ -1145,6 +1139,28 @@ test('panel saved CSV export neutralises formula cells', async () => {
   expect(csvText).not.toContain('"=HYPERLINK');
   expect(csvText).toContain("'=HYPERLINK");
   expect(csvText).not.toContain('"+cmd');
+
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+  await extensionPage.reload();
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'formula.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csvText)
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+  const restored = await extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    const saved = data['di:panel:saved'][0];
+    return { name: saved.name, url: saved.url, value: saved.value };
+  });
+  expect(restored).toEqual({
+    name: '=HYPERLINK("http://example.test")',
+    url: '+cmd',
+    value: '#save'
+  });
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
 });
 
 test('panel expands a collapsed tester when editing a saved locator', async () => {
