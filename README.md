@@ -26,7 +26,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
 
 - **Toolbar popup** — start picking, open the panel, jump to batch healing,
   review the last picked element, the latest distinct picks and recent saved
-  locators, and copy any value.
+  locators, and copy any value. Shortcuts: `P` pick, `O` open panel, `H` batch
+  healing, `R` refresh, `C` copy all last locators.
 - **Selected element** — tag, id, classes, implicit role, accessible name, text,
   visibility, URL, iframe depth, shadow-host chain, shadow CSS chain and frame
   XPath.
@@ -74,6 +75,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
 - `Enter` in the tester runs Test & highlight; in the saved-name field it
   commits the name.
 - `Enter` in the “Text to type” field runs the Type action.
+- Popup: `P` pick, `O` open panel, `H` batch healing, `R` refresh, `C` copy the
+  locators shown for the last pick.
 
 ## Locator coverage
 
@@ -165,7 +168,7 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 134/134 unit checks and 15/15 extension e2e checks
+popup copy. Current status: 134/134 unit checks and 17/17 extension e2e checks
 pass, including real-extension coverage for the popup, axes reference,
 right-click bridge, repair and batch healing.
 
