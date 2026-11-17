@@ -178,6 +178,7 @@ test('picker generates verified CSS, XPath, Playwright and Selenium locators', a
   expect(payload.selenium.some((item) => item.type === 'id' && item.value === 'save' && item.count === 1)).toBe(true);
   expect(payload.selenium.some((item) => item.type === 'cssSelector' && item.count === 1)).toBe(true);
   expect(payload.formats.some((item) => item.type === 'cypress-css' && item.code.includes("cy.get('#save')"))).toBe(true);
+  expect(payload.formats.some((item) => item.type === 'testRigor' && item.code === '"Save changes"')).toBe(true);
 
   const overlay = await waitFor(() => fixturePage.evaluate(() => {
     const node = document.getElementById('di-picker-overlay');
