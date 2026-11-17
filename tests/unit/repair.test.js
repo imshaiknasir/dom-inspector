@@ -24,6 +24,9 @@ test('repair: normalize cleans quotes, whitespace and unbalanced delimiters', as
       '.btn;',
       '\u200b#save\u00a0',
       'div[',
+      'div[title=\'x',
+      'button[data-testid=\'save-btn\'',
+      'a[href="x',
       '  ',
       ''
     ];
@@ -37,6 +40,9 @@ test('repair: normalize cleans quotes, whitespace and unbalanced delimiters', as
   assert.equal(byInput['.btn;'], '.btn');
   assert.equal(byInput['\u200b#save\u00a0'], '#save');
   assert.equal(byInput['div['], 'div[]');
+  assert.equal(byInput['div[title=\'x'], "div[title='x']");
+  assert.equal(byInput['button[data-testid=\'save-btn\''], "button[data-testid='save-btn']");
+  assert.equal(byInput['a[href="x'], 'a[href="x"]');
   assert.equal(byInput['  '], '');
   assert.equal(byInput[''], '');
 });
