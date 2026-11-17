@@ -1912,6 +1912,11 @@
       input.focus();
       return;
     }
+    if (state.liveTimer) {
+      clearTimeout(state.liveTimer);
+      state.liveTimer = null;
+    }
+    state.liveSeq += 1;
     const button = $("di-fix");
     button.disabled = true;
     showResult("Finding a stable fix…");
@@ -2796,6 +2801,10 @@
     $("di-test").addEventListener("click", testInput);
     $("di-fix").addEventListener("click", fixInput);
     $("di-clear").addEventListener("click", () => {
+      if (state.liveTimer) {
+        clearTimeout(state.liveTimer);
+        state.liveTimer = null;
+      }
       state.liveSeq += 1;
       $("di-input").value = "";
       $("di-live-badge").hidden = true;
