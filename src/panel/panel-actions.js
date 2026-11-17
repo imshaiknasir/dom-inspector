@@ -412,7 +412,8 @@
           const firstValue = readFirstString(args);
           const firstText = firstValue ? firstValue.value : "";
           const firstPattern = firstValue ? firstValue.regex : null;
-          const firstInvalid = !firstValue || !!firstValue.invalid;
+          const firstInvalid = !firstValue || !!firstValue.invalid ||
+            (!firstValue.regex && firstValue.value === "");
           const rest = firstValue ? args.slice(firstValue.end) : "";
           const exact = /exact:\s*true/.test(rest);
           const firstMatch = (actual) => (firstPattern ? regexTest(firstPattern, actual) : textEquals(actual, firstText, exact));
