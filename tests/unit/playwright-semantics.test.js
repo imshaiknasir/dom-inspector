@@ -160,3 +160,36 @@ test('playwright: hidden inputs have no role and file inputs are buttons', { tod
     }
   );
 });
+
+test('playwright: accessible names fall back to title and role contents', { todo: 'accessibleName skips title for buttons and contents for role elements' }, async () => {
+  const extra = await page.evaluate(() => {
+    const titleButton = document.createElement('button');
+    titleButton.id = 'title-only';
+    titleButton.title = 'Title button';
+    const custom = document.createElement('div');
+    custom.id = 'custom-button';
+    custom.setAttribute('role', 'button');
+    custom.tabIndex = 0;
+    custom.textContent = 'Custom button';
+    document.body.append(titleButton, custom);
+    const result = {
+      title: DI.playwright.accessibleName(titleButton),
+      contents: DI.playwright.accessibleName(custom),
+      titleCount: DI.playwright.countExpr("page.getByRole('button', { name: 'Title button' })"),
+      customCount: DI.playwright.countExpr("page.getByRole('button', { name: 'Custom button' })"),
+      panelTitle: DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Title button' })", '', false).matched,
+      panelCustom: DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Custom button' })", '', false).matched
+    };
+    titleButton.remove();
+    custom.remove();
+    return result;
+  });
+  assert.deepEqual(extra, {
+    title: 'Title button',
+    contents: 'Custom button',
+    titleCount: 1,
+    customCount: 1,
+    panelTitle: 1,
+    panelCustom: 1
+  });
+});

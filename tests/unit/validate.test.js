@@ -187,3 +187,29 @@ test('validate: bare Playwright locator() expressions are auto-detected', async 
   assert.equal(out.xpathTested.ok, true);
   assert.equal(out.xpathTested.count, 1);
 });
+
+test('validate: Playwright string engines and regex arguments resolve', { todo: 'resolvePlaywright only reads quoted getBy* values' }, async () => {
+  const cases = [
+    ["page.locator('css=#save')", page.locator('css=#save')],
+    ["page.locator('xpath=//button[@id=\"save\"]')", page.locator('xpath=//button[@id="save"]')],
+    ["page.locator('text=Save changes')", page.locator('text=Save changes')],
+    ['page.getByText(/save changes/i)', page.getByText(/save changes/i)],
+    ['page.getByLabel(/email/i)', page.getByLabel(/email/i)],
+    ['page.getByTestId(/save-/)', page.getByTestId(/save-/)]
+  ];
+  for (const [expr, real] of cases) {
+    const local = await page.evaluate((value) => DI.validate.test('playwright', value).count, expr);
+    assert.equal(local, await real.count(), expr);
+  }
+});
+
+test('validate: chained filters narrow the resolved set', { todo: 'resolvePlaywright ignores filter/hasText modifiers' }, async () => {
+  const cases = [
+    ["page.getByRole('button').filter({ hasText: 'Save changes' })", page.getByRole('button').filter({ hasText: 'Save changes' })],
+    ["page.locator('button', { hasText: 'Save changes' })", page.locator('button', { hasText: 'Save changes' })]
+  ];
+  for (const [expr, real] of cases) {
+    const local = await page.evaluate((value) => DI.validate.test('playwright', value).count, expr);
+    assert.equal(local, await real.count(), expr);
+  }
+});
