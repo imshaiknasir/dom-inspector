@@ -623,6 +623,10 @@ test('panel driver template substitutes the picked CSS and XPath values', async 
     base.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await expect(extensionPage.locator('#di-driver-output')).toContainText("//*[@id='save']");
+
+  await expect(extensionPage.locator('#di-driver-copy')).toBeEnabled();
+  await extensionPage.evaluate(() => document.getElementById('di-driver-copy').click());
+  await expect(extensionPage.locator('#di-toast')).toContainText('Copied driver command');
 });
 
 test('picker reports shadow DOM and refuses shadow XPath', async () => {
