@@ -610,6 +610,7 @@ test('panel filters locators by strategy', async () => {
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-css code').length
   ), { timeout: 5000 }).toBe(0);
+  await expect(extensionPage.locator('#di-css-copy')).toBeDisabled();
 
   await extensionPage.evaluate(() => {
     const select = document.getElementById('di-strategy');
@@ -619,6 +620,7 @@ test('panel filters locators by strategy', async () => {
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-css code').length
   ), { timeout: 5000 }).toBeGreaterThan(0);
+  await expect(extensionPage.locator('#di-css-copy')).toBeEnabled();
 });
 
 test('panel live tester badges valid and invalid locators as you type', async () => {
