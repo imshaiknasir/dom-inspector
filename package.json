@@ -4,9 +4,16 @@
   "private": true,
   "description": "Clean-room MV3 element locator inspector",
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test --test-concurrency=1 tests/unit/*.test.js",
+    "test:e2e": "playwright test",
+    "install:browsers": "playwright install chromium"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "playwright-core": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

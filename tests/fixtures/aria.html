@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ARIA fixture</title></head>
+<body>
+  <label for="email2">Email address</label>
+  <input id="email2" name="email2" type="email" placeholder="you@example.com">
+
+  <span id="lbl">Labelled button</span>
+  <button id="labelled" aria-labelledby="lbl">Go</button>
+
+  <input id="search" type="search" aria-label="Search">
+  <input id="number" type="number" aria-label="Quantity">
+
+  <select id="single"><option>A</option></select>
+  <select id="multi" multiple><option>A</option></select>
+
+  <table>
+    <thead><tr><th scope="col">Name</th></tr></thead>
+    <tbody><tr><th scope="row">Alice</th><td>1</td></tr></tbody>
+  </table>
+
+  <img id="logo" alt="Company logo" title="Logo title" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">
+  <section aria-label="Info">Some text</section>
+  <a id="anchor" href="/docs">Read the docs</a>
+
+  <div id="wrap"><button id="wrapped" title="Wrapped title">Wrapped</button></div>
+</body>
+</html>
