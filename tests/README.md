@@ -41,6 +41,6 @@ and a user-data directory.
   plus the background `DI_GET_LAST` cache.
 
 166 unit cases pass (3 `{ todo }` cases document open panel-action bugs) and
-26 e2e cases pass. The workspace-root
+27 e2e cases pass. The workspace-root
 `../../BLOCKERS.md` tracks any defect that would require editing files owned
 by another agent.
