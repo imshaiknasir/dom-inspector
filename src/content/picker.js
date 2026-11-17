@@ -13,7 +13,15 @@
   let lastTarget = null;
 
   const ensureOverlay = () => {
-    if (overlay && overlay.isConnected) return overlay;
+    if (overlay) {
+      const parent = document.documentElement || document.body;
+      if (overlay.isConnected) return overlay;
+      if (parent) {
+        parent.appendChild(overlay);
+        return overlay;
+      }
+      return overlay;
+    }
     overlay = document.createElement("div");
     overlay.id = "di-picker-overlay";
     overlay.setAttribute("aria-hidden", "true");
