@@ -142,9 +142,11 @@
   const applyFocusPayload = (value, smooth) => {
     const target = value && typeof value === "object" ? value.target : value;
     if (target === "heal") {
+      ensureExpanded("di-heal-card");
       $("di-heal-card").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
       $("di-heal-input").focus();
     } else if (target === "tester") {
+      ensureExpanded("di-tester-card");
       $("di-tester-card").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
       if (value && typeof value === "object" && typeof value.value === "string" && value.value.trim()) {
         $("di-input").value = value.value;
@@ -799,6 +801,7 @@
   const fillTester = (row) => {
     const input = $("di-input");
     if (!input) return;
+    ensureExpanded("di-tester-card");
     input.value = row.testValue || row.raw || row.value;
     const type = row.testType || "auto";
     $("di-type").value = ["css", "xpath", "playwright"].includes(type) ? type : "auto";
@@ -2397,6 +2400,16 @@
         })
         .catch(() => { /* content script unavailable */ });
     }
+  };
+
+  const ensureExpanded = (id) => {
+    const card = $(id);
+    if (!card || !card.classList.contains("collapsed")) return;
+    state.settings.collapsed[id] = false;
+    card.classList.remove("collapsed");
+    const toggle = card.querySelector(".section-toggle");
+    if (toggle) toggle.setAttribute("aria-expanded", "true");
+    persistSettings();
   };
 
   const applyCollapsedState = () => {
