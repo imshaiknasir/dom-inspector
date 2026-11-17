@@ -181,6 +181,7 @@
     if (!Array.isArray(list)) return [];
     const out = [];
     const seen = new Set();
+    const ids = new Set();
     for (const raw of list) {
       if (!raw || typeof raw !== "object") continue;
       const value = typeof raw.value === "string" ? raw.value : "";
@@ -191,10 +192,13 @@
       const key = typeof raw.key === "string" && raw.key ? raw.key : type + "::" + (testValue || value);
       if (seen.has(key)) continue;
       seen.add(key);
+      let id = typeof raw.id === "string" && raw.id ? raw.id : "";
+      if (!id || ids.has(id)) {
+        id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "-" + out.length;
+      }
+      ids.add(id);
       out.push({
-        id: typeof raw.id === "string" && raw.id
-          ? raw.id
-          : Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "-" + out.length,
+        id,
         key,
         name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Saved locator",
         scope: typeof raw.scope === "string" ? raw.scope : "",
