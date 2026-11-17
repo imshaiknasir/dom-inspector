@@ -762,6 +762,13 @@
         setRowCount(row, response.count);
         if (badge) updateCountBadge(badge, response.count);
       }
+      const savedEntry = state.saved.find((entry) => entry.key === row.key);
+      if (savedEntry) {
+        savedEntry.count = typeof response.count === "number" ? response.count : savedEntry.count;
+        savedEntry.error = response.ok ? "" : (response.error || "No match");
+        persistSaved();
+        renderSaved();
+      }
       const tone = response.ok ? "ok" : "bad";
       const message = response.ok
         ? `Valid ${String(response.type || "").toUpperCase()}: ${response.count} match${response.count === 1 ? "" : "es"} · highlighted`
