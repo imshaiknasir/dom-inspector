@@ -37,6 +37,34 @@
     return value;
   };
 
+  /* Collapse whitespace outside quoted values so attribute strings survive. */
+  const normalizeSpaces = (value) => {
+    let out = "";
+    let quote = null;
+    let space = false;
+    for (let i = 0; i < value.length; i += 1) {
+      const ch = value[i];
+      if (quote) {
+        out += ch;
+        if (ch === "\\") { if (i + 1 < value.length) { i += 1; out += value[i]; } }
+        else if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === "'" || ch === '"') {
+        if (space && out) out += " ";
+        space = false;
+        quote = ch;
+        out += ch;
+        continue;
+      }
+      if (/\s/.test(ch)) { space = true; continue; }
+      if (space && out) out += " ";
+      space = false;
+      out += ch;
+    }
+    return out;
+  };
+
   const normalize = (input) => {
     let value = String(input == null ? "" : input)
       .replace(/[\u2018\u2019]/g, "'")
@@ -49,7 +77,7 @@
     const wrapped = value.match(/^(['"`])([\s\S]*)\1$/);
     if (wrapped) value = wrapped[2].trim();
     value = value.replace(/\/{3,}/g, "//");
-    value = value.replace(/\s+/g, " ");
+    value = normalizeSpaces(value);
     value = value.replace(/^[>+~]+/, "").trim();
     value = value.replace(/[;,]+$/g, "").trim();
     value = value.replace(/[>+\s]+$/g, "").trim();

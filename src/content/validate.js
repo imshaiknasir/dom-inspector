@@ -185,8 +185,10 @@
         else frame = matches[0] || null;
         if (!frame) return [];
         let nextDoc = null;
-        try { nextDoc = frame.contentDocument || frame.contentWindow.document; } catch (_) { return []; }
-        if (!nextDoc) return [];
+        try { nextDoc = frame.contentDocument || frame.contentWindow.document; } catch (_) {
+          throw new Error("Cannot inspect a cross-origin frame from here");
+        }
+        if (!nextDoc) throw new Error("Frame document is unavailable");
         currentDoc = nextDoc;
       }
       const rest = expr.replace(framePattern, "").replace(/^page/, "page");
