@@ -1640,9 +1640,10 @@ test('panel Reset restores defaults and clears filters', async () => {
     continuous: document.getElementById('di-continuous').checked,
     unique: document.getElementById('di-unique').checked,
     await: document.getElementById('di-await').checked,
-    filter: document.getElementById('di-filter').value
+    filter: document.getElementById('di-filter').value,
+    expand: document.getElementById('di-expand').textContent
   }));
-  expect(state).toEqual({ lang: 'js', continuous: false, unique: false, await: false, filter: '' });
+  expect(state).toEqual({ lang: 'js', continuous: false, unique: false, await: false, filter: '', expand: 'Collapse all' });
 });
 
 test('panel sanitizes corrupted persisted settings on reload', async () => {
