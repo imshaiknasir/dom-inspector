@@ -2040,6 +2040,23 @@
     });
   };
 
+  const syncHealButtons = () => {
+    const busy = state.healBusy;
+    const rows = state.healRows;
+    const flagged = rows.some((row) => row.status === "broken" || row.status === "many" || row.status === "fix-failed");
+    const input = $("di-heal-input");
+    const check = $("di-heal-check");
+    if (check) check.disabled = busy || !(input && input.value.trim());
+    const fix = $("di-heal-fix");
+    if (fix) fix.disabled = busy || !flagged;
+    for (const id of ["di-heal-copy", "di-heal-json", "di-heal-csv"]) {
+      const button = $(id);
+      if (button) button.disabled = busy || rows.length === 0;
+    }
+    const clear = $("di-heal-clear");
+    if (clear) clear.disabled = !rows.length && !busy;
+  };
+
   const renderHeal = () => {
     const list = $("di-heal-results");
     const empty = $("di-heal-empty");
@@ -2049,16 +2066,7 @@
     const rows = state.healRows;
     empty.hidden = rows.length > 0;
     meta.textContent = healSummary();
-    const busy = state.healBusy;
-    const flagged = rows.some((row) => row.status === "broken" || row.status === "many" || row.status === "fix-failed");
-    $("di-heal-check").disabled = busy;
-    $("di-heal-fix").disabled = busy || !flagged;
-    for (const id of ["di-heal-copy", "di-heal-json", "di-heal-csv"]) {
-      const button = $(id);
-      if (button) button.disabled = busy || rows.length === 0;
-    }
-    const clear = $("di-heal-clear");
-    if (clear) clear.disabled = !rows.length && !busy;
+    syncHealButtons();
 
     for (const row of rows) {
       const node = el("div", "heal-row status-" + row.status);
@@ -2639,6 +2647,7 @@
     $("di-heal-input").addEventListener("input", (event) => {
       state.settings.healText = event.target.value;
       persistSettings();
+      syncHealButtons();
     });
     $("di-heal-check").addEventListener("click", checkAllHeal);
     $("di-heal-fix").addEventListener("click", fixBrokenHeal);
