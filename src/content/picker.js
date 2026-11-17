@@ -242,10 +242,32 @@
       const pw = needsContext
         ? (safe(() => DI.playwright.generate(el), []) || []).find((item) => item.count === 1)
         : null;
+      // A frame/shadow element's scoped CSS is not usable from the page, so
+      // fall back to a Playwright chain instead of handing back a dead value.
+      const contextual = () => {
+        if (!needsContext) return "";
+        const prefix = safe(() => DI.playwright.framePrefix(), []) || [];
+        const base = prefix.length ? `page.${prefix.join(".")}` : "page";
+        if (U.isInShadow(el)) {
+          const chain = safe(() => DI.playwright.shadowLocator(el, base), null);
+          if (chain) return chain;
+        }
+        const jsString = (value) => JSON.stringify(String(value));
+        if (css && css.selector) {
+          const nodes = safe(() => U.deepQueryAll(css.selector, U.rootOf(el)), []) || [];
+          const index = nodes.indexOf(el);
+          if (index >= 0) {
+            return `${base}.locator(${jsString(css.selector)})` + (nodes.length > 1 ? `.nth(${index})` : "");
+          }
+        }
+        if (xp && xp.xpath) return `${base}.locator(\`${xp.xpath}\`)`;
+        return "";
+      };
       const value = pw ? pw.selector
-        : css && css.count === 1 ? css.selector
-          : xp && xp.count === 1 ? xp.xpath
-            : (css && css.selector) || (xp && xp.xpath) || "";
+        : contextual()
+          || (css && css.count === 1 ? css.selector : "")
+          || (xp && xp.count === 1 ? xp.xpath : "")
+          || (css && css.selector) || (xp && xp.xpath) || "";
       if (!value) {
         sendResponse({ ok: false, error: "No locator generated" });
         return true;

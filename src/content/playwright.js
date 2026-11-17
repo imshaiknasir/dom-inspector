@@ -429,11 +429,35 @@
   const cssString = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
     .replace(/\r/g, "\\d ").replace(/\n/g, "\\a ");
 
+  /* A Playwright locator chain that reaches a shadow-DOM target from the
+     document, adding .nth() only where a step is ambiguous in its own root. */
+  const shadowLocator = (el, base = "page") => {
+    if (!U.isInShadow(el)) return null;
+    const hosts = U.shadowHosts(el).slice().reverse();
+    const steps = hosts.concat([el]);
+    let code = base;
+    for (const node of steps) {
+      const root = node.getRootNode ? node.getRootNode() : null;
+      if (!root) return null;
+      const best = DI.css.best(node);
+      if (!best || !best.selector) return null;
+      let matches;
+      try { matches = U.deepQueryAll(best.selector, root); } catch (_) { return null; }
+      const index = matches.indexOf(node);
+      if (index < 0) return null;
+      code += `.locator(${quote(best.selector)})`;
+      if (matches.length > 1) code += `.nth(${index})`;
+    }
+    return code;
+  };
+
   const generate = (el) => {
     const out = [];
     const prefix = framePrefix(el.ownerDocument && el.ownerDocument.defaultView ? el.ownerDocument.defaultView : window);
     const base = prefix.length ? `page.${prefix.join(".")}` : "page";
-    const root = el.getRootNode ? el.getRootNode() : document;
+    // Playwright locators are page/frame scoped: count across the whole
+    // document (including open shadow roots), not just the element's root.
+    const root = el.ownerDocument || document;
     const stabilityFor = (type) => {
       if (type === "getByTestId") return 100;
       if (type === "getByRole" || type === "getByRole-regex") return 92;
@@ -502,15 +526,13 @@
 
     const css = DI.css.best(el);
     if (css && css.count === 1 && U.isInShadow(el)) {
-      const rawHosts = U.shadowHosts(el).slice().reverse();
-      const hosts = rawHosts.map((host) => DI.css.best(host)).filter(Boolean);
-      if (hosts.length && hosts.length === rawHosts.length && hosts.every((h) => h.count === 1)) {
-        const chain = base + hosts.map((h) => `.locator(${quote(h.selector)})`).join("") + `.locator(${quote(css.selector)})`;
-        add("locator+shadow", chain, 1, 37);
-      }
+      const chain = shadowLocator(el, base);
+      if (chain) add("locator+shadow", chain, 1, 37);
     }
     if (css) {
-      add("locator", `${base}.locator(${quote(css.selector)})`, css.count, 38);
+      let cssCount = css.count;
+      try { cssCount = U.deepQueryAll(css.selector, root).length; } catch (_) {}
+      add("locator", `${base}.locator(${quote(css.selector)})`, cssCount, 38);
       // `:visible` narrows the CSS matches, so report the visible count, not
       // the unfiltered one (a hidden element has no visible matches).
       let visibleCount = 0;
@@ -601,7 +623,7 @@
   DI.playwright = {
     implicitRole, accessibleName, labelledByText, countExpr, countHasText,
     parseTextFilter, matchesHasText, matchesTextRegexSmallest, buildRegex,
-    isAriaHidden, roleEligible,
+    isAriaHidden, roleEligible, shadowLocator,
     generate, best, framePrefix, toPython, toJava, toCSharp
   };
 })();
