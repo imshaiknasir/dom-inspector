@@ -1249,22 +1249,24 @@ test('panel re-checks saved locators and records counts and errors', async () =>
     { id: 'check-a', key: 'css::#save', name: 'Valid save', type: 'css', value: '#save', testType: 'css', testValue: '#save', count: null },
     { id: 'check-b', key: 'css::#missing', name: 'Broken save', type: 'css', value: '#missing', testType: 'css', testValue: '#missing', count: null },
     { id: 'check-c', key: 'css::.rowbtn', name: 'Duplicate rows', type: 'css', value: '.rowbtn', testType: 'css', testValue: '.rowbtn', count: null },
-    { id: 'check-d', key: 'testrigor::Save', name: 'TestRigor snippet', type: 'testrigor', value: 'Save', count: null }
+    { id: 'check-d', key: 'testrigor::Save', name: 'TestRigor snippet', type: 'testrigor', value: 'Save', count: null },
+    { id: 'check-e', key: 'css::#link', name: 'From another page', type: 'css', value: '#link', testType: 'css', testValue: '#link', url: 'https://other.example/page', count: null }
   ];
   await extensionPage.evaluate((value) => chrome.storage.local.set({ 'di:panel:saved': value }), entries);
   await extensionPage.reload();
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-saved .saved-row').length
-  ), { timeout: 10000 }).toBe(4);
+  ), { timeout: 10000 }).toBe(5);
 
   await extensionPage.evaluate(() => document.getElementById('di-saved-check').click());
   await expect.poll(() => extensionPage.evaluate(() =>
     document.getElementById('di-status').textContent
-  ), { timeout: 10000 }).toContain('Checked 3 of 4 saved locators');
+  ), { timeout: 10000 }).toContain('Checked 3 of 5 saved locators');
   await expect(extensionPage.locator('#di-status')).toContainText('1 unique');
   await expect(extensionPage.locator('#di-status')).toContainText('1 not unique');
   await expect(extensionPage.locator('#di-status')).toContainText('1 broken');
   await expect(extensionPage.locator('#di-status')).toContainText('1 not testable');
+  await expect(extensionPage.locator('#di-status')).toContainText('1 other page');
   await expect(extensionPage.locator('#di-saved')).toContainText('No elements matched');
 
   const stored = await extensionPage.evaluate(async () => {
@@ -1280,6 +1282,8 @@ test('panel re-checks saved locators and records counts and errors', async () =>
   expect(byId['check-c'].error).toBe('');
   expect(byId['check-d'].count).toBeNull();
   expect(byId['check-d'].error).toBe('');
+  expect(byId['check-e'].count).toBeNull();
+  expect(byId['check-e'].error).toBe('');
 });
 
 test('panel fixes a broken saved locator in place', async () => {
