@@ -2362,6 +2362,9 @@
     persistSettings();
     applySettings();
     renderAll();
+    if (state.picking) {
+      sendToTab({ type: "DI_START", continuous: false }).catch(() => {});
+    }
     toast("Panel settings reset");
   };
 
