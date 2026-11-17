@@ -1,8 +1,7 @@
 /* DOM Inspector — service worker: side-panel lifecycle and last-pick cache. */
 const LAST_KEY = "di:lastPick";
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+const createMenus = () => {
   chrome.contextMenus.create({
     id: "di-pick",
     title: "Pick element with DOM Inspector",
@@ -13,6 +12,13 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Copy best selector (DOM Inspector)",
     contexts: ["all"]
   }, () => void chrome.runtime.lastError);
+};
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  // Recreate menus so updates never leave duplicate ids behind.
+  if (chrome.contextMenus.removeAll) chrome.contextMenus.removeAll(createMenus);
+  else createMenus();
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
