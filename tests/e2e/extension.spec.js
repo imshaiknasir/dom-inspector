@@ -311,6 +311,38 @@ test('picker generates verified CSS, XPath, Playwright and Selenium locators', a
   await expect(extensionPage.locator('#di-xpath code').first()).toContainText("//*[@id='save']");
 });
 
+test('panel filters rows and exports picked locators as JSON', async () => {
+  await fixturePage.bringToFront();
+  await startPicking();
+  await clickElement(fixturePage.locator('#save'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
+  }, 10000);
+  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-filter');
+    filter.value = '#save';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-filter');
+    filter.value = '';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  const downloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-export').click());
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^dom-inspector-.*\.json$/);
+  const report = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  expect(report.extension).toBe('DOM Inspector');
+  expect(report.element).toMatchObject({ tag: 'button', id: 'save' });
+  expect(report.locators.some((row) => row.value === '#save')).toBe(true);
+  expect(report.locators.some((row) => row.type === 'xpath' && row.value === "//*[@id='save']")).toBe(true);
+});
+
 test('picker reports shadow DOM and refuses shadow XPath', async () => {
   await startPicking();
   await clickElement(fixturePage.locator('#shadowbtn'));
