@@ -217,3 +217,11 @@ test('repair: a valid frame Playwright locator is preserved', async () => {
   assert.deepEqual(out.locators.frameCss, ['#frame']);
   assert.match(out.locators.playwright, /frameLocator\('#frame'\).*getByTestId\('inner-btn'\)/);
 });
+
+test('repair: fixMany caps a batch at 200 selectors', async () => {
+  const out = await page.evaluate(() => {
+    const values = Array.from({ length: 205 }, (_, index) => '#missing-' + index);
+    return DI.repair.fixMany(values).length;
+  });
+  assert.equal(out, 200);
+});
