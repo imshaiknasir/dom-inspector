@@ -121,7 +121,7 @@
       const wantVisible = visibility[2] === "visible";
       return U.deepQueryAll(base, doc).filter((el) => U.isVisible(el) === wantVisible);
     }
-    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
+    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']((?:\\.|[^"'])+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
       const value = U.unescapeString(engine[2]);
@@ -146,7 +146,7 @@
       }
       return nodes;
     }
-    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
+    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]((?:\\.|[^'"])+)['"]\s*\}\)/);
     if (filtered) {
       return U.deepQueryAll(filtered[1], doc).filter((el) => U.normalizeText(el.textContent).includes(U.unescapeString(filtered[2])));
     }

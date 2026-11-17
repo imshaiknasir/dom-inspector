@@ -202,7 +202,7 @@
       const wantVisible = visibility[2] === "visible";
       return U.deepQueryAll(base, root).filter((el) => U.isVisible(el) === wantVisible).length;
     }
-    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
+    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']((?:\\.|[^"'])+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
       const value = U.unescapeString(engine[2]);
@@ -228,7 +228,7 @@
       }
       return nodes.length;
     }
-    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
+    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]((?:\\.|[^'"])+)['"]\s*\}\)/);
     if (filtered) {
       return U.deepQueryAll(filtered[1], root).filter((el) => U.normalizeText(el.textContent).includes(U.unescapeString(filtered[2]))).length;
     }
@@ -256,6 +256,7 @@
   };
 
   const quote = (value) => `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ")}'`;
+  const cssString = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
   const generate = (el) => {
     const out = [];
@@ -314,7 +315,7 @@
       if (exactMatch) add("getByText", `${base}.getByText(${quote(text)}, { exact: true })`, countText(text, true, root), 9);
       if (looseMatch) {
         add("getByText", `${base}.getByText(${quote(text)})`, countText(text, false, root), 10);
-        add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${text.replace(/"/g, '\\"')}")')`, countText(text, false, root), 22);
+        add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${cssString(text)}")')`, countText(text, false, root), 22);
       }
     }
     const alt = U.attr(el, "alt");

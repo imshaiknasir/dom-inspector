@@ -301,3 +301,20 @@ test('validate: auto detects locator() as Playwright', async () => {
   assert.equal(out.result.ok, true);
   assert.equal(out.result.count, 1);
 });
+
+test('playwright: :has-text escapes backslashes and quotes', async () => {
+  const out = await page.evaluate(() => {
+    const b = document.createElement('button');
+    b.id = 'odd-text';
+    b.textContent = 'a\\b "quoted"';
+    document.body.appendChild(b);
+    const selector = DI.playwright.generate(b).map((c) => c.selector).find((s) => s.includes(':has-text('));
+    const count = selector ? DI.playwright.countExpr(selector) : 0;
+    const validated = selector ? DI.validate.test('playwright', selector) : null;
+    b.remove();
+    return { selector, count, validated };
+  });
+  assert.ok(out.selector);
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});
