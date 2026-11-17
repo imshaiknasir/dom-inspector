@@ -75,6 +75,7 @@ not shipped). Last updated 17 Nov 2026.
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator reorder | done | up/down controls; order drives POM method order |
 | Saved locator filter | done | name/type/value/URL filter; empty-state feedback |
+| Re-check saved locators | done | re-tests all saved values, updates counts and shows per-row errors |
 | Saved locator import / export | done | JSON/CSV import with dedupe + JSON/CSV export |
 | Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries |
 | Saved locator delete / clear | done | confirm before clearing all |
@@ -109,7 +110,7 @@ not shipped). Last updated 17 Nov 2026.
 |---|---|---|
 | Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 166 pass, 3 documented todo |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 26/26 checks, including popup, axes, tester Fix, POM export/import, settings recovery and batch healing |
+| Extension e2e suites | done | 29/29 checks, including popup, axes, tester Fix, saved re-check, POM export/import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |

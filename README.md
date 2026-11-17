@@ -63,9 +63,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   XPath using `{selector}` (legacy `xpathvalue` / `cssvalue` also work), with
   Selenium Java/Python, Cypress, Playwright and TestNG presets.
 - **Saved locators** — a small locator/POM list stored locally. Rename entries,
-  filter, reorder, re-test, edit, copy, delete, import JSON/CSV, export
-  JSON/CSV, clear the list, or download a Playwright page-object snippet (`POM`)
-  generated from the saved locators.
+  filter, reorder, re-check every saved locator's live count, re-test, edit,
+  copy, delete, import JSON/CSV, export JSON/CSV, clear the list, or download a
+  Playwright page-object snippet (`POM`) generated from the saved locators.
 - **Right-click copy** — the page context menu can pick an element or copy its
   best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
