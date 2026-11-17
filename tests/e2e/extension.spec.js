@@ -216,6 +216,13 @@ test('right-click copy bridge returns the best selector for the context element'
   await fixturePage.locator('#link').dispatchEvent('contextmenu', { bubbles: true, composed: true, button: 2 });
   const copied = await sendToFixture({ type: 'DI_COPY_BEST' }, { frameId: 0 });
   expect(copied).toMatchObject({ ok: true, value: '#link' });
+
+  await fixturePage.locator('.rowbtn').first().dispatchEvent('contextmenu', { bubbles: true, composed: true, button: 2 });
+  const duplicate = await sendToFixture({ type: 'DI_COPY_BEST' }, { frameId: 0 });
+  expect(duplicate.ok).toBe(true);
+  expect(duplicate.value).not.toBe('.rowbtn');
+  const resolved = await sendToFixture({ type: 'DI_TEST', locatorType: 'auto', value: duplicate.value }, { frameId: 0 });
+  expect(resolved).toMatchObject({ ok: true, count: 1 });
 });
 
 test('repair bridge fixes single, batch and in-frame selectors', async () => {

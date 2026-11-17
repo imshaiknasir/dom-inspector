@@ -206,3 +206,34 @@ test('playwright: accessible names prefer aria-labelledby and aria-label', async
   assert.equal(out.dialog, 'Dialog box');
   assert.equal(out.navlink, 'Nav link');
 });
+
+test('playwright: aria-labelledby drives getByLabel generation and validation', async () => {
+  const out = await aria.evaluate(() => {
+    const el = document.getElementById('labelled');
+    return {
+      generate: DI.playwright.generate(el).map((item) => item.selector),
+      count: DI.playwright.countExpr("page.getByLabel('Labelled button')"),
+      validated: DI.validate.test('playwright', "page.getByLabel('Labelled button')"),
+      name: DI.playwright.accessibleName(el)
+    };
+  });
+  assert.equal(out.name, 'Labelled button');
+  assert.ok(out.generate.some((selector) => selector.includes("getByLabel('Labelled button'")));
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.ok, true);
+  assert.equal(out.validated.count, 1);
+});
+
+test('playwright: submit inputs use their value as the accessible name', async () => {
+  const out = await aria.evaluate(() => {
+    const el = document.getElementById('submit');
+    return {
+      name: DI.playwright.accessibleName(el),
+      role: DI.playwright.implicitRole(el),
+      generate: DI.playwright.generate(el).map((item) => item.selector)
+    };
+  });
+  assert.equal(out.role, 'button');
+  assert.equal(out.name, 'Send');
+  assert.ok(out.generate.some((selector) => selector.includes("getByRole('button'") && selector.includes("name: 'Send'")));
+});

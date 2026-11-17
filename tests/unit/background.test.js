@@ -20,7 +20,7 @@ const SOURCE = fs.readFileSync(path.join(ROOT, 'src/background.js'), 'utf8');
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
 const loadBackground = () => {
-  const calls = { menus: [], opened: [], sent: [], session: {}, behavior: [], created: [] };
+  const calls = { menus: [], opened: [], sent: [], session: {}, behavior: [], created: [], removeAll: 0 };
   const listeners = { installed: [], clicked: [], action: [], message: [] };
   const chrome = {
     runtime: {
@@ -34,6 +34,7 @@ const loadBackground = () => {
     },
     contextMenus: {
       create: (options, callback) => { calls.menus.push(options); if (callback) callback(); },
+      removeAll: (callback) => { calls.removeAll += 1; if (callback) callback(); },
       onClicked: { addListener: (fn) => listeners.clicked.push(fn) }
     },
     action: { onClicked: { addListener: (fn) => listeners.action.push(fn) } },
@@ -124,4 +125,14 @@ test('background: unrelated messages are ignored', () => {
   const { listeners } = loadBackground();
   assert.equal(listeners.message[0]({ type: 'DI_NOPE' }, {}, () => {}), undefined);
   assert.equal(listeners.message[0](null, {}, () => {}), undefined);
+});
+
+test('background: install/update recreates menus without stale ids', async () => {
+  const { calls, listeners } = loadBackground();
+  await listeners.installed[0]();
+  await listeners.installed[0]();
+  await tick();
+  assert.equal(calls.removeAll, 2);
+  assert.equal(calls.menus.length, 4);
+  assert.deepEqual(calls.menus.map((item) => item.id), ['di-pick', 'di-copy-best', 'di-pick', 'di-copy-best']);
 });

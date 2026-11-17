@@ -127,6 +127,8 @@ test('repair: valid selectors inside same-origin frames are found', async () => 
   assert.equal(out.count, 1);
   assert.equal(out.element.id, 'inner');
   assert.equal(out.locators.css, '#inner');
+  assert.deepEqual(out.locators.frameCss, ['#frame']);
+  assert.deepEqual(out.locators.frameXpath, ["//iframe[@id='frame']"]);
 });
 
 test('repair: near-miss selectors search same-origin frames', async () => {
