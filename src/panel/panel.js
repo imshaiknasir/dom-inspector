@@ -1298,6 +1298,8 @@
       live.value = verified.type === "playwright"
         ? convertPlaywright(verified.value, state.settings.lang, state.settings.await)
         : verified.value;
+      live.label = "";
+      live.scope = verified.type === "css" ? "CSS" : verified.type === "xpath" ? "XPath" : "Playwright";
       const nextKey = verified.type + "::" + verified.value;
       const keyTaken = state.saved.some((item) => item.id !== live.id && item.key === nextKey);
       if (!keyTaken) live.key = nextKey;
