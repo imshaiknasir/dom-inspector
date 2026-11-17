@@ -188,3 +188,11 @@ test('background: start-pick still sends when the side panel rejects', async () 
   await tick();
   same(calls.sent, [{ tabId: 5, message: { type: 'DI_START' } }]);
 });
+
+test('background: context-menu pick starts only the clicked frame', async () => {
+  const { calls, listeners } = loadBackground();
+  listeners.clicked[0]({ menuItemId: 'di-pick', frameId: 6 }, { id: 11, windowId: 3 });
+  await tick();
+  same(calls.opened, [{ windowId: 3 }]);
+  same(calls.sent, [{ tabId: 11, message: { type: 'DI_START' }, options: { frameId: 6 } }]);
+});
