@@ -116,6 +116,21 @@ test('panel actions: first/last/filter modifiers narrow the match set', async ()
   assert.equal(out.filtered.matched, 0);
 });
 
+test('panel actions: text and attribute matching is case-insensitive unless exact', async () => {
+  const out = await page.evaluate(() => ({
+    text: DIPanel.pageAction('click', 'playwright', "page.getByText('SAVE CHANGES')", '', false),
+    textExact: DIPanel.pageAction('click', 'playwright', "page.getByText('SAVE CHANGES', { exact: true })", '', false),
+    placeholder: DIPanel.pageAction('click', 'playwright', "page.getByPlaceholder('YOU@EXAMPLE')", '', false),
+    placeholderExact: DIPanel.pageAction('click', 'playwright', "page.getByPlaceholder('you@example', { exact: true })", '', false),
+    label: DIPanel.pageAction('click', 'playwright', "page.getByLabel('EMAIL ADDRESS')", '', false)
+  }));
+  assert.equal(out.text.matched, 1);
+  assert.equal(out.textExact.matched, 0);
+  assert.equal(out.placeholder.matched, 1);
+  assert.equal(out.placeholderExact.matched, 0);
+  assert.equal(out.label.matched, 1);
+});
+
 test('panel actions: Playwright name, role and test-id semantics match the generator', async () => {
   const out = await page.evaluate(() => {
     const submit = document.createElement('input');

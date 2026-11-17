@@ -50,6 +50,11 @@
       walk(document);
 
       const norm = (input) => String(input == null ? "" : input).replace(/\s+/g, " ").trim();
+      const textEquals = (actual, wanted, exact) => {
+        const value = norm(actual);
+        const needle = norm(wanted);
+        return exact ? value === needle : value.toLowerCase().includes(needle.toLowerCase());
+      };
       const attr = (node, name) => (node.getAttribute && node.getAttribute(name)) || "";
       const tagOf = (node) => (node.tagName || "").toLowerCase();
       const allElements = () => {
@@ -146,10 +151,10 @@
       const textMatches = (node, needle, exact) => {
         const own = norm(node.textContent);
         if (!own) return false;
-        if (exact ? own !== needle : !own.includes(needle)) return false;
+        if (!textEquals(own, needle, exact)) return false;
         for (const child of node.children) {
           const childText = norm(child.textContent);
-          if (childText && (exact ? childText === needle : childText.includes(needle))) return false;
+          if (childText && textEquals(childText, needle, exact)) return false;
         }
         return true;
       };
@@ -262,8 +267,7 @@
               if (namePattern) {
                 if (!namePattern.test(norm(accessibleName(node)))) continue;
               } else if (nameValue) {
-                const actual = norm(accessibleName(node));
-                if (exact ? actual !== nameValue : !actual.includes(nameValue)) continue;
+                if (!textEquals(accessibleName(node), nameValue, exact)) continue;
               }
               matches.push(node);
             }
@@ -273,8 +277,7 @@
             const seen = new Set();
             for (const node of all) {
               if (tagOf(node) === "label") {
-                const labelText = norm(node.textContent);
-                if (exact ? labelText === firstText : labelText.includes(firstText)) {
+                if (textEquals(node.textContent, firstText, exact)) {
                   const id = attr(node, "for");
                   let target = null;
                   if (id) {
@@ -289,7 +292,7 @@
                 }
               }
               const aria = attr(node, "aria-label");
-              if (aria && (exact ? aria === firstText : aria.includes(firstText)) && !seen.has(node)) {
+              if (aria && textEquals(aria, firstText, exact) && !seen.has(node)) {
                 seen.add(node);
                 matches.push(node);
               }
@@ -300,18 +303,18 @@
                   const target = root.getElementById ? root.getElementById(ref) : null;
                   return target ? norm(target.textContent) : "";
                 }).join(" ").trim();
-                if (text && (exact ? text === firstText : text.includes(firstText)) && !seen.has(node)) {
+                if (text && textEquals(text, firstText, exact) && !seen.has(node)) {
                   seen.add(node);
                   matches.push(node);
                 }
               }
             }
           } else if (method === "Placeholder") {
-            matches = all.filter((node) => attr(node, "placeholder") === firstText);
+            matches = all.filter((node) => textEquals(attr(node, "placeholder"), firstText, exact));
           } else if (method === "AltText") {
-            matches = all.filter((node) => attr(node, "alt") === firstText);
+            matches = all.filter((node) => textEquals(attr(node, "alt"), firstText, exact));
           } else if (method === "Title") {
-            matches = all.filter((node) => attr(node, "title") === firstText);
+            matches = all.filter((node) => textEquals(attr(node, "title"), firstText, exact));
           } else if (method === "TestId") {
             matches = all.filter((node) => attr(node, "data-testid") === firstText);
           }
@@ -363,7 +366,7 @@
         }
 
         if (filterText !== null) {
-          matches = matches.filter((node) => norm(node.textContent).includes(filterText));
+          matches = matches.filter((node) => textEquals(node.textContent, filterText, false));
         }
         if (first) matches = matches.slice(0, 1);
         if (last) matches = matches.slice(-1);
