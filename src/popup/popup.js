@@ -10,6 +10,7 @@
   const FOCUS_KEY = "di:panel:focus";
 
   const state = { payload: null, saved: [], history: [], historyExpanded: false, busy: false };
+  const listOf = (value) => (Array.isArray(value) ? value : []);
 
   const setStatus = (text, tone) => {
     const node = $("pop-status");
@@ -157,7 +158,8 @@
     if (!payload) return null;
     const css = payload.css && payload.css.best;
     const xpath = payload.xpath && payload.xpath.best;
-    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
+    const playwrights = listOf(payload.playwright);
+    const playwright = playwrights.find((item) => item.count === 1) || playwrights[0];
     if (css && css.count === 1) return { value: css.selector, type: "css" };
     if (xpath && xpath.count === 1) return { value: xpath.xpath, type: "xpath" };
     if (playwright) return { value: playwright.selector, type: "playwright" };
@@ -174,7 +176,8 @@
     const xpath = payload.xpath && payload.xpath.best;
     if (css) rows.push({ label: "CSS", value: css.selector, meta: `${css.count} match${css.count === 1 ? "" : "es"} · ${css.strategy || "best"}` });
     if (xpath) rows.push({ label: "XPath", value: xpath.xpath, meta: `${xpath.count} match${xpath.count === 1 ? "" : "es"} · ${xpath.strategy || "best"}` });
-    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
+    const playwrights = listOf(payload.playwright);
+    const playwright = playwrights.find((item) => item.count === 1) || playwrights[0];
     if (playwright) rows.push({ label: "Playwright", value: playwright.selector, meta: `${playwright.count} match${playwright.count === 1 ? "" : "es"} · ${playwright.type || "locator"}` });
     if (payload.xpath && payload.xpath.absolute) rows.push({ label: "Absolute XPath", value: payload.xpath.absolute, meta: "absolute" });
     return rows;
@@ -212,7 +215,8 @@
     if (!payload) return "";
     const css = payload.css && payload.css.best ? payload.css.best.selector : "";
     const xpath = payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "";
-    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
+    const playwrights = listOf(payload.playwright);
+    const playwright = playwrights.find((item) => item.count === 1) || playwrights[0];
     return (payload.url || "") + "\n" + css + "\n" + xpath + "\n" + (playwright ? playwright.selector : "");
   };
 
