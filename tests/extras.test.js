@@ -392,3 +392,16 @@ test('repair: brackets inside quoted values do not count as structure', async ()
   assert.equal(out.result.fixed, 'button[title="a[b"]');
   assert.equal(out.normalized, 'button[title="a[b"]');
 });
+
+test('repair: locator generation failures do not break the response', async () => {
+  const out = await page.evaluate(() => {
+    const original = DI.formats.generate;
+    DI.formats.generate = () => { throw new Error('boom'); };
+    const result = DI.repair.fix('#save');
+    DI.formats.generate = original;
+    return result;
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.fixed, '#save');
+  assert.equal(out.locators, null);
+});

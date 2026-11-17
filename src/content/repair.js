@@ -161,6 +161,10 @@
       const result = DI.validate.test("auto", value);
       if (result.ok) {
         const el = result.elements.find((node) => node && node.nodeType === 1) || null;
+        let locators = null;
+        if (el) {
+          try { locators = locatorsFor(el); } catch (_) { locators = null; }
+        }
         return {
           ok: true,
           repaired: value !== original,
@@ -168,7 +172,7 @@
           count: result.count,
           type: result.type,
           element: el ? { tag: U.tagOf(el), id: U.attr(el, "id"), text: U.normalizeText(el.textContent).slice(0, 80) } : null,
-          locators: el ? locatorsFor(el) : null
+          locators
         };
       }
     }
@@ -177,8 +181,9 @@
     if (!found) {
       return { ok: false, fixed: first || original, error: "No matching element found", tokens: list };
     }
-    const locators = locatorsFor(found.element);
-    const fixed = locators.css || locators.xpath || first || original;
+    let locators = null;
+    try { locators = locatorsFor(found.element); } catch (_) { locators = null; }
+    const fixed = (locators && (locators.css || locators.xpath)) || first || original;
     return {
       ok: true,
       repaired: true,
