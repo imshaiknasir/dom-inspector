@@ -3009,6 +3009,10 @@
       }
       const storedSaved = await readStore(STORE_SAVED);
       if (Array.isArray(storedSaved)) state.saved = sanitizeSaved(storedSaved);
+      const storedHistory = await readStore(STORE_HISTORY);
+      if (Array.isArray(storedHistory)) {
+        state.history = storedHistory.filter((entry) => entry && entry.at && (entry.css || entry.xpath || entry.playwright));
+      }
     } catch (_) { /* defaults are fine */ }
 
     bindEvents();
@@ -3016,10 +3020,6 @@
     renderAll();
     await resolveTabId(true);
 
-    const storedHistory = await readStore(STORE_HISTORY);
-    if (Array.isArray(storedHistory)) {
-      state.history = storedHistory.filter((entry) => entry && entry.at && (entry.css || entry.xpath || entry.playwright));
-    }
     const restored = await restoreLast();
     const alive = await pingTab();
     applyFocusRequest();
