@@ -3,21 +3,12 @@
 const { test, expect } = require('@playwright/test');
 const { chromium } = require('playwright-core');
 const http = require('node:http');
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const FIXTURE = path.join(ROOT, 'tests', 'fixture.html');
-
-/** Chrome's unpacked-extension id: 128 bits of SHA-256 over the absolute path. */
-const extensionIdForPath = (dir) => crypto
-  .createHash('sha256')
-  .update(dir)
-  .digest('hex')
-  .slice(0, 32)
-  .replace(/[0-9a-f]/g, (hex) => String.fromCharCode(97 + parseInt(hex, 16)));
 
 const collectErrors = (page, label, sink) => {
   page.on('pageerror', (error) => sink.push(`${label} pageerror: ${error.message}`));
@@ -814,6 +805,38 @@ test('panel exports saved locators as a Playwright POM snippet', async () => {
   expect(source).toContain('this.page.locator("#link")');
   expect(source).toContain('locatorConstructor()');
   expect(source).not.toMatch(/\bconstructor\(\) \{/);
+});
+
+test('panel POM export sanitises comment labels and the page field', async () => {
+  // Expected failure until src/panel/panel.js sanitises pomSource labels and
+  // reserves the instance field `page`; see ../../BLOCKERS.md.
+  test.fail(true, 'pomSource interpolates names into comments and method names');
+  const saved = [
+    {
+      id: 'pom-unsafe', key: 'css::#save', name: 'Bad */ name', type: 'css',
+      value: '#save', testType: 'css', testValue: '#save', count: 1
+    },
+    {
+      id: 'pom-page', key: 'css::#link', name: 'page', type: 'css',
+      value: '#link', testType: 'css', testValue: '#link', count: 1
+    }
+  ];
+  await extensionPage.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), saved);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+
+  const downloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-saved-pom').click());
+  const download = await downloadPromise;
+  const source = fs.readFileSync(await download.path(), 'utf8');
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+
+  expect(source).not.toContain('Bad */ name');
+  expect(source).not.toMatch(/^\s{2}page\(\)/m);
+  const body = source.replace('export class PageLocators', 'class PageLocators');
+  expect(() => new Function(body + '; return PageLocators;')).not.toThrow();
 });
 
 test('panel imports saved locators from JSON and skips duplicates', async () => {
