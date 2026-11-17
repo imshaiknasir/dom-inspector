@@ -11,6 +11,7 @@ not shipped). Last updated 17 Nov 2026.
 | DevTools Elements sidebar pane | done | `createSidebarPane` → `panel/panel.html` |
 | Chrome side panel | done | same panel; toolbar icon opens it |
 | Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
+| Recent pick history in popup | done | panel stores the latest distinct picks; popup lists and clears them |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
 | Light/dark theme | done | `prefers-color-scheme` and responsive CSS |
@@ -101,9 +102,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 128/128 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 134/134 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 14/14 checks, including popup, axes, tester, right-click bridge, repair and batch healing |
+| Extension e2e suites | done | 15/15 checks, including popup, axes, tester, right-click bridge, repair and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
@@ -126,11 +127,12 @@ not shipped). Last updated 17 Nov 2026.
 - `c16566b` testRigor and Cypress-shadow format labels
 - `4d718d9` tester result wording matches the validation contract
 - `d270c92` single-locator Fix action in the tester
+- `11ab1e4` recent pick history in the popup
 
 ## Next candidates
 
 1. Multi-column POM grid with rename, reorder and spreadsheet import.
 2. Attribute filter and per-row visibility controls.
 3. Aggregate match counts across frames and a choose-frame flow for actions.
-4. Popup keyboard accelerators and a recent-locator history beyond the last pick.
+4. Popup keyboard accelerators for pick/open/copy.
 5. Optional POM code generation from the saved locator list.

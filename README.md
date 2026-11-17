@@ -25,7 +25,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
 ## Panel tour
 
 - **Toolbar popup** — start picking, open the panel, jump to batch healing,
-  review the last picked element and recent saved locators, and copy any value.
+  review the last picked element, the latest distinct picks and recent saved
+  locators, and copy any value.
 - **Selected element** — tag, id, classes, implicit role, accessible name, text,
   visibility, URL, iframe depth, shadow-host chain, shadow CSS chain and frame
   XPath.
@@ -63,7 +64,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
   sections, driver template and saved locators survive panel reloads. The last
-  pick is restored from the service worker/session storage.
+  pick is restored from the service worker/session storage, and the panel keeps
+  a small history of recent picks for the popup.
 - **Themes** — light and dark follow the browser colour scheme.
 
 ### Keyboard
@@ -163,7 +165,7 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 128/128 unit checks and 14/14 extension e2e checks
+popup copy. Current status: 134/134 unit checks and 15/15 extension e2e checks
 pass, including real-extension coverage for the popup, axes reference,
 right-click bridge, repair and batch healing.
 
