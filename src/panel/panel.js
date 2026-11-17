@@ -74,6 +74,7 @@
     picking: false,
     contentAvailable: null,
     autoCounted: new Set(),
+    payloadSeq: 0,
     countNodes: new Map(),
     liveTimer: null,
     liveSeq: 0,
@@ -2236,6 +2237,7 @@
   };
 
   const queueAutoCounts = () => {
+    const sequence = state.payloadSeq;
     const pending = (state.groups.xpath || []).filter((row) =>
       row.autoCount && typeof row.count !== "number" && row.testType && row.testValue
     );
@@ -2244,6 +2246,7 @@
       state.autoCounted.add(row.key);
       sendToTab({ type: "DI_TEST", locatorType: row.testType, value: row.testValue, highlight: false })
         .then((response) => {
+          if (sequence !== state.payloadSeq) return;
           if (response && typeof response.count === "number") {
             row.count = response.count;
             const node = state.countNodes.get(row.key);
@@ -2296,6 +2299,7 @@
     if (!payload) return;
     const previous = state.payload;
     state.payload = payload;
+    state.payloadSeq += 1;
     state.previousPayload = !restored && previous && previous.url === payload.url ? previous : null;
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
