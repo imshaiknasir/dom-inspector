@@ -1268,7 +1268,7 @@
   const pageKey = (value) => {
     try {
       const url = new URL(value);
-      return url.origin + url.pathname + url.search;
+      return url.origin + url.pathname + url.search + url.hash;
     } catch (_) {
       return String(value || "");
     }
