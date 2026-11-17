@@ -24,7 +24,9 @@
   ];
 
   const usableValue = (value) => {
-    const v = normalizeText(value);
+    // Attribute values compare exactly in XPath, so trim only the ends; do not
+    // collapse internal whitespace (test ids and labels may contain it).
+    const v = String(value == null ? "" : value).trim();
     if (!v || v.length > 60) return "";
     if (/^\d+$/.test(v)) return "";
     if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v)) return "";
