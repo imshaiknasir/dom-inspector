@@ -81,6 +81,7 @@ not shipped). Last updated 17 Nov 2026.
 | Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV export; no grid/spreadsheet import |
 | Batch selector healing | done | paste lines, check counts, flag broken, fix via repair engine, JSON/CSV report |
 | Fix-selector repair loop | done | `content/repair.js`; panel batch fix verifies every suggestion |
+| Single-locator Fix in tester | done | **Fix** calls `DI_FIX`, replaces the input and re-validates/highlights |
 | Recorder / TestCase Studio | todo | out of scope |
 | Ads / login / profile / premium gates | n/a | intentionally removed; everything is local |
 
@@ -100,7 +101,7 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 118/118 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 128/128 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
 | Extension e2e suites | done | 14/14 checks, including popup, axes, tester, right-click bridge, repair and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
@@ -124,11 +125,12 @@ not shipped). Last updated 17 Nov 2026.
 - `ab39b4f` toolbar popup with pick/open/recent/copy
 - `c16566b` testRigor and Cypress-shadow format labels
 - `4d718d9` tester result wording matches the validation contract
+- `d270c92` single-locator Fix action in the tester
 
 ## Next candidates
 
 1. Multi-column POM grid with rename, reorder and spreadsheet import.
 2. Attribute filter and per-row visibility controls.
-3. Optional single-locator “Fix selector” action in the tester (batch fix exists).
-4. Aggregate match counts across frames and a choose-frame flow for actions.
-5. Popup keyboard accelerators and a recent-locator history beyond the last pick.
+3. Aggregate match counts across frames and a choose-frame flow for actions.
+4. Popup keyboard accelerators and a recent-locator history beyond the last pick.
+5. Optional POM code generation from the saved locator list.

@@ -41,10 +41,11 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   can be prefixed with `await`. Python/Java/C# output is a best-effort
   translation of the generated JavaScript locator.
 - **Test a locator** — paste CSS, XPath or Playwright, get an auto-detected type,
-  a debounced live count, and Test & highlight. Click / Hover / Type actions run
-  against the page, searching open shadow roots and same-origin frames. Action
-  testing is best-effort and reported honestly when a field is not typable or
-  nothing matches.
+  a debounced live count, and Test & highlight. **Fix** repairs a broken locator
+  through the page repair engine, replaces the tester value and re-validates it.
+  Click / Hover / Type actions run against the page, searching open shadow roots
+  and same-origin frames. Action testing is best-effort and reported honestly
+  when a field is not typable or nothing matches.
 - **Axes reference** — press **Axes ref**, pick a reference element, then pick
   the target. The panel lists axes XPath from the reference (descendant,
   ancestor, siblings, following/preceding, common ancestor), with counts and a
@@ -162,14 +163,15 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 118/118 unit checks and 14/14 extension e2e checks
+popup copy. Current status: 128/128 unit checks and 14/14 extension e2e checks
 pass, including real-extension coverage for the popup, axes reference,
 right-click bridge, repair and batch healing.
 
 ## Known gaps
 
 - Batch healing accepts pasted lines and exports JSON/CSV, but does not import
-  spreadsheets. Recorder/TestCase Studio, login, ads and cloud features are
+  spreadsheets; its repair suggestions are heuristic when a selector cannot be
+  normalized. Recorder/TestCase Studio, login, ads and cloud features are
   intentionally absent.
 - Saved locators are a lightweight POM list; there is no editable
   multi-column POM grid or spreadsheet import.
