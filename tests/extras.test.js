@@ -417,3 +417,11 @@ test('validate: top-frame matches are not inflated by iframes', async () => {
   assert.equal(out.buttons, out.topButtons);
   assert.equal(out.inner, 1);
 });
+
+test('repair: closes braces before parentheses in Playwright options', async () => {
+  const original = "page.getByRole('button', { name: 'Save'";
+  const out = await page.evaluate((value) => DI.repair.normalize(value), original);
+  assert.equal(out, "page.getByRole('button', { name: 'Save'})");
+  const fixed = await page.evaluate((value) => DI.repair.fix(value), "page.getByRole('button', { name: 'Save'");
+  assert.equal(fixed.ok, true);
+});

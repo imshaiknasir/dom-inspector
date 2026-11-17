@@ -27,7 +27,7 @@
       const count = value.split(quote).length - 1;
       if (count % 2 === 1) value += quote;
     }
-    for (const [open, close] of [["(", ")"], ["[", "]"]]) {
+    for (const [open, close] of [["{", "}"], ["(", ")"], ["[", "]"]]) {
       const opens = value.split(open).length - 1;
       const closes = value.split(close).length - 1;
       if (opens > closes) value += close.repeat(opens - closes);
@@ -39,6 +39,7 @@
     let quote = null;
     let brackets = 0;
     let parens = 0;
+    let braces = 0;
     for (let i = 0; i < value.length; i += 1) {
       const ch = value[i];
       if (ch === "\\") { i += 1; continue; }
@@ -51,9 +52,11 @@
       else if (ch === "]") brackets -= 1;
       else if (ch === "(") parens += 1;
       else if (ch === ")") parens -= 1;
-      if (brackets < 0 || parens < 0) return false;
+      else if (ch === "{") braces += 1;
+      else if (ch === "}") braces -= 1;
+      if (brackets < 0 || parens < 0 || braces < 0) return false;
     }
-    return quote === null && brackets === 0 && parens === 0;
+    return quote === null && brackets === 0 && parens === 0 && braces === 0;
   };
 
   const tokens = (value) => {
