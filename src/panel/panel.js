@@ -955,6 +955,7 @@
     const lines = [
       `${element.tag || "element"}${element.id ? "#" + element.id : ""}`,
       "URL: " + (payload.url || ""),
+      ...(state.payloadTopUrl && state.payloadTopUrl !== payload.url ? ["Page: " + state.payloadTopUrl] : []),
       "Role: " + (element.role || "—"),
       "Accessible name: " + (element.accessibleName || "—"),
       "Classes: " + (element.classes || "—"),
@@ -1006,6 +1007,9 @@
       ["Visible", element.visible == null ? "" : element.visible ? "yes" : "no"],
       ["URL", payload.url]
     ];
+    if (state.payloadTopUrl && state.payloadTopUrl !== payload.url) {
+      pairs.push(["Page", state.payloadTopUrl]);
+    }
     for (const [key, value] of pairs) {
       const dt = el("dt", null, key);
       const dd = el("dd");
