@@ -239,3 +239,33 @@ test('panel actions: role matching excludes hidden and aria-hidden nodes', { tod
     await hiddenPage.close();
   }
 });
+
+test('playwright: accessible names prefer title and read icon children', { todo: 'accessibleName prefers placeholder and ignores descendant labels' }, async () => {
+  const iconsPage = await browser.newPage();
+  try {
+    await iconsPage.setContent(`<!doctype html><html><body>
+      <input id="both" placeholder="Placeholder" title="Title">
+      <a id="icon-link" href="#"><svg aria-label="Icon link"></svg></a>
+      <button id="icon-button"><svg aria-label="Icon button"></svg></button>
+    </body></html>`);
+    await injectGenerators(iconsPage);
+    const out = await iconsPage.evaluate(() => ({
+      titleName: DI.playwright.accessibleName(document.getElementById('both')),
+      linkName: DI.playwright.accessibleName(document.getElementById('icon-link')),
+      buttonName: DI.playwright.accessibleName(document.getElementById('icon-button')),
+      titleCount: DI.playwright.countExpr("page.getByRole('textbox', { name: 'Title', exact: true })"),
+      linkCount: DI.playwright.countExpr("page.getByRole('link', { name: 'Icon link' })"),
+      buttonCount: DI.playwright.countExpr("page.getByRole('button', { name: 'Icon button' })")
+    }));
+    assert.deepEqual(out, {
+      titleName: 'Title',
+      linkName: 'Icon link',
+      buttonName: 'Icon button',
+      titleCount: await iconsPage.getByRole('textbox', { name: 'Title', exact: true }).count(),
+      linkCount: await iconsPage.getByRole('link', { name: 'Icon link' }).count(),
+      buttonCount: await iconsPage.getByRole('button', { name: 'Icon button' }).count()
+    });
+  } finally {
+    await iconsPage.close();
+  }
+});
