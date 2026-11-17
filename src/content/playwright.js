@@ -233,8 +233,11 @@
   };
 
   const isDisplayHidden = (el) => {
-    // Native check is ancestor-aware and much faster than per-node style walks.
-    if (typeof el.checkVisibility === "function") {
+    // Native check is ancestor-aware and fast, but options in a closed select
+    // have no layout box while still being exposed to assistive tech, so keep
+    // the manual display/visibility walk for option groups.
+    const tag = U.tagOf(el);
+    if (tag !== "option" && tag !== "optgroup" && typeof el.checkVisibility === "function") {
       try {
         return !el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
       } catch (_) { /* fall back to the manual walk */ }
