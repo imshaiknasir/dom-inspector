@@ -414,3 +414,23 @@ test('playwright: nested frameLocator chains resolve and validate', async () => 
     await local.close();
   }
 });
+
+test('playwright: frameLocator falls back to the frame name', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <iframe name="plainframe" srcdoc="<!doctype html><button id=kid data-testid=kid-btn>Kid</button>"></iframe>
+    </body></html>`);
+    await local.waitForTimeout(300);
+    const frame = local.frames()[local.frames().length - 1];
+    await injectGenerators(frame);
+    const out = await frame.evaluate(() => ({
+      prefix: DI.playwright.framePrefix(),
+      generated: DI.playwright.generate(document.getElementById('kid')).map((item) => item.selector)
+    }));
+    assert.deepEqual(out.prefix, [`frameLocator('[name="plainframe"]')`]);
+    assert.ok(out.generated.some((selector) => selector.startsWith(`page.frameLocator('[name="plainframe"]').getByTestId('kid-btn')`)));
+  } finally {
+    await local.close();
+  }
+});
