@@ -15,6 +15,7 @@ not shipped). Last updated 17 Nov 2026.
 | Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `T` test best, `C` copy last |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
+| Locator diff since previous pick | done | collapsible added/removed/count-change summary for the same URL |
 | Light/dark theme | done | `prefers-color-scheme` and responsive CSS |
 | Narrow side-panel layout | done | verified at 300–430 px; per-row actions wrap |
 
@@ -149,5 +150,5 @@ not shipped). Last updated 17 Nov 2026.
 1. Multi-column POM grid and XLS import/export (reorder, JSON/CSV already done).
 2. Per-attribute generation filter and per-row visibility controls.
 3. Aggregate Playwright counts across frames and a choose-frame action flow.
-4. Optional locator diffing between consecutive picks.
-5. Per-attribute generation filter (needs richer payload attributes).
+4. Per-attribute generation filter (needs richer payload attributes).
+5. Aggregate Playwright counts across frames.

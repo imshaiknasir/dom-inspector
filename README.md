@@ -31,7 +31,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   `T` test best, `C` copy all last locators.
 - **Selected element** — tag, id, classes, implicit role, accessible name, text,
   visibility, URL, iframe depth, shadow-host chain, shadow CSS chain and frame
-  XPath.
+  XPath. When the same page is picked twice, a collapsible diff shows locators
+  added, removed or whose counts changed.
 - **Locator sections** — CSS, XPath, Playwright, Selenium and
   Cypress/JS/jQuery. Each row shows the generated value, its strategy, a live
   match count and `unique` / `no match` state. The best candidate is marked with
