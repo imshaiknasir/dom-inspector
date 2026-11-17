@@ -61,6 +61,8 @@
     payload: null,
     previousPayload: null,
     tabId: null,
+    payloadTabId: null,
+    payloadTopUrl: "",
     settings: Object.assign({}, DEFAULT_SETTINGS),
     saved: [],
     savedFilter: "",
@@ -2448,12 +2450,20 @@
     toast("Panel settings reset");
   };
 
-  const handlePayload = (payload, restored) => {
+  const handlePayload = (payload, restored, senderTabId, senderTopUrl) => {
     if (!payload) return;
     const previous = state.payload;
-    const pageChanged = !restored && previous && previous.url !== payload.url;
+    const previousTab = state.payloadTabId;
+    const previousTop = state.payloadTopUrl;
+    const pageChanged = !restored && (
+      (senderTabId != null && previousTab != null && senderTabId !== previousTab) ||
+      (senderTopUrl && previousTop ? pageKey(senderTopUrl) !== pageKey(previousTop) : false) ||
+      (!senderTopUrl && previous ? previous.url !== payload.url : false)
+    );
     state.payload = payload;
     state.payloadSeq += 1;
+    if (senderTabId != null) state.payloadTabId = senderTabId;
+    if (senderTopUrl) state.payloadTopUrl = senderTopUrl;
     state.previousPayload = pageChanged ? null : (!restored && previous ? previous : null);
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
@@ -2791,7 +2801,7 @@
           return undefined;
         }
         if (message.type === "DI_ELEMENT" && message.payload) {
-          handlePayload(message.payload, false);
+          handlePayload(message.payload, false, senderTab, sender && sender.tab ? sender.tab.url : "");
         }
         return undefined;
       });
