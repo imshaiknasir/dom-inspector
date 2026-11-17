@@ -70,7 +70,7 @@ not shipped). Last updated 17 Nov 2026.
 | Per-row Save (star) | done | deduped by type+raw value |
 | Copy one section / copy all visible | done | respects filter and unique-only |
 | Filter locators; unique-only mode | done | instant row re-render; `Esc` clears the focused filter |
-| Collapse/expand sections; persisted | done | settings in `chrome.storage.local` |
+| Collapse/expand sections; persisted | done | every card (selected element, locators, tester, healing, saved) collapses from its header; state in `chrome.storage.local` |
 | Export all locators to JSON | done | includes element, counts, raw values, saved list |
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator reorder | done | up/down controls; order drives POM method order |
@@ -109,9 +109,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 207 checks: 205 pass, 2 tracked `todo` parity probes |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 209 checks: 206 pass, 3 tracked `todo` parity probes |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 34/34 checks, including popup history, axes, tester Fix, saved filter/re-check/reorder, POM export, JSON/CSV import, settings recovery and batch healing |
+| Extension e2e suites | done | 36/36 checks, including popup history, axes, tester Fix, saved filter/re-check/reorder, POM export, JSON/CSV import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
