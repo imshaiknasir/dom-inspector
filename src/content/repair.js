@@ -185,7 +185,8 @@
     });
     const css = DI.css.best(el);
     const xp = DI.xpath.best(el);
-    const pw = DI.playwright.generate(el).find((c) => c.count === 1) || DI.playwright.generate(el)[0] || null;
+    const pwCandidates = DI.playwright.generate(el);
+    const pw = pwCandidates.find((c) => c.count === 1) || pwCandidates[0] || null;
     const selenium = DI.formats.generate(el);
     return {
       css: css ? css.selector : null,
