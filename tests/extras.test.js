@@ -1,19 +1,15 @@
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const { chromium } = require('playwright-core');
+const { launchBrowser, fixtureUrl, GENERATOR_SCRIPTS } = require('./helpers/harness');
 
-const ROOT = path.resolve(__dirname, '..');
-const SCRIPTS = ['util', 'css', 'xpath', 'playwright', 'formats', 'validate', 'repair']
-  .map((n) => path.join(ROOT, 'src/content', n + '.js'));
-const FIXTURE = 'file://' + path.join(__dirname, 'fixture.html');
+const FIXTURE = fixtureUrl();
 
 let browser, page;
 before(async () => {
-  browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', headless: true });
+  browser = await launchBrowser();
   page = await browser.newPage();
   await page.goto(FIXTURE);
-  for (const file of SCRIPTS) await page.addScriptTag({ path: file });
+  for (const file of GENERATOR_SCRIPTS) await page.addScriptTag({ path: file });
 });
 after(async () => { if (browser) await browser.close(); });
 
@@ -274,4 +270,17 @@ test('playwright: attribute values containing backslashes are escaped', async ()
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
   assert.ok(out.generated.some((s) => s.includes('getByPlaceholder')));
+});
+
+test('css: data-test-id is a preferred attribute', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.createElement('button');
+    el.id = 'testid-button';
+    el.setAttribute('data-test-id', 'confirm');
+    document.body.appendChild(el);
+    const candidates = DI.css.candidates(el);
+    el.remove();
+    return candidates.map((c) => c.selector);
+  });
+  assert.ok(out.some((s) => s.includes('[data-test-id="confirm"]')));
 });

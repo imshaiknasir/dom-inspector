@@ -5,6 +5,7 @@
 
   const ATTR_PRIORITY = [
     ["data-testid", 2],
+    ["data-test-id", 3],
     ["data-test", 3],
     ["data-cy", 3],
     ["name", 12],
@@ -118,7 +119,7 @@
       const value = attr(el, name);
       if (!value || looksGenerated(value)) continue;
       pushCandidate(list, seen, `${tag}[${name}="${attrValue(value)}"]`, `attr:${name}`, score, el);
-      if (name === "data-testid" || name === "data-test" || name === "data-cy") {
+      if (name.startsWith("data-test") || name === "data-cy") {
         pushCandidate(list, seen, `[${name}="${attrValue(value)}"]`, `attr:${name}`, score + 1, el);
       }
     }
