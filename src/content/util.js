@@ -54,6 +54,12 @@
     return v == null ? "" : String(v).trim();
   };
 
+  /* Attribute value exactly as declared (no trimming). */
+  const rawAttr = (el, name) => {
+    const v = el.getAttribute && el.getAttribute(name);
+    return v == null ? "" : String(v);
+  };
+
   const isSvg = (el) => el.namespaceURI === "http://www.w3.org/2000/svg";
   const isSvgChild = (el) => {
     let node = el;
@@ -169,6 +175,7 @@
     normalizeText,
     directText,
     attr,
+    rawAttr,
     isSvg,
     isSvgChild,
     rootOf,

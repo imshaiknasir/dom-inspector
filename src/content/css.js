@@ -1,7 +1,7 @@
 /* DOM Inspector — CSS selector generation with ranked, verified candidates. */
 (() => {
   const DI = (globalThis.DI = globalThis.DI || {});
-  const { cssEscape, attr, countIn, rootOf, tagOf, isSvg, normalizeText } = DI.util;
+  const { cssEscape, attr, rawAttr, countIn, rootOf, tagOf, isSvg, normalizeText } = DI.util;
 
   const ATTR_PRIORITY = [
     ["data-testid", 2],
@@ -113,7 +113,7 @@
     }
 
     for (const [name, score] of ATTR_PRIORITY) {
-      const value = attr(el, name);
+      const value = rawAttr(el, name);
       if (!value || looksGenerated(value)) continue;
       pushCandidate(list, seen, `${tag}[${name}="${attrValue(value)}"]`, `attr:${name}`, score, el);
       if (name.startsWith("data-test") || name === "data-cy") {

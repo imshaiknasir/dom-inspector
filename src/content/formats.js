@@ -9,7 +9,7 @@
     const css = (DI.css.best(el) || {}).selector || "";
     const xp = (DI.xpath.best(el) || {}).xpath || "";
     const id = U.attr(el, "id");
-    const name = U.attr(el, "name");
+    const name = U.rawAttr(el, "name");
     const cls = U.attr(el, "class");
     const tag = U.tagOf(el);
     const text = U.normalizeText(el.textContent);

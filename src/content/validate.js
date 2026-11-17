@@ -226,13 +226,14 @@
     if (textCall) {
       return U.deepContentElements(doc, []).filter((el) => textMatches(el, textCall.value, /exact:\s*true/.test(expr)));
     }
-    const byAttr = (name, value, exact = false, normalize = true) => {
-      const wanted = normalize ? U.normalizeText(value) : String(value).trim();
+    const byAttr = (name, value, exact = false) => {
+      const rawWanted = String(value == null ? "" : value);
+      const wanted = exact ? rawWanted : U.normalizeText(rawWanted);
       const needle = exact ? wanted : wanted.toLowerCase();
       return U.deepContentElements(doc, []).filter((el) => {
-        const rawActual = U.attr(el, name);
-        const actual = normalize ? U.normalizeText(rawActual) : rawActual;
-        return exact ? actual === needle : actual.toLowerCase().includes(needle);
+        const rawActual = U.rawAttr(el, name);
+        if (exact) return rawActual === needle;
+        return U.normalizeText(rawActual).toLowerCase().includes(needle);
       });
     };
     const isExact = /exact:\s*true/.test(expr);
@@ -266,7 +267,7 @@
       });
     }
     const testId = DI.playwright.callArg(expr, "getByTestId");
-    if (testId) return byAttr("data-testid", testId.value, true, false);
+    if (testId) return byAttr("data-testid", testId.value, true);
 
     const chainedLocators = [...expr.matchAll(/\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)/g)]
       .map((match) => U.unescapeString(match[2]));

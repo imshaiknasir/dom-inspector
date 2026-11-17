@@ -268,7 +268,7 @@
             return `${base}.locator(${jsString(css.selector)})` + (nodes.length > 1 ? `.nth(${index})` : "");
           }
         }
-        if (xp && xp.xpath) return `${base}.locator(\`${xp.xpath}\`)`;
+        if (xp && xp.xpath) return `${base}.locator(${JSON.stringify(String(xp.xpath))})`;
         return "";
       };
       const value = pw ? pw.selector

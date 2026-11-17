@@ -14,7 +14,7 @@
     return false;
   };
 
-  const hasAccessibleLabel = (el) => !!(U.attr(el, "aria-label") || U.attr(el, "aria-labelledby") || U.attr(el, "title"));
+  const hasAccessibleLabel = (el) => !!(U.attr(el, "aria-label") || U.attr(el, "aria-labelledby"));
 
   const roleLevel = (el) => {
     const explicit = U.attr(el, "aria-level");
@@ -142,7 +142,17 @@
     }).join(" ").trim();
   };
 
+  const LABELABLE = new Set(["button", "input", "meter", "output", "progress", "select", "textarea"]);
+
+  const isLabelable = (el) => {
+    const tag = U.tagOf(el);
+    if (!LABELABLE.has(tag)) return false;
+    if (tag === "input") return (U.attr(el, "type") || "text").toLowerCase() !== "hidden";
+    return true;
+  };
+
   const labelFor = (el) => {
+    if (!isLabelable(el)) return "";
     const id = el.getAttribute("id");
     if (id) {
       const root = el.getRootNode ? el.getRootNode() : document;
@@ -176,6 +186,54 @@
     return "";
   };
 
+  /* Accessible name from content: text plus descendant names (aria-label,
+     alt, svg title, input values), skipping hidden subtrees. */
+  const isBlockDisplay = (node) => {
+    try {
+      const display = node.ownerDocument.defaultView.getComputedStyle(node).display;
+      return /^(block|flex|grid|table|list-item|flow-root)/.test(display);
+    } catch (_) {
+      return false;
+    }
+  };
+
+  /* Accessible name from content: text plus descendant names (aria-label,
+     alt, svg title, input values), skipping hidden subtrees. Block-level
+     children (and <br>) separate words the way rendered text does. */
+  const contentName = (el, depth = 0) => {
+    if (!el || depth > 12) return "";
+    let out = "";
+    for (const node of el.childNodes) {
+      if (node.nodeType === 3) { out += node.textContent; continue; }
+      if (node.nodeType !== 1) continue;
+      if (isAriaHidden(node) || isDisplayHidden(node)) continue;
+      if (node.tagName === "BR") { out += " "; continue; }
+      const tag = U.tagOf(node);
+      let piece = "";
+      const label = U.attr(node, "aria-label");
+      if (label) piece = label;
+      else {
+        const by = labelledByText(node);
+        const type = (U.attr(node, "type") || "").toLowerCase();
+        const alt = U.attr(node, "alt");
+        if (by) piece = by;
+        else if (alt && (tag === "img" || tag === "area" || (tag === "input" && type === "image"))) piece = alt;
+        else if (tag === "svg") {
+          const title = node.querySelector("title");
+          piece = title ? U.normalizeText(title.textContent) : "";
+        } else if (tag === "input" && ["button", "submit", "reset"].includes(type) && U.attr(node, "value")) {
+          piece = U.attr(node, "value");
+        } else {
+          piece = contentName(node, depth + 1);
+        }
+      }
+      if (!piece) continue;
+      if (isBlockDisplay(node)) out += " " + piece + " ";
+      else out += piece;
+    }
+    return out;
+  };
+
   const directChildText = (el, selector) => {
     const node = el.querySelector(selector);
     return node ? U.normalizeText(node.textContent) : "";
@@ -195,8 +253,10 @@
     }
     const fromLabel = labelFor(el);
     if (fromLabel) return fromLabel;
-    if (U.attr(el, "alt")) return U.attr(el, "alt");
     const tag = U.tagOf(el);
+    const type = (U.attr(el, "type") || "").toLowerCase();
+    const alt = U.attr(el, "alt");
+    if (alt && (tag === "img" || tag === "area" || (tag === "input" && type === "image"))) return alt;
     if (tag === "input") {
       const type = (U.attr(el, "type") || "text").toLowerCase();
       if (["button", "submit", "reset"].includes(type) && U.attr(el, "value")) return U.attr(el, "value");
@@ -213,14 +273,19 @@
       const caption = directChildText(el, "figcaption");
       if (caption) return caption;
     }
+    if (tag === "option") {
+      const label = U.attr(el, "label");
+      if (label) return label;
+    }
     // Natively content-named elements and custom widgets (role=button etc.)
     // take their name from their contents when nothing earlier applied.
+    // Inputs must not inherit a name from stray child nodes.
     if (CONTENT_NAMED.includes(tag) || U.attr(el, "role")) {
-      const content = U.normalizeText(el.textContent);
+      const content = U.normalizeText(contentName(el));
       if (content) return content;
+      const icon = descendantName(el);
+      if (icon) return icon;
     }
-    const icon = descendantName(el);
-    if (icon) return icon;
     // Playwright prefers title over placeholder for text inputs.
     return U.attr(el, "title") || U.attr(el, "placeholder") || "";
   };
@@ -327,13 +392,14 @@
     }).length;
   };
 
-  const countAttr = (name, value, root, exact = false, normalize = true) => {
-    const wanted = normalize ? U.normalizeText(value) : String(value == null ? "" : value).trim();
+  const countAttr = (name, value, root, exact = false) => {
+    const rawWanted = String(value == null ? "" : value);
+    const wanted = exact ? rawWanted : U.normalizeText(rawWanted);
     const needle = exact ? wanted : wanted.toLowerCase();
     return allElements(root).filter((el) => {
-      const raw = U.attr(el, name);
-      const actual = normalize ? U.normalizeText(raw) : raw;
-      return exact ? actual === needle : actual.toLowerCase().includes(needle);
+      const rawActual = U.rawAttr(el, name);
+      if (exact) return rawActual === needle; // exact matches do not normalize
+      return U.normalizeText(rawActual).toLowerCase().includes(needle);
     }).length;
   };
 
@@ -546,7 +612,7 @@
       }
       const m = callArg(expr, "getByTestId");
       if (!m) return 0;
-      return countAttr("data-testid", m.value, root, true, false);
+      return countAttr("data-testid", m.value, root, true);
     }
 
     const chainedLocators = [...expr.matchAll(/\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)/g)]
@@ -678,12 +744,12 @@
       const kind = type || method;
       out.push({ type: kind, selector: code, count, score, stability: stabilityFor(kind) });
     };
-    const testId = U.attr(el, "data-testid");
-    if (testId) add("getByTestId", `${base}.getByTestId(${quote(testId)})`, countAttr("data-testid", testId, root), 1);
+    const testId = U.rawAttr(el, "data-testid");
+    if (testId) add("getByTestId", `${base}.getByTestId(${quote(testId)})`, countAttr("data-testid", testId, root, true), 1);
 
     for (const name of ["data-test-id", "data-test", "data-cy"]) {
-      const value = U.attr(el, name);
-      if (value) add("locator", `${base}.locator('[${name}="${cssString(value)}"]')`, countAttr(name, value, root, true), 3);
+      const value = U.rawAttr(el, name);
+      if (value) add("locator", `${base}.locator(${quote(`[${name}="${cssString(value)}"]`)})`, countAttr(name, value, root, true), 3);
     }
 
     const role = implicitRole(el);
@@ -712,7 +778,7 @@
       add("getByLabel", `${base}.getByLabel(${quote(label)}, { exact: true })`, countLabel(label, true, root), 5);
       add("getByLabel", `${base}.getByLabel(${quote(label)})`, countLabel(label, false, root), 6);
     }
-    const placeholder = U.attr(el, "placeholder");
+    const placeholder = U.rawAttr(el, "placeholder");
     if (placeholder && placeholder.length <= 80) {
       add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)}, { exact: true })`, countAttr("placeholder", placeholder, root, true), 7);
       add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)})`, countAttr("placeholder", placeholder, root, false), 8);
@@ -728,12 +794,12 @@
         add("locator", `${base}.locator(${quote(hasText)})`, countHasText(U.tagOf(el), text, root), 22);
       }
     }
-    const alt = U.attr(el, "alt");
+    const alt = U.rawAttr(el, "alt");
     if (alt) {
       add("getByAltText", `${base}.getByAltText(${quote(alt)}, { exact: true })`, countAttr("alt", alt, root, true), 11);
       add("getByAltText", `${base}.getByAltText(${quote(alt)})`, countAttr("alt", alt, root, false), 12);
     }
-    const title = U.attr(el, "title");
+    const title = U.rawAttr(el, "title");
     if (title) {
       add("getByTitle", `${base}.getByTitle(${quote(title)}, { exact: true })`, countAttr("title", title, root, true), 13);
       add("getByTitle", `${base}.getByTitle(${quote(title)})`, countAttr("title", title, root, false), 14);
@@ -755,7 +821,7 @@
       if (visibleCount > 0) add("locator", `${base}.locator(${quote(css.selector + ":visible")})`, visibleCount, 40);
     }
     const xp = DI.xpath.best(el);
-    if (xp) add("locator", `${base}.locator(\`${xp.xpath}\`)`, xp.count, 48);
+    if (xp) add("locator", `${base}.locator(${quote(xp.xpath)})`, xp.count, 48);
 
     // Guarantee at least one exact locator when nothing is unique: nth fallback.
     if (!out.some((item) => item.count === 1)) {
@@ -767,7 +833,7 @@
       if (xp) {
         const nodes = DI.xpath.snapshot(xp.xpath, root);
         const index = nodes.indexOf(el) + 1;
-        if (index > 0) add("locator+nth", `${base}.locator(\`(${xp.xpath})[${index}]\`)`, 1, 59);
+        if (index > 0) add("locator+nth", `${base}.locator(${quote(`(${xp.xpath})[${index}]`)})`, 1, 59);
       }
     }
 
