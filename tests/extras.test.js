@@ -498,3 +498,8 @@ test('playwright: placeholder matching is case-insensitive substring by default'
   assert.equal(out.exact, 1);
   assert.equal(out.validated, 2);
 });
+
+test('playwright: exact text matching normalises whitespace', async () => {
+  const out = await page.evaluate(() => DI.playwright.countExpr("page.getByText('  Save   changes ', { exact: true })"));
+  assert.equal(out, 1);
+});

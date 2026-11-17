@@ -106,7 +106,8 @@
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
     if (!own) return false;
-    const wanted = exact ? value : U.normalizeText(value).toLowerCase();
+    const normalized = U.normalizeText(value);
+    const wanted = exact ? normalized : normalized.toLowerCase();
     const has = exact ? own === wanted : own.toLowerCase().includes(wanted);
     if (!has) return false;
     for (const child of el.children) {
