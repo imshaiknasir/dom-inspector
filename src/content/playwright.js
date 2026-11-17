@@ -163,6 +163,17 @@
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
         .reduce((sum, name) => sum + countAttr(name, m[1], root), 0);
     }
+    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
+    if (engine) {
+      const tag = (engine[1] || "").trim() || "*";
+      const value = engine[2];
+      const mode = expr.includes(":text-is(") ? "exact" : "contains";
+      return allElements(root).filter((el) => {
+        if (tag !== "*" && U.tagOf(el) !== tag) return false;
+        const text = U.normalizeText(el.textContent);
+        return mode === "exact" ? text === value : text.includes(value);
+      }).length;
+    }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/") && !css[1].startsWith("(")) {
       try { return U.deepQueryAll(css[1], root).length; } catch (_) { return 0; }

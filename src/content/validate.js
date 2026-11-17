@@ -66,6 +66,16 @@
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
         .flatMap((name) => U.deepQueryAll(`[${name}="${testId[1].replace(/"/g, '\\"')}"]`));
     }
+    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
+    if (engine) {
+      const tag = (engine[1] || "").trim() || "*";
+      const value = engine[2];
+      const exact = expr.includes(":text-is(");
+      return U.deepEveryElement(document, []).filter((el) => {
+        if (tag !== "*" && U.tagOf(el) !== tag) return false;
+        return textMatches(el, value, exact);
+      });
+    }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1]);
     const xp = expr.match(/locator\(\s*`([^`]+)`\s*\)/) || expr.match(/locator\(\s*['"](\/\/[^'"]+)['"]\s*\)/);
