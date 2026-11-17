@@ -199,3 +199,14 @@ test('formats: frame snippets switch into the enclosing iframe', async () => {
   assert.match(out.frame.code, /switchTo\(\)\.frame/);
   assert.match(out.frame.code, /#frame/);
 });
+
+test('formats: shadow Selenium snippet enters each shadow root', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.querySelector('#host').shadowRoot.getElementById('shadowbtn');
+    return DI.formats.formats(el).find((row) => row.type === 'selenium-shadow');
+  });
+  assert.ok(out);
+  assert.match(out.code, /getShadowRoot\(\)/);
+  assert.match(out.code, /#host/);
+  assert.match(out.code, /findElement\(By\.cssSelector/);
+});
