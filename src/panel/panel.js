@@ -2201,6 +2201,7 @@
     const rows = state.healRows;
     const flagged = rows.some((row) => row.status === "broken" || row.status === "many" || row.status === "fix-failed");
     const input = $("di-heal-input");
+    if (input) input.disabled = busy;
     const check = $("di-heal-check");
     if (check) check.disabled = busy || !(input && input.value.trim());
     const fix = $("di-heal-fix");
