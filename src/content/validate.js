@@ -15,10 +15,14 @@
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
     if (!own) return false;
-    if (exact ? own !== value : !own.includes(value)) return false;
+    const wanted = exact ? value : String(value).toLowerCase();
+    const has = exact ? own === wanted : own.toLowerCase().includes(wanted);
+    if (!has) return false;
     for (const child of el.children) {
       const t = U.normalizeText(child.textContent);
-      if (t && (exact ? t === value : t.includes(value))) return false;
+      if (!t) continue;
+      const childHas = exact ? t === wanted : t.toLowerCase().includes(wanted);
+      if (childHas) return false;
     }
     return true;
   };
@@ -28,7 +32,7 @@
     for (const el of U.deepEveryElement(doc, [])) {
       if (U.tagOf(el) === "label") {
         const text = U.normalizeText(el.textContent);
-        if (exact ? text === value : text.includes(value)) {
+        if (exact ? text === value : text.toLowerCase().includes(String(value).toLowerCase())) {
           const id = el.getAttribute("for");
           const root = el.getRootNode ? el.getRootNode() : document;
           let target = null;
@@ -43,7 +47,7 @@
         }
       }
       const aria = U.attr(el, "aria-label");
-      if (aria && (exact ? aria === value : aria.includes(value))) out.add(el);
+      if (aria && (exact ? aria === value : aria.toLowerCase().includes(String(value).toLowerCase()))) out.add(el);
       const ids = U.attr(el, "aria-labelledby");
       if (ids) {
         const root = el.getRootNode ? el.getRootNode() : doc;
@@ -51,7 +55,7 @@
           const node = root.getElementById ? root.getElementById(id) : null;
           return node ? U.normalizeText(node.textContent) : "";
         }).join(" ").trim();
-        if (by && (exact ? by === value : by.includes(value))) out.add(el);
+        if (by && (exact ? by === value : by.toLowerCase().includes(String(value).toLowerCase()))) out.add(el);
       }
     }
     return [...out];
@@ -97,7 +101,7 @@
         if (re) return re.test(actual);
         if (!name) return true;
         const wanted = U.unescapeString(name[1]);
-        return exact ? actual === wanted : actual.includes(wanted);
+        return exact ? actual === wanted : actual.toLowerCase().includes(wanted.toLowerCase());
       });
     }
     const label = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);

@@ -106,10 +106,14 @@
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
     if (!own) return false;
-    if (exact ? own !== value : !own.includes(value)) return false;
+    const wanted = exact ? value : String(value).toLowerCase();
+    const has = exact ? own === wanted : own.toLowerCase().includes(wanted);
+    if (!has) return false;
     for (const child of el.children) {
       const childText = U.normalizeText(child.textContent);
-      if (childText && (exact ? childText === value : childText.includes(value))) return false;
+      if (!childText) continue;
+      const childHas = exact ? childText === wanted : childText.toLowerCase().includes(wanted);
+      if (childHas) return false;
     }
     return true;
   };
@@ -120,7 +124,7 @@
     if (implicitRole(el) !== role) return false;
     if (!name) return true;
     const actual = U.normalizeText(accessibleName(el));
-    return exact ? actual === name : actual.includes(name);
+    return exact ? actual === name : actual.toLowerCase().includes(String(name).toLowerCase());
   }).length;
 
   const countLabel = (value, exact, root) => {
@@ -129,16 +133,16 @@
     for (const el of allElements(root)) {
       if (U.tagOf(el) === "label") {
         const text = U.normalizeText(el.textContent);
-        if (exact ? text === value : text.includes(value)) {
+        if (exact ? text === value : text.toLowerCase().includes(String(value).toLowerCase())) {
           const id = el.getAttribute("for");
           if (id) add((el.getRootNode ? el.getRootNode() : document).getElementById(id));
           else add(el.querySelector("input, select, textarea"));
         }
       }
       const aria = U.attr(el, "aria-label");
-      if (aria && (exact ? aria === value : aria.includes(value))) add(el);
+      if (aria && (exact ? aria === value : aria.toLowerCase().includes(String(value).toLowerCase()))) add(el);
       const by = labelledByText(el);
-      if (by && (exact ? by === value : by.includes(value))) add(el);
+      if (by && (exact ? by === value : by.toLowerCase().includes(String(value).toLowerCase()))) add(el);
     }
     return seen.size;
   };

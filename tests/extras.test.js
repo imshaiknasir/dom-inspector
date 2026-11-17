@@ -461,3 +461,16 @@ test('playwright: getByTestId counts only data-testid', async () => {
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: role/text names match case-insensitively by default', async () => {
+  const out = await page.evaluate(() => ({
+    role: DI.playwright.countExpr("page.getByRole('button', { name: 'save changes' })"),
+    roleExact: DI.playwright.countExpr("page.getByRole('button', { name: 'save changes', exact: true })"),
+    text: DI.playwright.countExpr("page.getByText('save CHANGES')"),
+    label: DI.playwright.countExpr("page.getByLabel('email address')")
+  }));
+  assert.equal(out.role, 1);
+  assert.equal(out.roleExact, 0);
+  assert.equal(out.text, 1);
+  assert.equal(out.label, 1);
+});
