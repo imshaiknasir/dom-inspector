@@ -329,12 +329,12 @@
           let namePattern = null;
           let nameValue = "";
 
-          const nameString = rest.match(/name:\s*'((?:\\.|[^'\\])*)'/);
+          const nameString = rest.match(/name:\s*(['"])((?:\\.|(?!\1).)*)\1/);
           const nameRegex = rest.match(/name:\s*\/((?:\\.|[^/\\])*)\/([a-z]*)/);
           if (nameRegex) {
             try { namePattern = new RegExp(nameRegex[1], nameRegex[2] || ""); } catch (_) { namePattern = null; }
           } else if (nameString) {
-            nameValue = nameString[1].replace(/\\(['\\])/g, "$1");
+            nameValue = nameString[2].replace(/\\(['"\\])/g, "$1");
           }
 
           const all = allElements();
