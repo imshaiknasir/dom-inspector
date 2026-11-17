@@ -188,7 +188,7 @@ test('validate: bare Playwright locator() expressions are auto-detected', async 
   assert.equal(out.xpathTested.count, 1);
 });
 
-test('validate: Playwright string engines and regex arguments resolve', { todo: 'resolvePlaywright only reads quoted getBy* values' }, async () => {
+test('validate: Playwright string engines and regex arguments resolve', async () => {
   const cases = [
     ["page.locator('css=#save')", page.locator('css=#save')],
     ["page.locator('xpath=//button[@id=\"save\"]')", page.locator('xpath=//button[@id="save"]')],
@@ -203,7 +203,7 @@ test('validate: Playwright string engines and regex arguments resolve', { todo: 
   }
 });
 
-test('validate: chained filters narrow the resolved set', { todo: 'resolvePlaywright ignores filter/hasText modifiers' }, async () => {
+test('validate: chained filters narrow the resolved set', async () => {
   const cases = [
     ["page.getByRole('button').filter({ hasText: 'Save changes' })", page.getByRole('button').filter({ hasText: 'Save changes' })],
     ["page.locator('button', { hasText: 'Save changes' })", page.locator('button', { hasText: 'Save changes' })]

@@ -104,7 +104,7 @@ test('playwright: exact getByText count matches Playwright', async () => {
   assert.equal(local, real);
 });
 
-test('playwright: getByText ignores script and style text like Playwright', { todo: 'countText scans script elements' }, async () => {
+test('playwright: getByText ignores script and style text like Playwright', async () => {
   const expr = "page.getByText('TEXT_MARKER')";
   const [local, real, validated] = await Promise.all([
     diCount(expr),
@@ -115,7 +115,7 @@ test('playwright: getByText ignores script and style text like Playwright', { to
   assert.equal(validated, real);
 });
 
-test('playwright: sectioning roots follow Playwright scoping', { todo: 'implicitRole ignores aria-labelledby and header/footer nesting' }, async () => {
+test('playwright: sectioning roots follow Playwright scoping', async () => {
   const [region, banner, contentinfo, panelBanner, panelContentinfo] = await Promise.all([
     diCount("page.getByRole('region')"),
     diCount("page.getByRole('banner')"),
@@ -135,7 +135,7 @@ test('playwright: sectioning roots follow Playwright scoping', { todo: 'implicit
   );
 });
 
-test('playwright: only named forms expose the form role', { todo: 'implicitRole maps every form to form' }, async () => {
+test('playwright: only named forms expose the form role', async () => {
   const [form, panelForm] = await Promise.all([
     diCount("page.getByRole('form')"),
     panelCount("page.getByRole('form')")
@@ -143,7 +143,7 @@ test('playwright: only named forms expose the form role', { todo: 'implicitRole 
   assert.deepEqual({ form, panelForm }, { form: await realCount('form'), panelForm: await realCount('form') });
 });
 
-test('playwright: hidden inputs have no role and file inputs are buttons', { todo: 'input role map counts hidden/file inputs as textbox' }, async () => {
+test('playwright: hidden inputs have no role and file inputs are buttons', async () => {
   const [textbox, button, panelTextbox, panelButton] = await Promise.all([
     diCount("page.getByRole('textbox')"),
     diCount("page.getByRole('button')"),
@@ -161,7 +161,7 @@ test('playwright: hidden inputs have no role and file inputs are buttons', { tod
   );
 });
 
-test('playwright: accessible names fall back to title and role contents', { todo: 'accessibleName skips title for buttons and contents for role elements' }, async () => {
+test('playwright: accessible names fall back to title and role contents', async () => {
   const extra = await page.evaluate(() => {
     const titleButton = document.createElement('button');
     titleButton.id = 'title-only';
@@ -194,35 +194,47 @@ test('playwright: accessible names fall back to title and role contents', { todo
   });
 });
 
-test('playwright: role counts exclude hidden and aria-hidden nodes', { todo: 'countRole includes hidden nodes' }, async () => {
+const HIDDEN_FIXTURE = `<!doctype html><html><body>
+  <button id="shown">Save</button>
+  <button id="display" style="display:none">Save</button>
+  <button id="visibility" style="visibility:hidden">Save</button>
+  <button id="aria" aria-hidden="true">Save</button>
+  <div hidden><button id="attr">Save</button></div>
+  <dialog id="closed">Closed</dialog>
+</body></html>`;
+
+const openHiddenFixture = async () => {
   const hiddenPage = await browser.newPage();
+  await hiddenPage.setContent(HIDDEN_FIXTURE);
+  await injectGenerators(hiddenPage);
+  await hiddenPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
+  return hiddenPage;
+};
+
+test('playwright: role counts exclude hidden and aria-hidden nodes', async () => {
+  const hiddenPage = await openHiddenFixture();
   try {
-    await hiddenPage.setContent(`<!doctype html><html><body>
-      <button id="shown">Save</button>
-      <button id="display" style="display:none">Save</button>
-      <button id="visibility" style="visibility:hidden">Save</button>
-      <button id="aria" aria-hidden="true">Save</button>
-      <div hidden><button id="attr">Save</button></div>
-      <dialog id="closed">Closed</dialog>
-    </body></html>`);
-    await injectGenerators(hiddenPage);
-    await hiddenPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
     const out = await hiddenPage.evaluate(() => ({
       buttons: DI.playwright.countExpr("page.getByRole('button', { name: 'Save' })"),
       dialog: DI.playwright.countExpr("page.getByRole('dialog')"),
-      validated: DI.validate.test('playwright', "page.getByRole('button', { name: 'Save' })").count,
-      panel: DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Save' })", '', false).matched
+      validated: DI.validate.test('playwright', "page.getByRole('button', { name: 'Save' })").count
     }));
-    const real = {
-      buttons: await hiddenPage.getByRole('button', { name: 'Save' }).count(),
-      dialog: await hiddenPage.getByRole('dialog').count()
-    };
     assert.deepEqual(out, {
-      buttons: real.buttons,
-      dialog: real.dialog,
-      validated: real.buttons,
-      panel: real.buttons
+      buttons: await hiddenPage.getByRole('button', { name: 'Save' }).count(),
+      dialog: await hiddenPage.getByRole('dialog').count(),
+      validated: await hiddenPage.getByRole('button', { name: 'Save' }).count()
     });
+  } finally {
+    await hiddenPage.close();
+  }
+});
+
+test('panel actions: role matching excludes hidden and aria-hidden nodes', { todo: 'panel-actions still counts hidden nodes' }, async () => {
+  const hiddenPage = await openHiddenFixture();
+  try {
+    const panel = await hiddenPage.evaluate(() =>
+      DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Save' })", '', false).matched);
+    assert.equal(panel, await hiddenPage.getByRole('button', { name: 'Save' }).count());
   } finally {
     await hiddenPage.close();
   }
