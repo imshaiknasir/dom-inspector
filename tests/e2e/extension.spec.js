@@ -881,6 +881,15 @@ test('panel filters saved locators and hides the filter when empty', async () =>
   await expect.poll(() => extensionPage.evaluate(() =>
     document.getElementById('di-saved-filter').hidden
   ), { timeout: 10000 }).toBe(true);
+  const tools = await extensionPage.evaluate(() => ({
+    check: document.getElementById('di-saved-check').disabled,
+    pom: document.getElementById('di-saved-pom').disabled,
+    json: document.getElementById('di-saved-json').disabled,
+    csv: document.getElementById('di-saved-csv').disabled,
+    clear: document.getElementById('di-saved-clear').disabled,
+    importEnabled: !document.getElementById('di-saved-import').disabled
+  }));
+  expect(tools).toEqual({ check: true, pom: true, json: true, csv: true, clear: true, importEnabled: true });
 });
 
 test('panel re-checks saved locators and records counts and errors', async () => {
