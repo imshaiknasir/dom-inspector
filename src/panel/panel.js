@@ -1063,13 +1063,15 @@
   const allLocatorText = () => {
     if (!state.payload) return "";
     const lines = ["DOM Inspector — " + (state.payload.url || "")];
+    let any = false;
     for (const group of GROUPS) {
       const rows = visibleRows(state.groups[group.key] || []);
       if (!rows.length) continue;
+      any = true;
       lines.push("", group.label);
       for (const row of rows) lines.push(displayValue(row));
     }
-    return lines.join("\n").trim();
+    return any ? lines.join("\n").trim() : "";
   };
 
   const snapshot = () => ({
@@ -2488,7 +2490,7 @@
 
     $("di-copy-all").addEventListener("click", () => {
       const text = allLocatorText();
-      if (!text) return toast("Pick an element first", "bad");
+      if (!text) return toast(state.payload ? "Nothing visible to copy" : "Pick an element first", "bad");
       copyText(text, "Copied visible locators");
     });
     $("di-export").addEventListener("click", exportAll);
