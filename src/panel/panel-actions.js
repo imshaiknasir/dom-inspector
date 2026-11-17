@@ -607,6 +607,11 @@
 
       if (!perform) return result;
 
+      if (!isVisible(target)) {
+        result.error = "Element is not visible";
+        return result;
+      }
+
       try { target.scrollIntoView({ block: "center", inline: "nearest" }); } catch (_) { /* ignore */ }
 
       if (kind === "click") {
