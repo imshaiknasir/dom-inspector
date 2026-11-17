@@ -1546,9 +1546,11 @@
     if (!rows.length) return "0 results";
     const parts = [`${rows.length} selector${rows.length === 1 ? "" : "s"}`];
     const unique = rows.filter((row) => row.status === "ok").length;
+    const many = rows.filter((row) => row.status === "many").length;
     const fixed = rows.filter((row) => row.status === "fixed").length;
     const broken = rows.filter((row) => row.status === "broken" || row.status === "fix-failed").length;
     if (unique) parts.push(`${unique} unique`);
+    if (many) parts.push(`${many} not unique`);
     if (fixed) parts.push(`${fixed} fixed`);
     if (broken) parts.push(`${broken} broken`);
     return parts.join(" · ");
@@ -1667,7 +1669,11 @@
     state.healBusy = false;
     renderHeal();
     const broken = state.healRows.filter((row) => row.status === "broken").length;
-    setStatus(`Batch checked ${state.healRows.length} selector${state.healRows.length === 1 ? "" : "s"}${broken ? ` · ${broken} broken` : ""}.`, broken ? "warn" : "ok");
+    const many = state.healRows.filter((row) => row.status === "many").length;
+    const notes = [];
+    if (broken) notes.push(`${broken} broken`);
+    if (many) notes.push(`${many} not unique`);
+    setStatus(`Batch checked ${state.healRows.length} selector${state.healRows.length === 1 ? "" : "s"}${notes.length ? " · " + notes.join(" · ") : ""}.`, notes.length ? "warn" : "ok");
   };
 
   const fixBrokenHeal = async () => {
