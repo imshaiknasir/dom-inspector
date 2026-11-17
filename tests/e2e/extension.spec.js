@@ -1394,6 +1394,8 @@ test('panel refuses to fix a saved locator from another page', async () => {
     document.querySelectorAll('#di-saved .saved-row').length
   ), { timeout: 10000 }).toBe(1);
 
+  await extensionPage.locator('#di-saved .saved-row button[title="Test & highlight"]').click();
+  await expect(extensionPage.locator('#di-toast')).toContainText('belongs to another page');
   await extensionPage.locator('#di-saved .saved-row button[title="Fix saved locator with the repair engine"]').click();
   await expect(extensionPage.locator('#di-toast')).toContainText('belongs to another page');
   const stored = await extensionPage.evaluate(async () => {
