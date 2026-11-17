@@ -280,6 +280,11 @@ test('toolbar popup renders the last picked locators', async () => {
   expect(await popup.locator('#pop-history-rows .loc-row').count()).toBe(0);
   await expect(popup.locator('#pop-status')).toContainText('Pick history cleared');
   expect(await popup.evaluate(() => chrome.storage.local.get('di:panel:history'))).toEqual({});
+  const keptSaved = await popup.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return data['di:panel:saved'].length;
+  });
+  expect(keptSaved).toBe(5);
 
   const linkPayload = {
     url: 'https://example.test/docs',
