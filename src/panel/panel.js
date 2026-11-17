@@ -2453,6 +2453,7 @@
     $("di-heal-input").value = "";
     persistSettings();
     renderHeal();
+    setStatus("Healing results cleared.");
   };
 
   /* ---------------------------------------------------------------- */
