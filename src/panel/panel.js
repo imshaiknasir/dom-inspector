@@ -712,6 +712,7 @@
     const node = state.countNodes.get(row.key);
     if (node) updateCountBadge(node.badge, count);
     refreshStats();
+    renderDiff();
   };
 
   const testRow = async (row, badge) => {
@@ -2029,6 +2030,7 @@
             const node = state.countNodes.get(row.key);
             if (node) updateCountBadge(node.badge, response.count);
             refreshStats();
+            renderDiff();
           }
         })
         .catch(() => { /* content script unavailable */ });
