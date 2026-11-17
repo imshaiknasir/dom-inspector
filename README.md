@@ -74,7 +74,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   stay scoped to the entry's saved source page; entries from other pages are
   skipped/refused so they are never rewritten against the wrong DOM. Saved code
   snippets that are not locators (Cypress/JS/jQuery/frame helpers) are kept and
-  exported but skipped by Check.
+  exported but skipped by Check. CSV exports neutralise spreadsheet formulas
+  (cells starting with `=`, `+`, `-`, `@`, tab or newline get an apostrophe
+  prefix), and CSV import removes that prefix again.
 - **Right-click copy** — the page context menu can pick an element or copy its
   best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
@@ -185,8 +187,8 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 218 unit checks (215 passing, 3 tracked as `todo`
-parity probes for the remaining Playwright engine work) and 39/39 extension
+popup copy. Current status: 220 unit checks (217 passing, 3 tracked as `todo`
+parity probes for the remaining Playwright engine work) and 40/40 extension
 e2e checks pass, including real-extension coverage for the popup, axes
 reference, right-click bridge, repair and batch healing.
 
