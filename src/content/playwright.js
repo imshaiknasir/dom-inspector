@@ -329,7 +329,7 @@
     }
 
     const css = DI.css.best(el);
-    if (css && U.isInShadow(el)) {
+    if (css && css.count === 1 && U.isInShadow(el)) {
       const rawHosts = U.shadowHosts(el).slice().reverse();
       const hosts = rawHosts.map((host) => DI.css.best(host)).filter(Boolean);
       if (hosts.length && hosts.length === rawHosts.length && hosts.every((h) => h.count === 1)) {
