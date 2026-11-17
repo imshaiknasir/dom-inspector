@@ -526,8 +526,10 @@
               }
             } else if (engine && engine[1] === "text") {
               const text = selector.trim();
-              const parsed = readFirstString(text);
-              if (parsed && parsed.regex) {
+              const parsed = text ? readFirstString(text) : null;
+              if (!text) {
+                nodes = [];
+              } else if (parsed && parsed.regex) {
                 nodes = allElements().filter((node) => textMatches(node, "", false, parsed.regex));
               } else if (parsed && /^['"]/.test(text) && parsed.end === text.length) {
                 nodes = allElements().filter((node) => textMatches(node, parsed.value, true));
