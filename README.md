@@ -54,9 +54,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   ancestor, siblings, following/preceding, common ancestor), with counts and a
   clear-reference action.
 - **Batch selector healing** — paste one selector per line, check all against
-  the page, flag broken or non-unique rows, and run **Fix broken** to get a
-  verified replacement from the repair engine. Copy or export the report as
-  JSON/CSV.
+  the page, flag broken or non-unique rows, and run **Fix flagged** to get a
+  verified unique replacement from the repair engine. Copy or export the report
+  as JSON/CSV.
 - **Driver command template** — build a runnable command from the best CSS or
   XPath using `{selector}` (legacy `xpathvalue` / `cssvalue` also work), with
   Selenium Java/Python, Cypress, Playwright and TestNG presets.

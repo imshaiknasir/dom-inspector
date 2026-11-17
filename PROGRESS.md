@@ -82,8 +82,8 @@ not shipped). Last updated 17 Nov 2026.
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |
 | Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV export; no grid/spreadsheet import |
-| Batch selector healing | done | paste lines, check counts, flag broken, fix via repair engine, JSON/CSV report |
-| Fix-selector repair loop | done | `content/repair.js`; panel batch fix verifies every suggestion |
+| Batch selector healing | done | paste lines, check counts, flag broken/non-unique, fix via repair engine with unique-candidate verification, JSON/CSV report |
+| Fix-selector repair loop | done | `content/repair.js`; panel batch fix verifies every suggestion and tries unique CSS/XPath/Playwright candidates |
 | Single-locator Fix in tester | done | **Fix** calls `DI_FIX`, replaces the input and re-validates/highlights |
 | Recorder / TestCase Studio | todo | out of scope |
 | Ads / login / profile / premium gates | n/a | intentionally removed; everything is local |
@@ -133,6 +133,7 @@ not shipped). Last updated 17 Nov 2026.
 - `1382440` saved locators → Playwright page-object snippet
 - `ad3b49f` sanitize persisted settings and reserved POM method names
 - `683f880` strategy filter for locator rows
+- `5521d32` batch-fix non-unique selectors with verified unique candidates
 - `e47ee2b` popup keyboard shortcuts
 
 ## Next candidates
