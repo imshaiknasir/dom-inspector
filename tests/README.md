@@ -34,4 +34,4 @@ and a user-data directory.
   and iframes, plus the background `DI_GET_LAST` cache.
 
 `node:test` `{ todo }` cases document known defects; they do not fail the suite.
-See `../BLOCKERS.md` at the workspace root for the owning file:line.
+See `../../BLOCKERS.md` (workspace root) for the owning file:line.
