@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { launchBrowser, openFixture } = require('../helpers/harness');
+const { launchBrowser, openFixture, injectGenerators } = require('../helpers/harness');
 
 let browser;
 let page;
@@ -224,4 +224,25 @@ test('repair: fixMany caps a batch at 200 selectors', async () => {
     return DI.repair.fixMany(values).length;
   });
   assert.equal(out, 200);
+});
+
+test('repair: nested frames produce chained frame locators', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <iframe id="outer" srcdoc="<!doctype html><body>
+        <iframe id='inner' srcdoc='<!doctype html><button id=deep>Deep</button>'></iframe>
+      </body>"></iframe>
+    </body></html>`);
+    await injectGenerators(local);
+    await local.waitForTimeout(400);
+    const out = await local.evaluate(() => DI.repair.fix('#dee'));
+    assert.equal(out.ok, true);
+    assert.equal(out.element.id, 'deep');
+    assert.deepEqual(out.locators.frameCss, ['#outer', '#inner']);
+    assert.deepEqual(out.locators.frameXpath, ["//iframe[@id='outer']", "//iframe[@id='inner']"]);
+    assert.match(out.locators.playwright, /frameLocator\('#outer'\)\.frameLocator\('#inner'\)/);
+  } finally {
+    await local.close();
+  }
 });
