@@ -135,3 +135,20 @@ test('validate: index XPath is detected and counted', async () => {
   assert.equal(out.result.ok, true);
   assert.equal(out.result.count, 1);
 });
+
+test('validate: getByLabel resolves form controls inside shadow roots', { todo: 'BLOCKERS.md — labelTargets uses document.getElementById for shadow labels (src/content/validate.js:25-33)' }, async () => {
+  const out = await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'label-host';
+    document.body.appendChild(host);
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = '<label for="deep-input">Deep label</label><input id="deep-input">';
+    const generated = DI.playwright.countExpr("page.getByLabel('Deep label')");
+    const validated = DI.validate.test('playwright', "page.getByLabel('Deep label')");
+    host.remove();
+    return { generated, validated };
+  });
+  assert.equal(out.generated, 1);
+  assert.equal(out.validated.ok, true);
+  assert.equal(out.validated.count, 1);
+});

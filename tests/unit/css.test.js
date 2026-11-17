@@ -180,3 +180,24 @@ test('css: ambiguous siblings still get a unique selector', async () => {
   assert.equal(out.nodes.length, 1);
   assert.equal(out.nodes[0], true);
 });
+
+test('css: shadowChain lists nested hosts from innermost to outermost', async () => {
+  const out = await page.evaluate(() => {
+    const outer = document.createElement('div');
+    outer.id = 'outer-host';
+    document.body.appendChild(outer);
+    const outerRoot = outer.attachShadow({ mode: 'open' });
+    const inner = document.createElement('div');
+    inner.id = 'inner-host';
+    outerRoot.appendChild(inner);
+    const innerRoot = inner.attachShadow({ mode: 'open' });
+    innerRoot.innerHTML = '<button id="deep-btn">Deep</button>';
+    const el = innerRoot.getElementById('deep-btn');
+    const result = { best: DI.css.best(el), chain: DI.css.shadowChain(el) };
+    outer.remove();
+    return result;
+  });
+  assert.equal(out.best.selector, '#deep-btn');
+  assert.equal(out.best.count, 1);
+  assert.deepEqual(out.chain, ['#inner-host', '#outer-host']);
+});
