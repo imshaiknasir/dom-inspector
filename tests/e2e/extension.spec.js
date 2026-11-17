@@ -233,6 +233,15 @@ test('toolbar popup renders the last picked locators', async () => {
   await expect(popup.locator('#pop-saved-rows')).toContainText('#save');
   await expect(popup.locator('#pop-saved-rows')).toContainText('//input');
 
+  const moreSaved = Array.from({ length: 5 }, (_, index) => ({
+    name: `Saved ${index}`, type: 'css', value: `#saved-${index}`, label: 'CSS', count: 1, savedAt: 10 + index
+  }));
+  await popup.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), moreSaved);
+  await popup.locator('#pop-refresh').click();
+  await expect(popup.locator('#pop-saved-meta')).toHaveText('5');
+  await expect(popup.locator('#pop-saved-rows .loc-row')).toHaveCount(4);
+  await expect(popup.locator('#pop-saved-rows')).toContainText('#saved-4');
+
   const history = [
     { at: 20, url: 'https://Old.Example/Path', css: '#old-save', cssCount: 1, element: { tag: 'button', id: 'old-save' } },
     { at: 10, url: 'https://older.example/', xpath: '//div[@id="old"]', xpathCount: 2, element: { tag: 'div', id: 'old' } },
@@ -1066,6 +1075,32 @@ test('panel exports saved locators as CSV and imports them back', async () => {
   });
   expect(stored[0]).toMatchObject({ name: 'Save, "main"', type: 'css', value: '#save', count: 1 });
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
+test('panel saved CSV export neutralises formula cells', async () => {
+  // Expected failure until src/panel/panel.js csvCell prefixes formula cells;
+  // see ../../BLOCKERS.md.
+  test.fail(true, 'csvCell does not neutralise =, +, - or @ prefixes');
+  const entry = {
+    id: 'csv-formula', key: 'css::#save', name: '=HYPERLINK("http://example.test")',
+    scope: 'CSS', type: 'css', value: '#save', testType: 'css', testValue: '#save',
+    count: 1, url: '+cmd', savedAt: 1700000000000
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  const downloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-saved-csv').click());
+  const download = await downloadPromise;
+  const csvText = fs.readFileSync(await download.path(), 'utf8');
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+
+  expect(csvText).not.toContain('"=HYPERLINK');
+  expect(csvText).toContain("'=HYPERLINK");
+  expect(csvText).not.toContain('"+cmd');
 });
 
 test('panel reorders saved locators with up/down controls', async () => {
