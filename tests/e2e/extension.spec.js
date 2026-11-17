@@ -351,6 +351,31 @@ test('panel filters rows and exports picked locators as JSON', async () => {
   expect(report.locators.some((row) => row.type === 'xpath' && row.value === "//*[@id='save']")).toBe(true);
 });
 
+test('panel driver template substitutes the picked CSS and XPath values', async () => {
+  await fixturePage.bringToFront();
+  await startPicking();
+  await clickElement(fixturePage.locator('#save'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
+  }, 10000);
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-driver-template');
+    input.value = 'driver.findElement(By.cssSelector("{selector}"))';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(extensionPage.locator('#di-driver-output')).toContainText('#save');
+  await expect(extensionPage.locator('#di-driver-output')).toContainText('cssSelector');
+
+  await extensionPage.evaluate(() => {
+    const base = document.getElementById('di-driver-base');
+    base.value = 'xpath';
+    base.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(extensionPage.locator('#di-driver-output')).toContainText("//*[@id='save']");
+});
+
 test('picker reports shadow DOM and refuses shadow XPath', async () => {
   await startPicking();
   await clickElement(fixturePage.locator('#shadowbtn'));
