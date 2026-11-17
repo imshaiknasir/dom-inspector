@@ -610,9 +610,17 @@
       try { target.scrollIntoView({ block: "center", inline: "nearest" }); } catch (_) { /* ignore */ }
 
       if (kind === "click") {
-        target.click();
-        result.performed = true;
+        if (target.disabled || attr(target, "aria-disabled") === "true") {
+          result.error = "Element is disabled";
+        } else {
+          target.click();
+          result.performed = true;
+        }
       } else if (kind === "hover") {
+        if (target.disabled || attr(target, "aria-disabled") === "true") {
+          result.error = "Element is disabled";
+          return result;
+        }
         for (const name of ["mouseover", "mouseenter", "mousemove"]) {
           target.dispatchEvent(new MouseEvent(name, {
             bubbles: name !== "mouseenter", cancelable: true, view: window
