@@ -811,12 +811,14 @@
     return [tag, row.label || row.type].filter(Boolean).join(" · ");
   };
 
-  const toggleSaved = (row) => {
+  const toggleSaved = async (row) => {
     const index = state.saved.findIndex((entry) => entry.key === row.key);
     if (index >= 0) {
       state.saved.splice(index, 1);
       toast("Removed from saved locators");
     } else {
+      const pageUrl = (await currentPageUrl()) || (state.payload && state.payload.url) || "";
+      if (state.saved.some((entry) => entry.key === row.key)) return;
       state.saved.unshift({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         key: row.key,
@@ -828,7 +830,7 @@
         testValue: row.testValue || null,
         count: typeof row.count === "number" ? row.count : null,
         label: row.label || "",
-        url: state.payload && state.payload.url ? state.payload.url : "",
+        url: pageUrl,
         savedAt: Date.now()
       });
       toast("Saved locator", "ok");
