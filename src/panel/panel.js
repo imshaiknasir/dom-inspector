@@ -120,6 +120,7 @@
   const persistSettings = () => {
     if (state.settingsTimer) clearTimeout(state.settingsTimer);
     state.settingsTimer = setTimeout(() => {
+      state.settingsTimer = null;
       writeStore(STORE_SETTINGS, state.settings);
     }, 180);
   };
