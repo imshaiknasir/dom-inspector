@@ -130,21 +130,29 @@
       if (modifier[1] === "last") return base.slice(-1);
       return base[Number(modifier[2])] ? [base[Number(modifier[2])]] : [];
     }
-    const filterMatch = expr.match(/\.filter\(\s*\{\s*(hasText|hasNotText)\s*:\s*([^}]+?)\s*\}\s*\)/);
+    const applyFilterOptions = (elements, options) => {
+      let out = elements;
+      const textProp = options.match(/(hasNotText|hasText)\s*:\s*(\/(?:\\.|[^/])+\/[gimsuy]*|'[^']*'|"[^"]*")/);
+      if (textProp) {
+        const spec = DI.playwright.parseTextFilter(textProp[2]);
+        if (!spec) return null;
+        const negate = textProp[1] === "hasNotText";
+        out = out.filter((el) => DI.playwright.matchesHasText(el, spec) !== negate);
+      }
+      const visible = options.match(/visible\s*:\s*(true|false)/);
+      if (visible) out = out.filter((el) => U.isVisible(el) === (visible[1] === "true"));
+      return out;
+    };
+    const filterMatch = expr.match(/\.filter\(\s*\{([^}]*)\}\s*\)/);
     if (filterMatch && filterMatch.index > 0) {
-      const spec = DI.playwright.parseTextFilter(filterMatch[2]);
-      if (!spec) return [];
-      const negate = filterMatch[1] === "hasNotText";
-      return resolvePlaywright(expr.slice(0, filterMatch.index), doc)
-        .filter((el) => DI.playwright.matchesHasText(el, spec) !== negate);
+      const filtered = applyFilterOptions(resolvePlaywright(expr.slice(0, filterMatch.index), doc), filterMatch[1]);
+      return filtered || [];
     }
-    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{\s*(hasText|hasNotText)\s*:\s*([^}]+?)\s*\}\s*\)\s*$/);
+    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{([^}]*)\}\s*\)\s*$/);
     if (locatorOption) {
-      const spec = DI.playwright.parseTextFilter(locatorOption[4]);
-      if (!spec) return [];
-      const negate = locatorOption[3] === "hasNotText";
-      return U.deepQueryAll(locatorOption[2], doc)
-        .filter((el) => DI.playwright.matchesHasText(el, spec) !== negate);
+      let base = [];
+      try { base = U.deepQueryAll(locatorOption[2], doc); } catch (_) { base = []; }
+      return applyFilterOptions(base, locatorOption[3]) || [];
     }
     const cssEngine = expr.match(/locator\(\s*['"]css=([\s\S]*?)['"]\s*\)\s*$/);
     if (cssEngine) return U.deepQueryAll(cssEngine[1], doc);

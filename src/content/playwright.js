@@ -138,8 +138,10 @@
     const id = el.getAttribute("id");
     if (id) {
       const root = el.getRootNode ? el.getRootNode() : document;
-      const label = root.querySelector(`label[for="${id.replace(/"/g, '\\"')}"]`);
-      if (label) return U.normalizeText(label.textContent);
+      let labels = [];
+      try { labels = Array.from(root.querySelectorAll(`label[for="${U.cssAttr(id)}"]`)); } catch (_) { labels = []; }
+      const text = labels.map((label) => U.normalizeText(label.textContent)).filter(Boolean).join(" ").trim();
+      if (text) return text;
     }
     const wrapping = el.closest("label");
     return wrapping ? U.normalizeText(wrapping.textContent) : "";
@@ -424,25 +426,34 @@
       return Number(modifier[2]) < total ? 1 : 0;
     }
 
-    const filterMatch = expr.match(/\.filter\(\s*\{\s*(hasText|hasNotText)\s*:\s*([^}]+?)\s*\}\s*\)/);
+    const applyFilterOptions = (elements, options) => {
+      let out = elements;
+      const textProp = options.match(/(hasNotText|hasText)\s*:\s*(\/(?:\\.|[^/])+\/[gimsuy]*|'[^']*'|"[^"]*")/);
+      if (textProp) {
+        const spec = parseTextFilter(textProp[2]);
+        if (!spec) return null;
+        const negate = textProp[1] === "hasNotText";
+        out = out.filter((el) => matchesHasText(el, spec) !== negate);
+      }
+      const visible = options.match(/visible\s*:\s*(true|false)/);
+      if (visible) out = out.filter((el) => U.isVisible(el) === (visible[1] === "true"));
+      return out;
+    };
+    const filterMatch = expr.match(/\.filter\(\s*\{([^}]*)\}\s*\)/);
     if (filterMatch && filterMatch.index > 0) {
-      const spec = parseTextFilter(filterMatch[2]);
-      if (!spec) return 0;
-      const negate = filterMatch[1] === "hasNotText";
       const baseExpr = expr.slice(0, filterMatch.index);
       const elements = DI.validate && DI.validate.resolve
         ? DI.validate.resolve("playwright", baseExpr).elements
         : [];
-      return elements.filter((el) => matchesHasText(el, spec) !== negate).length;
+      const filtered = applyFilterOptions(elements, filterMatch[1]);
+      return filtered ? filtered.length : 0;
     }
-    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{\s*(hasText|hasNotText)\s*:\s*([^}]+?)\s*\}\s*\)\s*$/);
+    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{([^}]*)\}\s*\)\s*$/);
     if (locatorOption) {
-      const spec = parseTextFilter(locatorOption[4]);
-      if (!spec) return 0;
-      const negate = locatorOption[3] === "hasNotText";
-      try {
-        return U.deepQueryAll(locatorOption[2], root).filter((el) => matchesHasText(el, spec) !== negate).length;
-      } catch (_) { return 0; }
+      let base = [];
+      try { base = U.deepQueryAll(locatorOption[2], root); } catch (_) { base = []; }
+      const filtered = applyFilterOptions(base, locatorOption[3]);
+      return filtered ? filtered.length : 0;
     }
 
     if (/getByRole\(/.test(expr)) {
