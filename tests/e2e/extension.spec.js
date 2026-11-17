@@ -1139,6 +1139,28 @@ test('panel POM export sanitises comment labels and the page field', async () =>
   expect(() => new Function(body + '; return PageLocators;')).not.toThrow();
 });
 
+test('panel disables POM export until a testable locator exists', async () => {
+  const snippet = { id: 'snippet', key: 'testrigor::Save', name: 'Snippet', type: 'testrigor', value: 'Save' };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [snippet]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+  await expect(extensionPage.locator('#di-saved-pom')).toBeDisabled();
+
+  const testable = {
+    id: 'testable', key: 'css::#save', name: 'Testable', type: 'css', value: '#save',
+    testType: 'css', testValue: '#save', count: 1
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [snippet, testable]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+  await expect(extensionPage.locator('#di-saved-pom')).toBeEnabled();
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel imports saved locators from JSON and skips duplicates', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
   await extensionPage.reload();
