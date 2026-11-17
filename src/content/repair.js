@@ -95,6 +95,20 @@
   };
 
   const locatorsFor = (el) => {
+    const frames = U.iframeChain(el.ownerDocument && el.ownerDocument.defaultView
+      ? el.ownerDocument.defaultView : window);
+    const frameCss = frames.map((frame) => {
+      const id = U.attr(frame, "id");
+      if (id) return "#" + U.cssEscape(id);
+      const name = U.attr(frame, "name");
+      return name ? `[name="${name.replace(/"/g, '\\"')}"]` : "iframe";
+    });
+    const frameXpath = frames.map((frame) => {
+      const id = U.attr(frame, "id");
+      if (id) return `//iframe[@id=${U.xpathLiteral(id)}]`;
+      const name = U.attr(frame, "name");
+      return name ? `//iframe[@name=${U.xpathLiteral(name)}]` : "//iframe";
+    });
     const css = DI.css.best(el);
     const xp = DI.xpath.best(el);
     const pw = DI.playwright.generate(el).find((c) => c.count === 1) || DI.playwright.generate(el)[0] || null;
@@ -104,6 +118,8 @@
       xpath: xp ? xp.xpath : null,
       playwright: pw ? pw.selector : null,
       id: (selenium.find((r) => r.type === "id" && r.count === 1) || {}).value || null,
+      frameCss,
+      frameXpath,
       matchCount: css ? css.count : null
     };
   };
