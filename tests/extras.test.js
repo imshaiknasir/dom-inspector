@@ -485,7 +485,7 @@ test('playwright: placeholder matching is case-insensitive substring by default'
     b.setAttribute('placeholder', 'Email address');
     document.body.append(a, b);
     const loose = "page.getByPlaceholder('email')";
-    const exact = "page.getByPlaceholder('email', { exact: true })";
+    const exact = "page.getByPlaceholder('Email', { exact: true })";
     const result = {
       loose: DI.playwright.countExpr(loose),
       exact: DI.playwright.countExpr(exact),

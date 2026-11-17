@@ -108,18 +108,23 @@
     if (label) return labelTargets(U.unescapeString(label[1]), /exact:\s*true/.test(expr), doc);
     const text = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
-    const byAttr = (name, raw) => {
+    const byAttr = (name, raw, exact = false) => {
       const wanted = U.unescapeString(raw);
-      return U.deepEveryElement(doc, []).filter((el) => U.attr(el, name) === wanted);
+      const needle = exact ? wanted : wanted.toLowerCase();
+      return U.deepEveryElement(doc, []).filter((el) => {
+        const actual = U.attr(el, name);
+        return exact ? actual === needle : actual.toLowerCase().includes(needle);
+      });
     };
+    const isExact = /exact:\s*true/.test(expr);
     const placeholder = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (placeholder) return byAttr("placeholder", placeholder[1]);
+    if (placeholder) return byAttr("placeholder", placeholder[1], isExact);
     const alt = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (alt) return byAttr("alt", alt[1]);
+    if (alt) return byAttr("alt", alt[1], isExact);
     const title = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (title) return byAttr("title", title[1]);
+    if (title) return byAttr("title", title[1], isExact);
     const testId = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (testId) return byAttr("data-testid", testId[1]);
+    if (testId) return byAttr("data-testid", testId[1], true);
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
       const base = (visibility[1] || "*").trim() || "*";
