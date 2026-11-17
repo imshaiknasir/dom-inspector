@@ -2414,7 +2414,7 @@
 
   const ensureExpanded = (id) => {
     const card = $(id);
-    if (!card || !card.classList.contains("collapsed")) return;
+    if (!card || (!card.classList.contains("collapsed") && !state.settings.collapsed[id])) return;
     state.settings.collapsed[id] = false;
     card.classList.remove("collapsed");
     const toggle = card.querySelector(".section-toggle");
