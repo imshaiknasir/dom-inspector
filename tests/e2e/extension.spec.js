@@ -49,16 +49,16 @@ const waitFor = async (fn, timeout = 5000, interval = 100) => {
   return last;
 };
 
-const sendToFixture = (message) => extensionPage.evaluate(async ({ url, message }) => {
+const sendToFixture = (message, options) => extensionPage.evaluate(async ({ url, message, options }) => {
   const tabs = await chrome.tabs.query({});
   const tab = tabs.find((candidate) => candidate.url && candidate.url.startsWith(url));
   if (!tab) return { error: 'fixture tab not found' };
   try {
-    return await chrome.tabs.sendMessage(tab.id, message);
+    return await chrome.tabs.sendMessage(tab.id, message, options);
   } catch (error) {
     return { error: error.message };
   }
-}, { url: baseURL, message });
+}, { url: baseURL, message, options });
 
 const startPicking = async () => {
   const start = await sendToFixture({ type: 'DI_START' });
@@ -143,7 +143,7 @@ test('extension loads without runtime errors', async () => {
 
 test('content script answers the picker bridge', async () => {
   const ping = await waitFor(async () => {
-    const response = await sendToFixture({ type: 'DI_PING' });
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
     return response && response.ok ? response : null;
   }, 10000);
   expect(ping).toMatchObject({ ok: true, picking: false, url: baseURL });
@@ -179,8 +179,12 @@ test('picker generates verified CSS, XPath, Playwright and Selenium locators', a
   }), 3000);
   expect(overlay).toBe(true);
 
-  const validated = await sendToFixture({ type: 'DI_TEST', locatorType: 'css', value: payload.css.best.selector, highlight: true });
+  const validated = await sendToFixture({ type: 'DI_TEST', locatorType: 'css', value: payload.css.best.selector, highlight: true }, { frameId: 0 });
   expect(validated).toMatchObject({ ok: true, type: 'css', count: 1 });
+
+  const restored = await extensionPage.evaluate(() => chrome.runtime.sendMessage({ type: 'DI_GET_LAST' }));
+  expect(restored).toMatchObject({ ok: true });
+  expect(restored.payload.css.best.selector).toBe(payload.css.best.selector);
 });
 
 test('picker reports shadow DOM and refuses shadow XPath', async () => {
@@ -223,6 +227,27 @@ test('picker reports iframe depth and Playwright frameLocator', async () => {
   expect(stop.ok).toBe(true);
   const removed = await waitFor(() => fixturePage.evaluate(() => !document.getElementById('di-picker-overlay')), 3000);
   expect(removed).toBe(true);
+});
+
+test('continuous picking survives multiple picks and Escape cancels it', async () => {
+  await startPicking();
+  const continuous = await sendToFixture({ type: 'DI_START', continuous: true });
+  expect(continuous.ok).toBe(true);
+
+  await clickElement(fixturePage.locator('#save'));
+  await expect.poll(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id;
+  }, { timeout: 5000 }).toBe('save');
+
+  await clickElement(fixturePage.locator('#shadowbtn'));
+  await expect.poll(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id;
+  }, { timeout: 5000 }).toBe('shadowbtn');
+
+  await fixturePage.keyboard.press('Escape');
+  await expect.poll(() => fixturePage.evaluate(() => !document.getElementById('di-picker-overlay')), { timeout: 5000 }).toBe(true);
 });
 
 test('no page errors accumulated during the run', async () => {
