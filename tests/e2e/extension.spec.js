@@ -234,6 +234,10 @@ test('toolbar popup renders the last picked locators', async () => {
   expect(await popup.locator('#pop-saved-rows .loc-row').count()).toBe(2);
   await expect(popup.locator('#pop-saved-rows')).toContainText('#save');
   await expect(popup.locator('#pop-saved-rows')).toContainText('//input');
+  const savedOrder = await popup.evaluate(() =>
+    [...document.querySelectorAll('#pop-saved-rows .loc-row')].map((row) => row.textContent));
+  expect(savedOrder[0]).toContain('Main save');
+  expect(savedOrder[1]).toContain('Login');
 
   const moreSaved = Array.from({ length: 5 }, (_, index) => ({
     name: `Saved ${index}`, type: 'css', value: `#saved-${index}`, label: 'CSS', count: 1, savedAt: 10 + index
