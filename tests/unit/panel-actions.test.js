@@ -88,3 +88,19 @@ test('panel actions: invalid selectors report an error', async () => {
   assert.ok(out.error);
   assert.equal(out.performed, false);
 });
+
+test('panel actions: auto mode recognises a bare locator() expression', { todo: 'BLOCKERS.md — panel-actions auto detection misses bare locator() (src/panel/panel-actions.js:24)' }, async () => {
+  const out = await page.evaluate(() => DIPanel.pageAction('click', 'auto', "locator('#save')", '', false));
+  assert.equal(out.matched, 1);
+  assert.equal(out.tag, 'button');
+  assert.equal(out.error, null);
+});
+
+test('panel actions: chained shadow locator targets the inner element', { todo: 'BLOCKERS.md — chained locator() resolves the host, not the shadow child (src/panel/panel-actions.js:200-295)' }, async () => {
+  const out = await page.evaluate(() =>
+    DIPanel.pageAction('click', 'playwright', "page.locator('#host').locator('#shadowbtn')", '', false)
+  );
+  assert.equal(out.matched, 1);
+  assert.equal(out.tag, 'button');
+  assert.equal(out.text, 'Shadow action');
+});
