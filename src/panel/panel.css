@@ -220,10 +220,16 @@ select { cursor: pointer; }
   overflow: hidden;
 }
 
-.info-card .section-head { padding: 10px 12px 0; }
+.info-card .section-head {
+  padding: 10px 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .loc-card .section-head,
 #di-tester-card .section-head,
+#di-heal-card .section-head,
 #di-saved-card .section-head {
   display: flex;
   align-items: center;
@@ -277,10 +283,12 @@ select { cursor: pointer; }
 .loc-card.collapsed .chev,
 .info-card.collapsed .chev,
 #di-tester-card.collapsed .chev,
+#di-heal-card.collapsed .chev,
 #di-saved-card.collapsed .chev { transform: rotate(-45deg); }
 .loc-card.collapsed .section-body,
 .info-card.collapsed .section-body,
 #di-tester-card.collapsed .section-body,
+#di-heal-card.collapsed .section-body,
 #di-saved-card.collapsed .section-body { display: none; }
 
 .section-body { padding: 10px 12px 12px; }

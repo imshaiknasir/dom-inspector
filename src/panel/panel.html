@@ -71,16 +71,18 @@
         <p class="hint" id="di-hint" hidden></p>
       </section>
 
-      <section class="card info-card" id="di-info-card" hidden>
+      <section class="card info-card" id="di-info-card" data-section="di-info-card" hidden>
         <div class="section-head">
           <div class="section-title">
-            <span class="chev" aria-hidden="true"></span>
-            <h2>Selected element</h2>
-            <span class="section-meta" id="di-stats"></span>
+            <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-info-body">
+              <span class="chev" aria-hidden="true"></span>
+              <h2>Selected element</h2>
+            </button>
           </div>
+          <span class="section-meta" id="di-stats"></span>
           <button class="btn small subtle" id="di-info-copy" type="button" title="Copy element summary">Copy summary</button>
         </div>
-        <div class="section-body">
+        <div class="section-body" id="di-info-body">
           <dl class="kv" id="di-info"></dl>
           <div id="di-context" class="context"></div>
           <div id="di-paths" class="paths" hidden></div>
@@ -226,15 +228,17 @@
         </div>
       </section>
 
-      <section class="card" id="di-tester-card">
+      <section class="card" id="di-tester-card" data-section="di-tester-card">
         <div class="section-head">
           <div class="section-title">
-            <span class="chev" aria-hidden="true"></span>
-            <h2>Test a locator</h2>
+            <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-tester-body">
+              <span class="chev" aria-hidden="true"></span>
+              <h2>Test a locator</h2>
+            </button>
           </div>
           <span class="pill live" id="di-live-badge" hidden></span>
         </div>
-        <div class="section-body">
+        <div class="section-body" id="di-tester-body">
           <div class="tester-grid">
             <select id="di-type" aria-label="Locator type">
               <option value="auto">Auto</option>
@@ -260,11 +264,13 @@
         </div>
       </section>
 
-      <section class="card" id="di-heal-card">
+      <section class="card" id="di-heal-card" data-section="di-heal-card">
         <div class="section-head">
           <div class="section-title">
-            <span class="chev" aria-hidden="true"></span>
-            <h2>Batch selector healing</h2>
+            <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-heal-body">
+              <span class="chev" aria-hidden="true"></span>
+              <h2>Batch selector healing</h2>
+            </button>
             <span class="section-meta" id="di-heal-meta">0 results</span>
           </div>
           <div class="saved-tools">
@@ -276,7 +282,7 @@
             <button id="di-heal-clear" class="btn small subtle" type="button">Clear</button>
           </div>
         </div>
-        <div class="section-body">
+        <div class="section-body" id="di-heal-body">
           <p class="hint">
             Paste one CSS, XPath or Playwright locator per line. Check each against the page, flag broken
             selectors, and suggest verified fixes with the repair engine.
@@ -288,11 +294,13 @@
         </div>
       </section>
 
-      <section class="card" id="di-saved-card">
+      <section class="card" id="di-saved-card" data-section="di-saved-card">
         <div class="section-head">
           <div class="section-title">
-            <span class="chev" aria-hidden="true"></span>
-            <h2>Saved locators</h2>
+            <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-saved-body">
+              <span class="chev" aria-hidden="true"></span>
+              <h2>Saved locators</h2>
+            </button>
             <span class="section-meta" id="di-saved-meta">0</span>
           </div>
           <div class="saved-tools">
@@ -304,7 +312,7 @@
             <button id="di-saved-clear" class="btn small subtle danger" type="button" title="Remove every saved locator">Clear</button>
           </div>
         </div>
-        <div class="section-body">
+        <div class="section-body" id="di-saved-body">
           <input id="di-saved-import-file" type="file" accept=".json,.csv,application/json,text/csv" hidden />
           <input id="di-saved-filter" class="saved-filter" type="search" placeholder="Filter saved locators…" aria-label="Filter saved locators" hidden />
           <div id="di-saved" class="rows saved-rows"></div>

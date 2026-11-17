@@ -33,6 +33,8 @@
     { key: "selenium", label: "Selenium", card: "di-selenium-card", rows: "di-selenium", meta: "di-selenium-meta", copy: "di-selenium-copy" },
     { key: "formats", label: "Cypress / JS / jQuery", card: "di-formats-card", rows: "di-formats", meta: "di-formats-meta", copy: "di-formats-copy" }
   ];
+  const EXTRA_CARDS = ["di-info-card", "di-tester-card", "di-heal-card", "di-saved-card"];
+  const SECTION_CARDS = GROUPS.map((group) => group.card).concat(EXTRA_CARDS);
 
   const DRIVER_PRESETS = {
     "java-css": { base: "css", template: 'driver.findElement(By.cssSelector("{selector}"))' },
@@ -2302,6 +2304,7 @@
     refreshSaveButtons();
     refreshStats();
     updatePickerUi();
+    applyCollapsedState();
     syncExpandLabel();
     queueAutoCounts();
   };
@@ -2329,8 +2332,19 @@
     }
   };
 
+  const applyCollapsedState = () => {
+    for (const id of EXTRA_CARDS) {
+      const card = $(id);
+      if (!card) continue;
+      const collapsed = !!state.settings.collapsed[id];
+      card.classList.toggle("collapsed", collapsed);
+      const toggle = card.querySelector(".section-toggle");
+      if (toggle) toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+  };
+
   const syncExpandLabel = () => {
-    const anyCollapsed = GROUPS.some((group) => state.settings.collapsed[group.card]);
+    const anyCollapsed = SECTION_CARDS.some((id) => state.settings.collapsed[id]);
     const button = $("di-expand");
     if (button) button.textContent = anyCollapsed ? "Expand all" : "Collapse all";
   };
@@ -2488,11 +2502,11 @@
     });
 
     $("di-expand").addEventListener("click", () => {
-      const anyCollapsed = GROUPS.some((group) => state.settings.collapsed[group.card]);
+      const anyCollapsed = SECTION_CARDS.some((id) => state.settings.collapsed[id]);
       const shouldCollapse = !anyCollapsed;
-      for (const group of GROUPS) {
-        state.settings.collapsed[group.card] = shouldCollapse;
-        const card = $(group.card);
+      for (const id of SECTION_CARDS) {
+        state.settings.collapsed[id] = shouldCollapse;
+        const card = $(id);
         if (card) card.classList.toggle("collapsed", shouldCollapse);
         const toggle = card ? card.querySelector(".section-toggle") : null;
         if (toggle) toggle.setAttribute("aria-expanded", shouldCollapse ? "false" : "true");
@@ -2522,6 +2536,20 @@
           copyText(text, `Copied ${group.label} locators`);
         });
       }
+    }
+
+    for (const id of EXTRA_CARDS) {
+      const card = $(id);
+      const toggle = card ? card.querySelector(".section-toggle") : null;
+      if (!toggle) continue;
+      toggle.addEventListener("click", () => {
+        const next = !state.settings.collapsed[id];
+        state.settings.collapsed[id] = next;
+        card.classList.toggle("collapsed", next);
+        toggle.setAttribute("aria-expanded", next ? "false" : "true");
+        syncExpandLabel();
+        persistSettings();
+      });
     }
 
     $("di-ref-set").addEventListener("click", startReference);
