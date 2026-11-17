@@ -61,10 +61,30 @@
     return total;
   };
 
+  const frameDocs = (doc = document, seen = new Set()) => {
+    const docs = [];
+    if (!doc || seen.has(doc)) return docs;
+    seen.add(doc);
+    for (const frame of doc.querySelectorAll("iframe, frame")) {
+      let child = null;
+      try { child = frame.contentDocument || frame.contentWindow.document; } catch (_) { continue; }
+      if (!child) continue;
+      docs.push(child);
+      docs.push(...frameDocs(child, seen));
+    }
+    return docs;
+  };
+
+  const allElements = () => {
+    const out = U.deepEveryElement(document, []);
+    for (const doc of frameDocs()) out.push(...U.deepEveryElement(doc, []));
+    return out;
+  };
+
   const bestElement = (list) => {
     let best = null;
     let bestScore = 0;
-    for (const el of U.deepEveryElement(document, [])) {
+    for (const el of allElements()) {
       const s = score(el, list);
       if (s > bestScore || (s === bestScore && s > 0 && best && U.isVisible(el) && !U.isVisible(best))) {
         best = el;
@@ -96,7 +116,16 @@
     for (const value of attempts) {
       const result = DI.validate.test("auto", value);
       if (result.ok) {
-        return { ok: true, repaired: value !== original, fixed: value, count: result.count, type: result.type, locators: locatorsFor(result.elements[0]) };
+        const el = result.elements[0];
+        return {
+          ok: true,
+          repaired: value !== original,
+          fixed: value,
+          count: result.count,
+          type: result.type,
+          element: el ? { tag: U.tagOf(el), id: U.attr(el, "id"), text: U.normalizeText(el.textContent).slice(0, 80) } : null,
+          locators: el ? locatorsFor(el) : null
+        };
       }
     }
     const list = tokens(original);

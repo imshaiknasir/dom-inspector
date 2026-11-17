@@ -4,7 +4,7 @@ const path = require('node:path');
 const { chromium } = require('playwright-core');
 
 const ROOT = path.resolve(__dirname, '..');
-const SCRIPTS = ['util', 'css', 'xpath', 'playwright', 'formats', 'validate']
+const SCRIPTS = ['util', 'css', 'xpath', 'playwright', 'formats', 'validate', 'repair']
   .map((n) => path.join(ROOT, 'src/content', n + '.js'));
 const FIXTURE = 'file://' + path.join(__dirname, 'fixture.html');
 
@@ -97,4 +97,33 @@ test('playwright: filter and first/last/nth modifiers are evaluated', async () =
   assert.equal(out.nth, 1);
   assert.equal(out.nthOut, 0);
   assert.equal(out.filtered.count, 2);
+});
+
+
+test('repair: normalises a broken selector and keeps it valid', async () => {
+  const out = await page.evaluate(() => DI.repair.fix("//button[@id='save'"));
+  assert.equal(out.ok, true);
+  assert.equal(out.fixed, "//button[@id='save']");
+});
+
+test('repair: rebuilds locators from a broken selector', async () => {
+  const out = await page.evaluate(() => DI.repair.fix('##save'));
+  assert.equal(out.ok, true);
+  assert.ok(out.repaired);
+  assert.equal(out.locators.css, '#save');
+  assert.equal(out.element.tag, 'button');
+});
+
+test('repair: reports no match for an unknown selector', async () => {
+  const out = await page.evaluate(() => DI.repair.fix('.definitely-not-here-xyz'));
+  assert.equal(out.ok, false);
+  assert.ok(out.error);
+});
+
+test('repair: reaches same-origin iframe elements when the top frame lacks them', async () => {
+  const frame = page.frames().find((f) => f !== page.mainFrame());
+  await frame.waitForSelector('#inner');
+  const out = await page.evaluate(() => DI.repair.fix('#inner'));
+  assert.equal(out.ok, true);
+  assert.equal(out.element.id, 'inner');
 });
