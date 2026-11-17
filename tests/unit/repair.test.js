@@ -144,6 +144,7 @@ test('repair: valid selectors inside same-origin frames are found', async () => 
   assert.equal(out.locators.css, '#inner');
   assert.deepEqual(out.locators.frameCss, ['#frame']);
   assert.deepEqual(out.locators.frameXpath, ["//iframe[@id='frame']"]);
+  assert.match(out.locators.playwright, /frameLocator\('#frame'\).*getByTestId\('inner-btn'\)/);
 });
 
 test('repair: near-miss selectors search same-origin frames', async () => {
@@ -153,6 +154,7 @@ test('repair: near-miss selectors search same-origin frames', async () => {
   assert.equal(out.element.tag, 'button');
   assert.equal(out.element.id, 'inner');
   assert.equal(out.locators.matchCount, 1);
+  assert.match(out.locators.playwright, /frameLocator\('#frame'\)/);
 });
 
 test('repair: fixMany preserves order and per-selector results', async () => {

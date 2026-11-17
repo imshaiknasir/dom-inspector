@@ -669,6 +669,16 @@ test('picker reports iframe depth and Playwright frameLocator', async () => {
   expect(payload.frame.chain[0]).toMatchObject({ tag: 'iframe', id: 'frame' });
   expect(payload.playwright.some((item) => item.selector.includes('frameLocator(') && item.selector.includes("getByTestId('inner-btn')"))).toBe(true);
 
+  await extensionPage.evaluate(() => {
+    const button = document.querySelector('#di-css .icon-btn[data-save-key]');
+    if (button) button.click();
+  });
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return (data['di:panel:saved'] || [])[0] ? data['di:panel:saved'][0].url : '';
+  }), { timeout: 5000 }).toBe(baseURL);
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+
   const stop = await sendToFixture({ type: 'DI_STOP' });
   expect(stop.ok).toBe(true);
   const removed = await waitFor(() => fixturePage.evaluate(() => !document.getElementById('di-picker-overlay')), 3000);
