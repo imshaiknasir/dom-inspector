@@ -334,3 +334,19 @@ test('playwright: accessible names with quotes are counted and validated', async
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('repair: a valid selector with repeated spaces is returned unchanged', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.createElement('button');
+    el.id = 'spaced-title';
+    el.setAttribute('title', 'a  b');
+    document.body.appendChild(el);
+    const original = 'button[title="a  b"]';
+    const fixed = DI.repair.fix(original);
+    el.remove();
+    return { fixed, ok: fixed.ok };
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.fixed.fixed, 'button[title="a  b"]');
+  assert.equal(out.fixed.repaired, false);
+});

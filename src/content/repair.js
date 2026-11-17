@@ -34,6 +34,12 @@
     return value;
   };
 
+  const balanced = (value) => {
+    const count = (ch) => value.split(ch).length - 1;
+    return count("'") % 2 === 0 && count('"') % 2 === 0 &&
+      count("[") === count("]") && count("(") === count(")");
+  };
+
   const tokens = (value) => {
     const out = [];
     const add = (type, token) => { if (token) out.push({ type, token: String(token) }); };
@@ -129,8 +135,9 @@
   const fix = (input) => {
     const original = String(input == null ? "" : input).trim();
     const attempts = [];
+    if (original && balanced(original)) attempts.push(original);
     const first = normalize(original);
-    if (first) attempts.push(first);
+    if (first && first !== original) attempts.push(first);
     for (const value of attempts) {
       const result = DI.validate.test("auto", value);
       if (result.ok) {
