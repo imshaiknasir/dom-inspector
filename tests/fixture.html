@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DOM Inspector fixture</title></head>
+<body>
+  <header><h1 id="title">Fixture</h1></header>
+  <button id="save" data-testid="save-btn" class="btn primary">Save changes</button>
+  <button class="btn">Other</button>
+  <a id="link" href="/docs">Read the docs</a>
+
+  <div class="card">
+    <label for="email">Email address</label>
+    <input id="email" name="email" type="email" placeholder="you@example.com">
+  </div>
+
+  <div class="dyn css-1a2b3c4d" id="dynbox">Dynamic</div>
+
+  <table id="people">
+    <thead><tr><th>Name</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td>Alice</td><td><button class="rowbtn">Edit</button></td></tr>
+      <tr><td>Bob</td><td><button class="rowbtn">Edit</button></td></tr>
+    </tbody>
+  </table>
+
+  <svg id="iconsvg" width="24" height="24" aria-label="status icon"><circle id="dot" cx="6" cy="6" r="5"></circle></svg>
+
+  <div id="host"></div>
+
+  <iframe id="frame" srcdoc="<!doctype html><button id='inner' data-testid='inner-btn'>Inside</button>"></iframe>
+
+  <script>
+    const host = document.getElementById('host');
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = '<button id="shadowbtn" data-testid="shadow-btn">Shadow action</button>';
+  </script>
+</body>
+</html>
