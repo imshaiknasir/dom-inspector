@@ -29,8 +29,9 @@ and a user-data directory.
 - `extras.test.js` — stability scores, Cypress shadow chains, regex roles,
   frameLocator/frame fallbacks and Playwright modifiers.
 - `unit/` — CSS, XPath, Playwright, testRigor, Selenium/Cypress/JS, validation,
-  utilities, manifest/popup/devtools contracts, service-worker routing and the
-  repair loop (single, batch, same-origin frames). Every generated count is
+  utilities, manifest/popup/devtools contracts, service-worker routing, the
+  repair loop (single, batch, same-origin frames) and a language/privacy guard
+  (plain JS, no WASM/TypeScript, no remote requests). Every generated count is
   resolved against the live DOM. `playwright-semantics.test.js` cross-checks
   role/text counts against real Playwright locators; cases that still diverge
   are marked todo and tracked in the workspace-root `BLOCKERS.md`.
@@ -42,6 +43,6 @@ and a user-data directory.
   the driver template, single-locator Fix, batch healing and JSON/POM exports,
   plus the background `DI_GET_LAST` cache.
 
-All 200 unit cases (198 pass, 2 tracked todo) and 34 e2e cases pass. The workspace-root
+All 204 unit cases (202 pass, 2 tracked todo) and 34 e2e cases pass. The workspace-root
 `../../BLOCKERS.md` tracks any defect that would require editing files owned
 by another agent.
