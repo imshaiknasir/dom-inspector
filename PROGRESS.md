@@ -104,9 +104,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 143/143 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 146/146 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 20/20 checks, including popup, axes, tester Fix, POM export, settings recovery and batch healing |
+| Extension e2e suites | done | 21/21 checks, including popup, axes, tester Fix, POM export, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
