@@ -120,3 +120,37 @@ test('repair: valid XPath is preserved and accompanied by CSS/Playwright locator
   assert.equal(out.count, 1);
   assert.equal(out.locators.css, '#save');
 });
+
+test('repair: valid selectors inside same-origin frames are found', async () => {
+  const out = await page.evaluate(() => DI.repair.fix('#inner'));
+  assert.equal(out.ok, true);
+  assert.equal(out.count, 1);
+  assert.equal(out.element.id, 'inner');
+  assert.equal(out.locators.css, '#inner');
+});
+
+test('repair: near-miss selectors search same-origin frames', async () => {
+  const out = await page.evaluate(() => DI.repair.fix('#inne'));
+  assert.equal(out.ok, true);
+  assert.equal(out.repaired, true);
+  assert.equal(out.element.tag, 'button');
+  assert.equal(out.element.id, 'inner');
+  assert.equal(out.locators.matchCount, 1);
+});
+
+test('repair: fixMany preserves order and per-selector results', async () => {
+  const out = await page.evaluate(() => ({
+    mixed: DI.repair.fixMany(['#save', '#sav', '.does-not-exist-anywhere']),
+    notArray: DI.repair.fixMany('nope'),
+    nullish: DI.repair.fixMany(null)
+  }));
+  assert.equal(out.mixed.length, 3);
+  assert.equal(out.mixed[0].ok, true);
+  assert.equal(out.mixed[0].repaired, false);
+  assert.equal(out.mixed[1].ok, true);
+  assert.equal(out.mixed[1].fixed, '#save');
+  assert.equal(out.mixed[2].ok, false);
+  assert.equal(out.mixed[2].error, 'No matching element found');
+  assert.deepEqual(out.notArray, []);
+  assert.deepEqual(out.nullish, []);
+});

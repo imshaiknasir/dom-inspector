@@ -169,6 +169,38 @@ test('toolbar popup renders the last picked locators', async () => {
   expect(rows).toContain("getByTestId('save-btn')");
   expect(rows).toContain('/html/body[1]/button[1]');
   expect(await popup.locator('#pop-last-rows .loc-row').count()).toBe(4);
+
+  const saved = [
+    { name: 'Main save', type: 'css', value: '#save', label: 'CSS', count: 1, savedAt: 2 },
+    { name: 'Login', type: 'xpath', value: "//input", label: 'XPath', count: 3, savedAt: 1 }
+  ];
+  await popup.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), saved);
+  await popup.locator('#pop-refresh').click();
+  await expect(popup.locator('#pop-saved-card')).toBeVisible();
+  await expect(popup.locator('#pop-saved-meta')).toHaveText('2');
+  expect(await popup.locator('#pop-saved-rows .loc-row').count()).toBe(2);
+  await expect(popup.locator('#pop-saved-rows')).toContainText('#save');
+  await expect(popup.locator('#pop-saved-rows')).toContainText('//input');
+
+  const linkPayload = {
+    url: 'https://example.test/docs',
+    element: { tag: 'a', id: 'link' },
+    css: { best: { selector: '#link', count: 1, strategy: 'id' } },
+    xpath: { best: { xpath: "//*[@id='link']", count: 1, strategy: 'id' } },
+    playwright: [{ selector: "page.getByText('Read the docs')", count: 1, type: 'getByText' }]
+  };
+  await popup.evaluate((value) => chrome.storage.session.set({ 'di:lastPick': value }), linkPayload);
+  await popup.locator('#pop-refresh').click();
+  await expect(popup.locator('#pop-status')).toContainText('Last pick: a#link');
+  await expect(popup.locator('#pop-last-rows')).toContainText('#link');
+
+  await popup.evaluate(async () => {
+    await chrome.storage.session.remove('di:lastPick');
+    await chrome.storage.local.remove('di:panel:saved');
+  });
+  await popup.reload();
+  await expect(popup.locator('#pop-empty')).toBeVisible();
+  await expect(popup.locator('#pop-status')).toContainText('Pick an element');
   await popup.close();
 });
 
@@ -184,6 +216,24 @@ test('right-click copy bridge returns the best selector for the context element'
   await fixturePage.locator('#link').dispatchEvent('contextmenu', { bubbles: true, composed: true, button: 2 });
   const copied = await sendToFixture({ type: 'DI_COPY_BEST' }, { frameId: 0 });
   expect(copied).toMatchObject({ ok: true, value: '#link' });
+});
+
+test('repair bridge fixes single, batch and in-frame selectors', async () => {
+  const single = await sendToFixture({ type: 'DI_FIX', value: '#sav' }, { frameId: 0 });
+  expect(single).toMatchObject({ ok: true, fixed: '#save', count: 1, type: 'css' });
+  expect(single.element).toMatchObject({ tag: 'button', id: 'save' });
+  expect(single.locators.css).toBe('#save');
+
+  const batch = await sendToFixture({ type: 'DI_FIX', values: ['#sav', '.does-not-exist-anywhere'] }, { frameId: 0 });
+  expect(batch.ok).toBe(true);
+  expect(batch.results.length).toBe(2);
+  expect(batch.results[0]).toMatchObject({ ok: true, fixed: '#save' });
+  expect(batch.results[1].ok).toBe(false);
+
+  const frame = await sendToFixture({ type: 'DI_FIX', value: '#inne' }, { frameId: 0 });
+  expect(frame).toMatchObject({ ok: true, repaired: true });
+  expect(frame.element).toMatchObject({ tag: 'button', id: 'inner' });
+  expect(frame.fixed).toBe('#inner');
 });
 
 test('picker generates verified CSS, XPath, Playwright and Selenium locators', async () => {
