@@ -335,6 +335,7 @@ test('popup history expands past four rows and collapses again', async () => {
   await popup.reload();
 
   await expect(popup.locator('#pop-history-card')).toBeVisible();
+  await expect(popup.locator('#pop-empty')).toBeHidden();
   await expect(popup.locator('#pop-history-rows .loc-row')).toHaveCount(4);
   await expect(popup.locator('#pop-history-more')).toBeVisible();
   await expect(popup.locator('#pop-history-more')).toHaveText('Show all (6)');
