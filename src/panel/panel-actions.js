@@ -248,6 +248,32 @@
         return true;
       };
 
+      const unescapeValue = (value) => {
+        let out = "";
+        let i = 0;
+        while (i < value.length) {
+          const ch = value[i];
+          if (ch !== "\\") { out += ch; i += 1; continue; }
+          const next = value[i + 1];
+          if (next === "u") {
+            const code = parseInt(value.slice(i + 2, i + 6), 16);
+            out += Number.isNaN(code) ? "" : String.fromCharCode(code);
+            i += 6;
+            continue;
+          }
+          if (next === "x") {
+            const code = parseInt(value.slice(i + 2, i + 4), 16);
+            out += Number.isNaN(code) ? "" : String.fromCharCode(code);
+            i += 4;
+            continue;
+          }
+          const map = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f", v: "\v", 0: "\0" };
+          out += Object.prototype.hasOwnProperty.call(map, next) ? map[next] : (next || "");
+          i += 2;
+        }
+        return out;
+      };
+
       const readFirstString = (args) => {
         const start = args.search(/['"`/]/);
         if (start < 0) return null;
@@ -286,7 +312,21 @@
         while (i < args.length) {
           const ch = args[i];
           if (ch === "\\") {
-            out += args[i + 1] || "";
+            const next = args[i + 1];
+            if (next === "u") {
+              const code = parseInt(args.slice(i + 2, i + 6), 16);
+              if (!Number.isNaN(code)) out += String.fromCharCode(code);
+              i += 6;
+              continue;
+            }
+            if (next === "x") {
+              const code = parseInt(args.slice(i + 2, i + 4), 16);
+              if (!Number.isNaN(code)) out += String.fromCharCode(code);
+              i += 4;
+              continue;
+            }
+            const map = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f", v: "\v", 0: "\0" };
+            out += Object.prototype.hasOwnProperty.call(map, next) ? map[next] : (next || "");
             i += 2;
             continue;
           }
@@ -351,7 +391,7 @@
             continue;
           }
           if ((modifier = expression.match(/\.filter\(\{\s*hasText:\s*(['"])((?:\\.|(?!\1).)*)\1\s*\}\s*\)\s*$/))) {
-            filterText = modifier[2].replace(/\\(['"\\])/g, "$1");
+            filterText = unescapeValue(modifier[2]);
             expression = expression.slice(0, modifier.index);
             stripping = true;
           }
@@ -377,7 +417,7 @@
           if (nameRegex) {
             try { namePattern = new RegExp(nameRegex[1], nameRegex[2] || ""); } catch (_) { namePattern = null; }
           } else if (nameString) {
-            nameValue = nameString[2].replace(/\\(['"\\])/g, "$1");
+            nameValue = unescapeValue(nameString[2]);
           }
 
           const all = allElements();
