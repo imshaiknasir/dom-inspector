@@ -516,3 +516,17 @@ test('formats: testRigor uses alt text for images', async () => {
   });
   assert.equal(out, '"Company logo"');
 });
+
+test('formats: testRigor uses submit input value', async () => {
+  const out = await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.id = 'submit-value';
+    input.type = 'submit';
+    input.value = 'Place order';
+    document.body.appendChild(input);
+    const value = DI.formats.testRigorPath(input);
+    input.remove();
+    return value;
+  });
+  assert.equal(out, '"Place order"');
+});

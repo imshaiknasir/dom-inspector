@@ -40,6 +40,10 @@
   const testRigorPath = (el) => {
     let label = U.attr(el, "aria-label") || U.attr(el, "alt");
     const tag = U.tagOf(el);
+    if (!label && tag === "input") {
+      const type = U.attr(el, "type").toLowerCase();
+      if (["button", "submit", "reset"].includes(type)) label = U.attr(el, "value");
+    }
     if (!label && ["input", "select", "textarea"].includes(tag)) {
       const id = U.attr(el, "id");
       const root = el.getRootNode ? el.getRootNode() : document;
