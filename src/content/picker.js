@@ -7,6 +7,7 @@
   let continuous = false;
   let pickMode = "element";
   let reference = null;
+  let lastPicked = null;
   let overlay = null;
   let lastTarget = null;
 
@@ -128,7 +129,9 @@
       if (!continuous) stop();
       return;
     }
+    if (!reference && lastPicked && lastPicked.isConnected) reference = lastPicked;
     const payload = describe(el);
+    lastPicked = el;
     try {
       chrome.runtime.sendMessage({ type: "DI_ELEMENT", payload });
     } catch (_) {}
@@ -190,6 +193,7 @@
     }
     if (message.type === "DI_CLEAR_REFERENCE") {
       reference = null;
+      lastPicked = null;
       sendResponse({ ok: true });
       return true;
     }

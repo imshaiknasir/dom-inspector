@@ -270,9 +270,15 @@
       add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${text.replace(/"/g, '\\"')}")')`, countText(text, false, root), 22);
     }
     const alt = U.attr(el, "alt");
-    if (alt) add("getByAltText", `${base}.getByAltText(${quote(alt)})`, countAttr("alt", alt, root), 12);
+    if (alt) {
+      add("getByAltText", `${base}.getByAltText(${quote(alt)}, { exact: true })`, countAttr("alt", alt, root), 11);
+      add("getByAltText", `${base}.getByAltText(${quote(alt)})`, countAttr("alt", alt, root), 12);
+    }
     const title = U.attr(el, "title");
-    if (title) add("getByTitle", `${base}.getByTitle(${quote(title)})`, countAttr("title", title, root), 14);
+    if (title) {
+      add("getByTitle", `${base}.getByTitle(${quote(title)}, { exact: true })`, countAttr("title", title, root), 13);
+      add("getByTitle", `${base}.getByTitle(${quote(title)})`, countAttr("title", title, root), 14);
+    }
 
     const css = DI.css.best(el);
     if (css) {
