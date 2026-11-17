@@ -713,6 +713,28 @@ test('panel tester validates, highlights and clears a locator', async () => {
   ), { timeout: 5000 }).toMatch(/invalid|no elements/i);
 });
 
+test('panel tester resolves CSS selectors inside same-origin frames', async () => {
+  await fixturePage.bringToFront();
+  const frame = fixturePage.frames().find((item) => item !== fixturePage.mainFrame());
+  await frame.waitForSelector('#inner');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#inner';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'css';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('di-test').click();
+  });
+
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toContain('Valid CSS: 1 match');
+
+  await extensionPage.evaluate(() => document.getElementById('di-clear').click());
+});
+
 test('panel tester Fix repairs, accepts valid and reports unfixable locators', async () => {
   await fixturePage.bringToFront();
 
