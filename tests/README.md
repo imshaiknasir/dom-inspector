@@ -13,7 +13,8 @@ npm run test:e2e           # tests/e2e/*.spec.js (Playwright test runner)
 ```
 
 `DI_CHROME_PATH=/path/to/chrome` overrides the Chromium binary used by the
-unit harness. The e2e spec launches its own persistent context with
+unit harness; without it the harness uses Playwright's bundled Chromium and
+falls back to a system Chrome/Chromium if that download is missing. The e2e spec launches its own persistent context with
 `channel: "chromium"` because unpacked MV3 extensions need `--load-extension`
 and a user-data directory.
 
@@ -39,6 +40,6 @@ and a user-data directory.
   the driver template, single-locator Fix, batch healing and JSON/POM exports,
   plus the background `DI_GET_LAST` cache.
 
-All 143 unit cases and 20 extension e2e cases pass. The workspace-root
+All 146 unit cases and 20 extension e2e cases pass. The workspace-root
 `../../BLOCKERS.md` tracks any defect that would require editing files owned
 by another agent.
