@@ -1331,7 +1331,9 @@
       if (many) notes.push(`${many} not unique`);
       if (broken) notes.push(`${broken} broken`);
       if (skipped) notes.push(`${skipped} not testable`);
-      const message = `Checked ${list.length} saved locator${list.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
+      const checked = list.length - skipped;
+      const scope = skipped ? `${checked} of ${list.length}` : String(list.length);
+      const message = `Checked ${scope} saved locator${list.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
       toast(message, broken ? "bad" : "ok");
       setStatus(message, broken || many ? "warn" : "ok");
     } finally {
