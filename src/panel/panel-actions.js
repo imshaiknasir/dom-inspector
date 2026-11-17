@@ -191,18 +191,18 @@
 
       const labelFor = (node) => {
         const id = attr(node, "id");
+        const labels = [];
         if (id) {
           const root = node.getRootNode ? node.getRootNode() : document;
-          let label = null;
-          try {
-            label = root.querySelector
-              ? root.querySelector('label[for="' + id.replace(/"/g, '\\"') + '"]')
-              : null;
-          } catch (_) { label = null; }
-          if (label) return norm(label.textContent);
+          let candidates = [];
+          try { candidates = root.querySelectorAll ? [...root.querySelectorAll("label[for]")] : []; } catch (_) { candidates = []; }
+          for (const label of candidates) {
+            if (label.getAttribute("for") === id) labels.push(label);
+          }
         }
         const wrapping = node.closest ? node.closest("label") : null;
-        return wrapping ? norm(wrapping.textContent) : "";
+        if (wrapping && !labels.includes(wrapping)) labels.push(wrapping);
+        return labels.map((label) => norm(label.textContent)).filter(Boolean).join(" ");
       };
 
       const NAME_FROM_CONTENT = [
