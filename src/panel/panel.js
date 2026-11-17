@@ -1404,7 +1404,7 @@
     }).join("");
     if (!name) name = "locator";
     if (/^[0-9]/.test(name)) name = "locator" + name;
-    if (["constructor", "prototype", "__proto__", "hasOwnProperty", "toString", "valueOf"].includes(name)) {
+    if (["constructor", "prototype", "__proto__", "hasOwnProperty", "toString", "valueOf", "then"].includes(name)) {
       name = "locator" + name.charAt(0).toUpperCase() + name.slice(1);
     }
     let unique = name;
