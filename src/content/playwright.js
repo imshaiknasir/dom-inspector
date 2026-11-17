@@ -233,6 +233,12 @@
   };
 
   const isDisplayHidden = (el) => {
+    // Native check is ancestor-aware and much faster than per-node style walks.
+    if (typeof el.checkVisibility === "function") {
+      try {
+        return !el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true });
+      } catch (_) { /* fall back to the manual walk */ }
+    }
     let node = el;
     while (node && node.nodeType === 1) {
       const style = node.ownerDocument.defaultView.getComputedStyle(node);
