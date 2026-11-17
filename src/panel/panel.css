@@ -367,7 +367,8 @@ select { cursor: pointer; }
 .badge.warn, .pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: var(--warn-soft); }
 .badge.ok, .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); background: var(--ok-soft); }
 .badge.bad, .pill.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); background: var(--bad-soft); }
-.badge.accent { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-soft); }
+.badge.accent, .pill.accent { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: var(--accent-soft); }
+#di-ref-chip { max-width: 160px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; }
 
 .paths {
   margin-top: 10px;
@@ -459,6 +460,56 @@ select { cursor: pointer; }
 .saved-name:hover { border-color: var(--line-2); }
 .saved-name:focus { background: var(--card-3); border-color: var(--focus); outline: none; }
 .saved-row-meta { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+
+
+/* ---------- Batch healing ---------- */
+
+.heal-input {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 9px;
+  color: var(--text);
+  font: 11.5px/1.5 var(--mono);
+  tab-size: 2;
+}
+.heal-input:focus {
+  border-color: var(--focus);
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 22%, transparent);
+}
+.heal-results { display: grid; gap: 6px; margin-top: 9px; }
+.heal-row {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card-2);
+  padding: 7px 8px;
+  display: grid;
+  gap: 5px;
+}
+.heal-row.status-ok { border-left: 3px solid var(--ok); }
+.heal-row.status-many { border-left: 3px solid var(--warn); }
+.heal-row.status-broken, .heal-row.status-fix-failed { border-left: 3px solid var(--bad); }
+.heal-row.status-fixed { border-left: 3px solid var(--accent); }
+.heal-head { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.heal-actions { margin-left: auto; display: flex; gap: 3px; flex-wrap: wrap; }
+.heal-index { color: var(--muted-2); font: 10.5px var(--mono); }
+.heal-selector { font: 11.5px/1.45 var(--mono); overflow-wrap: anywhere; white-space: pre-wrap; }
+.heal-fix {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  border-top: 1px dashed var(--line);
+  padding-top: 5px;
+}
+.heal-fix .heal-selector { flex: 1 1 auto; color: var(--accent); }
+.heal-fix-actions { flex: none; display: flex; gap: 3px; }
+.heal-note { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.heal-note.bad { color: var(--bad); }
+.heal-note.ok { color: var(--ok); }
 
 /* ---------- Driver template ---------- */
 

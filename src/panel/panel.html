@@ -37,6 +37,7 @@
         </label>
         <div class="tool-buttons">
           <button id="di-expand" class="btn small" type="button" title="Expand or collapse every section">Collapse all</button>
+          <button id="di-ref-set" class="btn small" type="button" title="Pick a reference element, then pick the target for axes XPath">Axes ref</button>
           <button id="di-copy-all" class="btn small" type="button">Copy all</button>
           <button id="di-export" class="btn small" type="button" title="Download every generated locator as JSON">Export</button>
           <button id="di-reset" class="btn small" type="button" title="Reset panel settings">Reset</button>
@@ -101,6 +102,25 @@
         </div>
         <div class="section-body" id="di-xpath-body">
           <div id="di-xpath" class="rows"></div>
+        </div>
+      </section>
+
+      <section class="card loc-card" id="di-axes-card" hidden data-section="di-axes-card">
+        <div class="section-head">
+          <button class="section-toggle" type="button" aria-expanded="true" aria-controls="di-axes-body">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Axes</h2>
+          </button>
+          <span class="section-meta" id="di-axes-meta"></span>
+          <div class="pw-controls">
+            <span class="pill accent" id="di-ref-chip" hidden></span>
+            <button class="btn small subtle" id="di-ref-clear" type="button" title="Forget the axes reference element">Clear ref</button>
+            <button class="btn small subtle" id="di-axes-copy" type="button" title="Copy all visible axes XPath locators">Copy</button>
+          </div>
+        </div>
+        <div class="section-body" id="di-axes-body">
+          <p class="hint" id="di-axes-hint" hidden>Pick a reference element first, then pick the target element. Axes XPath is generated from the reference to the target.</p>
+          <div id="di-axes" class="rows"></div>
         </div>
       </section>
 
@@ -222,6 +242,34 @@
             <input id="di-type-text" class="type-text" type="text" placeholder="Text to type" aria-label="Text to type" />
           </div>
           <p class="hint">Live counts run as you type. Actions search the page, open shadow roots and same-origin frames.</p>
+        </div>
+      </section>
+
+      <section class="card" id="di-heal-card">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="chev" aria-hidden="true"></span>
+            <h2>Batch selector healing</h2>
+            <span class="section-meta" id="di-heal-meta">0 results</span>
+          </div>
+          <div class="saved-tools">
+            <button id="di-heal-check" class="btn small primary" type="button">Check all</button>
+            <button id="di-heal-fix" class="btn small" type="button" title="Suggest and verify fixes for broken selectors">Fix broken</button>
+            <button id="di-heal-copy" class="btn small subtle" type="button" title="Copy a text report">Copy</button>
+            <button id="di-heal-json" class="btn small subtle" type="button" title="Download results as JSON">JSON</button>
+            <button id="di-heal-csv" class="btn small subtle" type="button" title="Download results as CSV">CSV</button>
+            <button id="di-heal-clear" class="btn small subtle" type="button">Clear</button>
+          </div>
+        </div>
+        <div class="section-body">
+          <p class="hint">
+            Paste one CSS, XPath or Playwright locator per line. Check each against the page, flag broken
+            selectors, and suggest verified fixes with the repair engine.
+          </p>
+          <textarea id="di-heal-input" class="heal-input" rows="5" spellcheck="false"
+            aria-label="Selectors to verify" placeholder="//button[@id='save']&#10;#checkout > .pay&#10;page.getByRole('button', { name: 'Save' })"></textarea>
+          <div id="di-heal-results" class="heal-results"></div>
+          <p class="hint" id="di-heal-empty">Paste selectors above, then use Check all.</p>
         </div>
       </section>
 

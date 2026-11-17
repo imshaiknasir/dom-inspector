@@ -19,12 +19,14 @@
     continuous: false,
     collapsed: {},
     driver: "",
-    driverBase: "css"
+    driverBase: "css",
+    healText: ""
   };
 
   const GROUPS = [
     { key: "css", label: "CSS", card: "di-css-card", rows: "di-css", meta: "di-css-meta", copy: "di-css-copy" },
     { key: "xpath", label: "XPath", card: "di-xpath-card", rows: "di-xpath", meta: "di-xpath-meta", copy: "di-xpath-copy" },
+    { key: "axes", label: "Axes", card: "di-axes-card", rows: "di-axes", meta: "di-axes-meta", copy: "di-axes-copy" },
     { key: "pw", label: "Playwright", card: "di-pw-card", rows: "di-pw", meta: "di-pw-meta", copy: "di-pw-copy" },
     { key: "selenium", label: "Selenium", card: "di-selenium-card", rows: "di-selenium", meta: "di-selenium-meta", copy: "di-selenium-copy" },
     { key: "formats", label: "Cypress / JS / jQuery", card: "di-formats-card", rows: "di-formats", meta: "di-formats-meta", copy: "di-formats-copy" }
@@ -53,7 +55,12 @@
     tabId: null,
     settings: Object.assign({}, DEFAULT_SETTINGS),
     saved: [],
-    groups: { css: [], xpath: [], pw: [], selenium: [], formats: [] },
+    healRows: [],
+    healBusy: false,
+    healSeq: 0,
+    repairInjected: false,
+    groups: { css: [], xpath: [], axes: [], pw: [], selenium: [], formats: [] },
+    reference: null,
     filter: "",
     picking: false,
     contentAvailable: null,
@@ -104,6 +111,33 @@
     state.settingsTimer = setTimeout(() => {
       writeStore(STORE_SETTINGS, state.settings);
     }, 180);
+  };
+
+  const removeStore = async (key) => {
+    if (localStore && localStore.remove) {
+      try {
+        await localStore.remove(key);
+        return;
+      } catch (_) { /* fall through */ }
+    }
+    try { localStorage.removeItem(key); } catch (_) { /* ignore */ }
+  };
+
+  const applyFocusRequest = async () => {
+    const focus = await readStore("di:panel:focus");
+    if (!focus || typeof focus !== "object") return;
+    if (Date.now() - (focus.at || 0) > 60000) {
+      removeStore("di:panel:focus");
+      return;
+    }
+    if (focus.target === "heal") {
+      $("di-heal-card").scrollIntoView({ block: "start" });
+      $("di-heal-input").focus();
+    } else if (focus.target === "tester") {
+      $("di-tester-card").scrollIntoView({ block: "start" });
+      $("di-input").focus();
+    }
+    removeStore("di:panel:focus");
   };
 
   const persistSaved = () => writeStore(STORE_SAVED, state.saved);
@@ -374,6 +408,21 @@
     return rows;
   };
 
+  const addAxesRows = (payload) => {
+    const rows = [];
+    const seen = new Set();
+    for (const item of payload.axes || []) {
+      if (!item || !item.xpath || seen.has(item.xpath)) continue;
+      seen.add(item.xpath);
+      rows.push({
+        scope: "Axes", type: "xpath", testType: "xpath", testValue: item.xpath,
+        value: item.xpath, count: item.count, label: item.strategy,
+        isBest: rows.length === 0 && item.count === 1, key: "axes::" + item.xpath
+      });
+    }
+    return rows;
+  };
+
   const addPlaywrightRows = (payload) => {
     const rows = [];
     const seen = new Set();
@@ -467,10 +516,11 @@
   };
 
   const buildGroups = (payload) => {
-    if (!payload) return { css: [], xpath: [], pw: [], selenium: [], formats: [] };
+    if (!payload) return { css: [], xpath: [], axes: [], pw: [], selenium: [], formats: [] };
     return {
       css: addCssRows(payload),
       xpath: addXpathRows(payload),
+      axes: addAxesRows(payload),
       pw: addPlaywrightRows(payload),
       selenium: addSeleniumRows(payload),
       formats: addFormatRows(payload)
@@ -670,8 +720,19 @@
     if (!card || !container) return;
     const all = state.groups[group.key] || [];
     if (!all.length) {
-      card.hidden = true;
-      container.textContent = "";
+      if (group.key === "axes" && (state.reference || (state.payload && state.payload.reference))) {
+        card.hidden = false;
+        container.textContent = "";
+        container.appendChild(el("div", "rows-empty", "Reference set — pick the target element to generate axes XPath."));
+        const meta = $(group.meta);
+        if (meta) meta.textContent = "reference set";
+        card.classList.toggle("collapsed", !!state.settings.collapsed[group.card]);
+        const toggle = card.querySelector(".section-toggle");
+        if (toggle) toggle.setAttribute("aria-expanded", state.settings.collapsed[group.card] ? "false" : "true");
+      } else {
+        card.hidden = true;
+        container.textContent = "";
+      }
       return;
     }
     card.hidden = false;
@@ -765,6 +826,10 @@
       badges.push(["XPath unavailable in shadow DOM", "warn"]);
     }
     if (element.visible === false) badges.push(["element is hidden", "warn"]);
+    if (payload.reference) {
+      const ref = payload.reference;
+      badges.push(["reference: " + (ref.tag || "element") + (ref.id ? "#" + ref.id : ""), "accent"]);
+    }
     if (!badges.length) badges.push(["ready", "ok"]);
     for (const [text, tone] of badges) context.appendChild(el("span", "badge " + (tone || ""), text));
 
@@ -783,6 +848,9 @@
     }
     if (payload.shadow && Array.isArray(payload.shadow.hostCss) && payload.shadow.hostCss.length) {
       pathRows.push(["Shadow CSS", payload.shadow.hostCss.join(" > ")]);
+    }
+    if (payload.frame && payload.frame.xpath && payload.frame.xpath.xpath) {
+      pathRows.push(["Frame XPath", payload.frame.xpath.xpath]);
     }
     if (pathRows.length) {
       paths.hidden = false;
@@ -1133,6 +1201,364 @@
   };
 
   /* ---------------------------------------------------------------- */
+  /* Reference element / axes                                         */
+  /* ---------------------------------------------------------------- */
+
+  const referenceOf = () => state.reference || (state.payload && state.payload.reference) || null;
+
+  const renderReference = () => {
+    const ref = referenceOf();
+    const chip = $("di-ref-chip");
+    const clear = $("di-ref-clear");
+    if (ref) {
+      chip.hidden = false;
+      chip.textContent = "ref: " + (ref.tag || "element") + (ref.id ? "#" + ref.id : "");
+      chip.title = "Axes reference: " + (ref.tag || "element") + (ref.id ? "#" + ref.id : "") + (ref.text ? " · " + ref.text : "");
+      clear.hidden = false;
+    } else {
+      chip.hidden = true;
+      chip.textContent = "";
+      clear.hidden = true;
+    }
+    const hint = $("di-axes-hint");
+    if (hint) hint.hidden = !(ref && !(state.groups.axes || []).length);
+  };
+
+  const startReference = async () => {
+    try {
+      await sendToTab({ type: "DI_START", continuous: false, mode: "reference" });
+      state.picking = true;
+      updatePickerUi();
+      setStatus("Pick the reference element for axes XPath…");
+    } catch (error) {
+      const message = friendlyError(error);
+      setStatus(message, "bad");
+      toast(message, "bad");
+    }
+  };
+
+  const clearReference = async () => {
+    try {
+      await sendToTab({ type: "DI_CLEAR_REFERENCE" });
+    } catch (_) { /* no content script */ }
+    state.reference = null;
+    if (state.payload) {
+      state.payload.reference = null;
+      state.payload.axes = [];
+    }
+    renderAll();
+    setStatus("Axes reference cleared.");
+  };
+
+  /* ---------------------------------------------------------------- */
+  /* Batch selector healing                                           */
+  /* ---------------------------------------------------------------- */
+
+  const HEAL_LABELS = {
+    pending: "pending",
+    checking: "checking…",
+    ok: "unique",
+    many: "not unique",
+    broken: "broken",
+    fixed: "fixed",
+    "fix-failed": "fix failed"
+  };
+
+  const HEAL_TONES = {
+    ok: "ok",
+    many: "warn",
+    broken: "bad",
+    fixed: "accent",
+    "fix-failed": "bad"
+  };
+
+  const healVerify = async (value) => {
+    const response = await sendToTab({ type: "DI_TEST", locatorType: "auto", value, highlight: false });
+    if (!response) throw new Error("No response from the page.");
+    return response;
+  };
+
+  const repairSelector = async (value) => {
+    if (!api || !api.scripting || !api.scripting.executeScript) {
+      return { ok: false, error: "Scripting API unavailable in this context" };
+    }
+    const tabId = await resolveTabId(true);
+    if (tabId == null) return { ok: false, error: "No active web page" };
+    const repairFn = (selector) => {
+      try {
+        const DI = globalThis.DI;
+        if (!DI || !DI.repair || typeof DI.repair.fix !== "function") {
+          return { ok: false, error: "Repair engine unavailable" };
+        }
+        return DI.repair.fix(selector);
+      } catch (error) {
+        return { ok: false, error: String(error && error.message ? error.message : error) };
+      }
+    };
+    const run = async () => {
+      const results = await api.scripting.executeScript({
+        target: { tabId, allFrames: true }, func: repairFn, args: [value]
+      });
+      const usable = (results || []).map((entry) => entry && entry.result).filter(Boolean);
+      return usable.find((entry) => entry.ok) || usable[0] || null;
+    };
+    try {
+      let result = await run();
+      if ((!result || /repair engine unavailable/i.test(result.error || "")) && !state.repairInjected) {
+        state.repairInjected = true;
+        await api.scripting.executeScript({
+          target: { tabId, allFrames: true },
+          files: [
+            "src/content/util.js",
+            "src/content/css.js",
+            "src/content/xpath.js",
+            "src/content/playwright.js",
+            "src/content/formats.js",
+            "src/content/validate.js",
+            "src/content/repair.js"
+          ]
+        });
+        result = await run();
+      }
+      return result || { ok: false, error: "Repair engine unavailable" };
+    } catch (error) {
+      return { ok: false, error: friendlyError(error) };
+    }
+  };
+
+  const healSummary = () => {
+    const rows = state.healRows;
+    if (!rows.length) return "0 results";
+    const parts = [`${rows.length} selector${rows.length === 1 ? "" : "s"}`];
+    const unique = rows.filter((row) => row.status === "ok").length;
+    const fixed = rows.filter((row) => row.status === "fixed").length;
+    const broken = rows.filter((row) => row.status === "broken" || row.status === "fix-failed").length;
+    if (unique) parts.push(`${unique} unique`);
+    if (fixed) parts.push(`${fixed} fixed`);
+    if (broken) parts.push(`${broken} broken`);
+    return parts.join(" · ");
+  };
+
+  const useHealValue = (value, type) => {
+    fillTester({
+      key: "heal::" + value,
+      scope: "Heal",
+      type: type || detectType(value),
+      testType: type || detectType(value),
+      testValue: value,
+      value,
+      raw: value,
+      count: null
+    });
+  };
+
+  const renderHeal = () => {
+    const list = $("di-heal-results");
+    const empty = $("di-heal-empty");
+    const meta = $("di-heal-meta");
+    if (!list) return;
+    list.textContent = "";
+    const rows = state.healRows;
+    empty.hidden = rows.length > 0;
+    meta.textContent = healSummary();
+    $("di-heal-check").disabled = state.healBusy;
+    $("di-heal-fix").disabled = state.healBusy;
+
+    for (const row of rows) {
+      const node = el("div", "heal-row status-" + row.status);
+      const head = el("div", "heal-head");
+      head.appendChild(el("span", "heal-index", "#" + row.index));
+      head.appendChild(el("span", "pill " + (HEAL_TONES[row.status] || ""), HEAL_LABELS[row.status] || row.status));
+      if (typeof row.count === "number") {
+        head.appendChild(el("span", "pill count " + countTone(row.count), countText(row.count)));
+      }
+      if (row.status === "fixed") {
+        if (row.fixedType) head.appendChild(el("span", "pill accent", "fix · " + row.fixedType));
+        if (row.score) head.appendChild(el("span", "pill", "score " + row.score));
+      } else if (row.type) {
+        head.appendChild(el("span", "pill", row.type));
+      }
+      const actions = el("div", "heal-actions");
+      const source = row.fixed || row.original;
+      const sourceType = row.fixed ? (row.fixedType || detectType(row.fixed)) : (row.type || detectType(row.original));
+      actions.appendChild(iconButton("copy", row.fixed ? "Copy fixed locator" : "Copy locator", () =>
+        copyText(source, row.fixed ? "Copied fixed locator" : "Copied locator")));
+      actions.appendChild(iconButton("edit", "Use in tester", () => useHealValue(source, sourceType)));
+      head.appendChild(actions);
+      node.appendChild(head);
+      node.appendChild(el("code", "heal-selector", row.original));
+      if (row.error) node.appendChild(el("div", "heal-note bad", row.error));
+      if (row.fixed) {
+        const fix = el("div", "heal-fix");
+        fix.appendChild(el("code", "heal-selector", row.fixed));
+        const fixActions = el("div", "heal-fix-actions");
+        fixActions.appendChild(iconButton("copy", "Copy fixed locator", () => copyText(row.fixed, "Copied fixed locator")));
+        fixActions.appendChild(iconButton("edit", "Use fix in tester", () => useHealValue(row.fixed, row.fixedType || detectType(row.fixed))));
+        fix.appendChild(fixActions);
+        node.appendChild(fix);
+      }
+      if (row.element) {
+        const info = [row.element.tag || "element"];
+        if (row.element.id) info.push("#" + row.element.id);
+        if (row.element.text) info.push("· " + row.element.text);
+        node.appendChild(el("div", "heal-note", "matched " + info.join(" ")));
+      }
+      list.appendChild(node);
+    }
+  };
+
+  const checkAllHeal = async () => {
+    const lines = $("di-heal-input").value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) return toast("Paste at least one selector", "bad");
+    const sequence = ++state.healSeq;
+    state.healBusy = true;
+    state.healRows = lines.map((line, index) => ({
+      id: Date.now().toString(36) + "-" + index,
+      index: index + 1,
+      original: line,
+      status: "pending",
+      count: null,
+      type: detectType(line),
+      error: null,
+      fixed: null,
+      fixedType: null,
+      score: null,
+      element: null
+    }));
+    renderHeal();
+    for (const row of state.healRows) {
+      if (sequence !== state.healSeq) return;
+      row.status = "checking";
+      renderHeal();
+      try {
+        const response = await healVerify(row.original);
+        row.type = response.type || detectType(row.original);
+        row.count = typeof response.count === "number" ? response.count : 0;
+        if (response.ok) {
+          row.status = row.count === 1 ? "ok" : "many";
+          row.error = row.count === 1 ? null : `Matches ${row.count} elements — not unique.`;
+        } else {
+          row.status = "broken";
+          row.error = response.error || "No elements matched.";
+        }
+      } catch (error) {
+        row.status = "broken";
+        row.count = 0;
+        row.error = friendlyError(error);
+      }
+      renderHeal();
+    }
+    if (sequence !== state.healSeq) return;
+    state.healBusy = false;
+    renderHeal();
+    const broken = state.healRows.filter((row) => row.status === "broken").length;
+    setStatus(`Batch checked ${state.healRows.length} selector${state.healRows.length === 1 ? "" : "s"}${broken ? ` · ${broken} broken` : ""}.`, broken ? "warn" : "ok");
+  };
+
+  const fixBrokenHeal = async () => {
+    const targets = state.healRows.filter((row) => row.status === "broken" || row.status === "fix-failed");
+    if (!targets.length) return toast("No broken selectors to fix", "bad");
+    const sequence = state.healSeq;
+    state.healBusy = true;
+    renderHeal();
+    for (const row of targets) {
+      if (sequence !== state.healSeq) return;
+      row.status = "checking";
+      row.error = null;
+      renderHeal();
+      try {
+        const repair = await repairSelector(row.original);
+        if (!repair || !repair.ok || !repair.fixed) {
+          row.status = "fix-failed";
+          row.error = (repair && repair.error) || "No matching element found.";
+          renderHeal();
+          continue;
+        }
+        row.fixed = repair.fixed;
+        row.fixedType = repair.type || detectType(repair.fixed);
+        row.score = repair.score || null;
+        row.element = repair.element || null;
+        const verify = await healVerify(repair.fixed);
+        if (verify && verify.ok) {
+          row.status = "fixed";
+          row.count = verify.count;
+          row.type = verify.type || row.fixedType;
+          row.fixedType = verify.type || row.fixedType;
+          row.error = null;
+        } else {
+          row.status = "fix-failed";
+          row.error = "Suggested fix did not verify" + (verify && verify.error ? ": " + verify.error : ".");
+        }
+      } catch (error) {
+        row.status = "fix-failed";
+        row.error = friendlyError(error);
+      }
+      renderHeal();
+    }
+    if (sequence !== state.healSeq) return;
+    state.healBusy = false;
+    renderHeal();
+    const fixed = state.healRows.filter((row) => row.status === "fixed").length;
+    setStatus(`Healed ${fixed} selector${fixed === 1 ? "" : "s"}.`, fixed ? "ok" : "warn");
+  };
+
+  const healReport = () => {
+    const lines = ["DOM Inspector — batch selector report", "Page: " + ((state.payload && state.payload.url) || ""), ""];
+    for (const row of state.healRows) {
+      lines.push(`#${row.index} [${HEAL_LABELS[row.status] || row.status}] ${row.original}`);
+      if (typeof row.count === "number") lines.push(`  matches: ${row.count}`);
+      if (row.error) lines.push(`  note: ${row.error}`);
+      if (row.fixed) lines.push(`  fix (${row.fixedType || detectType(row.fixed)}): ${row.fixed}`);
+    }
+    return lines.join("\n").trim();
+  };
+
+  const healExportRows = () => state.healRows.map((row) => ({
+    index: row.index,
+    original: row.original,
+    status: row.status,
+    count: typeof row.count === "number" ? row.count : null,
+    type: row.type || null,
+    error: row.error || null,
+    fixed: row.fixed || null,
+    fixedType: row.fixedType || null,
+    score: row.score || null,
+    element: row.element || null
+  }));
+
+  const exportHealJson = () => {
+    if (!state.healRows.length) return toast("Check selectors first", "bad");
+    const ok = download(`dom-inspector-healing-${stamp()}.json`, "application/json",
+      JSON.stringify({ extension: "DOM Inspector", exportedAt: new Date().toISOString(), page: state.payload ? state.payload.url : null, results: healExportRows() }, null, 2));
+    toast(ok ? "Healing report exported" : "Download failed", ok ? "ok" : "bad");
+  };
+
+  const exportHealCsv = () => {
+    if (!state.healRows.length) return toast("Check selectors first", "bad");
+    const header = ["index", "original", "status", "count", "type", "error", "fixed", "fixedType", "score", "elementTag", "elementId"];
+    const lines = [header.join(",")];
+    for (const row of healExportRows()) {
+      lines.push([
+        row.index, row.original, row.status, row.count, row.type,
+        row.error, row.fixed, row.fixedType, row.score,
+        row.element ? row.element.tag : "", row.element ? row.element.id : ""
+      ].map(csvCell).join(","));
+    }
+    const ok = download(`dom-inspector-healing-${stamp()}.csv`, "text/csv", lines.join("\r\n"));
+    toast(ok ? "Healing CSV exported" : "Download failed", ok ? "ok" : "bad");
+  };
+
+  const clearHeal = () => {
+    state.healSeq += 1;
+    state.healBusy = false;
+    state.healRows = [];
+    state.settings.healText = "";
+    $("di-heal-input").value = "";
+    persistSettings();
+    renderHeal();
+  };
+
+  /* ---------------------------------------------------------------- */
   /* Render all                                                       */
   /* ---------------------------------------------------------------- */
 
@@ -1142,6 +1568,8 @@
     renderInfo();
     for (const group of GROUPS) renderGroup(group);
     renderDriver();
+    renderHeal();
+    renderReference();
     renderSaved();
     refreshSaveButtons();
     refreshStats();
@@ -1184,12 +1612,17 @@
     $("di-continuous").checked = !!state.settings.continuous;
     $("di-driver-base").value = state.settings.driverBase;
     $("di-driver-template").value = state.settings.driver;
+    if ($("di-heal-input").value !== (state.settings.healText || "")) {
+      $("di-heal-input").value = state.settings.healText || "";
+    }
     syncExpandLabel();
   };
 
   const resetSettings = () => {
     state.settings = Object.assign({}, DEFAULT_SETTINGS, { collapsed: {} });
     state.filter = "";
+    state.healRows = [];
+    state.healSeq += 1;
     $("di-filter").value = "";
     persistSettings();
     applySettings();
@@ -1321,6 +1754,9 @@
       }
     }
 
+    $("di-ref-set").addEventListener("click", startReference);
+    $("di-ref-clear").addEventListener("click", clearReference);
+
     $("di-copy-all").addEventListener("click", () => {
       const text = allLocatorText();
       if (!text) return toast("Pick an element first", "bad");
@@ -1400,6 +1836,37 @@
       }
     });
 
+    $("di-heal-input").addEventListener("input", (event) => {
+      state.settings.healText = event.target.value;
+      persistSettings();
+    });
+    $("di-heal-check").addEventListener("click", checkAllHeal);
+    $("di-heal-fix").addEventListener("click", fixBrokenHeal);
+    $("di-heal-copy").addEventListener("click", () => {
+      const text = healReport();
+      if (!state.healRows.length) return toast("Check selectors first", "bad");
+      copyText(text, "Copied healing report");
+    });
+    $("di-heal-json").addEventListener("click", exportHealJson);
+    $("di-heal-csv").addEventListener("click", exportHealCsv);
+    $("di-heal-clear").addEventListener("click", clearHeal);
+
+    if (api && api.storage && api.storage.onChanged) {
+      api.storage.onChanged.addListener((changes, area) => {
+        if (area !== "local" || !changes["di:panel:focus"]) return;
+        const next = changes["di:panel:focus"].newValue;
+        const target = next && typeof next === "object" ? next.target : next;
+        if (target === "heal") {
+          $("di-heal-card").scrollIntoView({ block: "start", behavior: "smooth" });
+          $("di-heal-input").focus();
+        } else if (target === "tester") {
+          $("di-tester-card").scrollIntoView({ block: "start", behavior: "smooth" });
+          $("di-input").focus();
+        }
+        if (target) removeStore("di:panel:focus");
+      });
+    }
+
     $("di-saved-json").addEventListener("click", exportSavedJson);
     $("di-saved-csv").addEventListener("click", exportSavedCsv);
     $("di-saved-clear").addEventListener("click", clearSaved);
@@ -1416,11 +1883,27 @@
 
     if (api && api.runtime && api.runtime.onMessage) {
       api.runtime.onMessage.addListener((message, sender) => {
-        if (!message || message.type !== "DI_ELEMENT" || !message.payload) return undefined;
+        if (!message || !message.type) return undefined;
         const senderTab = sender && sender.tab && sender.tab.id;
         if (senderTab != null && state.tabId != null && senderTab !== state.tabId) return undefined;
         if (state.tabId == null && senderTab != null) state.tabId = senderTab;
-        handlePayload(message.payload, false);
+        if (message.type === "DI_REFERENCE" && message.payload) {
+          state.reference = message.payload;
+          if (state.payload) {
+            state.payload.reference = message.payload;
+            state.payload.axes = [];
+          }
+          renderAll();
+          const ref = message.payload;
+          setStatus(`Reference: ${ref.tag || "element"}${ref.id ? "#" + ref.id : ""} — now pick the target element.`);
+          sendToTab({ type: "DI_START", continuous: !!state.settings.continuous, mode: "element" })
+            .then(() => { state.picking = true; updatePickerUi(); })
+            .catch(() => { state.picking = false; updatePickerUi(); });
+          return undefined;
+        }
+        if (message.type === "DI_ELEMENT" && message.payload) {
+          handlePayload(message.payload, false);
+        }
         return undefined;
       });
     }
@@ -1451,6 +1934,7 @@
 
     const restored = await restoreLast();
     const alive = await pingTab();
+    applyFocusRequest();
     if (!restored && !alive) {
       setStatus("Open an http(s) page, then pick an element.");
     } else if (!restored) {
