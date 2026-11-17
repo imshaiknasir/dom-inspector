@@ -374,6 +374,7 @@
         let first = false;
         let last = false;
         let filterText = null;
+        let filterPattern = null;
         let stripping = true;
         while (stripping) {
           stripping = false;
@@ -396,8 +397,14 @@
             stripping = true;
             continue;
           }
-          if ((modifier = expression.match(/\.filter\(\{\s*hasText:\s*(['"])((?:\\.|(?!\1).)*)\1\s*\}\s*\)\s*$/))) {
-            filterText = unescapeValue(modifier[2]);
+          if ((modifier = expression.match(
+            /\.filter\(\{\s*hasText:\s*(?:(['"])((?:\\.|(?!\1).)*)\1|\/((?:\\.|[^/\\])*)\/([a-z]*))\s*\}\s*\)\s*$/
+          ))) {
+            if (modifier[3] !== undefined) {
+              try { filterPattern = new RegExp(modifier[3], modifier[4] || ""); } catch (_) { filterPattern = false; }
+            } else {
+              filterText = unescapeValue(modifier[2]);
+            }
             expression = expression.slice(0, modifier.index);
             stripping = true;
           }
@@ -555,7 +562,11 @@
           }
         }
 
-        if (filterText !== null) {
+        if (filterPattern === false) {
+          matches = [];
+        } else if (filterPattern) {
+          matches = matches.filter((node) => regexTest(filterPattern, visibleText(node)));
+        } else if (filterText !== null) {
           matches = matches.filter((node) => textEquals(visibleText(node), filterText, false));
         }
         if (first) matches = matches.slice(0, 1);
