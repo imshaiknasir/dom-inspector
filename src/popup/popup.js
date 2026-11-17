@@ -212,7 +212,7 @@
     if (!payload) return "";
     const css = payload.css && payload.css.best ? payload.css.best.selector : "";
     const xpath = payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "";
-    const playwright = (payload.playwright || [])[0];
+    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
     return (payload.url || "") + "\n" + css + "\n" + xpath + "\n" + (playwright ? playwright.selector : "");
   };
 
