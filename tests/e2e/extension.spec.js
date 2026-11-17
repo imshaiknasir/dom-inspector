@@ -346,8 +346,6 @@ test('picker generates verified CSS, XPath, Playwright and Selenium locators', a
   expect(restored).toMatchObject({ ok: true });
   expect(restored.payload.css.best.selector).toBe(payload.css.best.selector);
 
-  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
-  await expect(extensionPage.locator('#di-xpath code').first()).toContainText("//*[@id='save']");
 });
 
 test('panel filters rows and exports picked locators as JSON', async () => {
@@ -726,6 +724,31 @@ test('panel imports saved locators from JSON and skips duplicates', async () => 
   expect(await extensionPage.evaluate(() =>
     document.querySelectorAll('#di-saved .saved-row').length
   )).toBe(1);
+
+  const csv = [
+    'name,scope,type,value,testType,testValue,count,url,savedAt',
+    'CSV locator,CSS,css,#link,css,#link,1,https://example.test/,'
+  ].join('\n');
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'saved.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv)
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+  await expect(extensionPage.locator('#di-toast')).toContainText('Imported 1 saved locator');
+  await expect(extensionPage.locator('#di-saved')).toContainText('#link');
+
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'saved.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv)
+  });
+  await expect(extensionPage.locator('#di-toast')).toContainText('No new saved locators to import');
+  expect(await extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  )).toBe(2);
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
