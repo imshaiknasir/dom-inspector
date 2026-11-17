@@ -130,18 +130,21 @@
       if (modifier[1] === "last") return base.slice(-1);
       return base[Number(modifier[2])] ? [base[Number(modifier[2])]] : [];
     }
-    const filterMatch = expr.match(/\.filter\(\s*\{\s*hasText\s*:\s*([^}]+?)\s*\}\s*\)/);
+    const filterMatch = expr.match(/\.filter\(\s*\{\s*(hasText|hasNotText)\s*:\s*([^}]+?)\s*\}\s*\)/);
     if (filterMatch && filterMatch.index > 0) {
-      const spec = DI.playwright.parseTextFilter(filterMatch[1]);
+      const spec = DI.playwright.parseTextFilter(filterMatch[2]);
       if (!spec) return [];
+      const negate = filterMatch[1] === "hasNotText";
       return resolvePlaywright(expr.slice(0, filterMatch.index), doc)
-        .filter((el) => DI.playwright.matchesHasText(el, spec));
+        .filter((el) => DI.playwright.matchesHasText(el, spec) !== negate);
     }
-    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{\s*hasText\s*:\s*([^}]+?)\s*\}\s*\)\s*$/);
+    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{\s*(hasText|hasNotText)\s*:\s*([^}]+?)\s*\}\s*\)\s*$/);
     if (locatorOption) {
-      const spec = DI.playwright.parseTextFilter(locatorOption[3]);
+      const spec = DI.playwright.parseTextFilter(locatorOption[4]);
       if (!spec) return [];
-      return U.deepQueryAll(locatorOption[2], doc).filter((el) => DI.playwright.matchesHasText(el, spec));
+      const negate = locatorOption[3] === "hasNotText";
+      return U.deepQueryAll(locatorOption[2], doc)
+        .filter((el) => DI.playwright.matchesHasText(el, spec) !== negate);
     }
     const cssEngine = expr.match(/locator\(\s*['"]css=([\s\S]*?)['"]\s*\)\s*$/);
     if (cssEngine) return U.deepQueryAll(cssEngine[1], doc);
