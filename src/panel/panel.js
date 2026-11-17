@@ -1134,7 +1134,7 @@
       up.disabled = index === 0;
       actions.appendChild(up);
       const down = iconButton("down", "Move down", () => moveSaved(entry, 1));
-      down.disabled = index === entries.length - 1;
+      down.disabled = index === state.saved.length - 1;
       actions.appendChild(down);
       actions.appendChild(iconButton("trash", "Delete saved locator", () => {
         state.saved = state.saved.filter((item) => item.id !== entry.id);
@@ -1164,7 +1164,9 @@
           const response = await sendToTab({ type: "DI_TEST", locatorType: type, value, highlight: false });
           if (!response) throw new Error("No response from the page");
           entry.count = typeof response.count === "number" ? response.count : 0;
-          entry.error = response.ok ? "" : (response.error || "No match");
+          entry.error = response.ok
+            ? (entry.count > 1 ? `Matches ${entry.count} elements — not unique.` : "")
+            : (response.error || "No match");
         } catch (error) {
           entry.count = 0;
           entry.error = friendlyError(error);
@@ -1179,7 +1181,7 @@
       if (many) notes.push(`${many} not unique`);
       if (broken) notes.push(`${broken} broken`);
       const message = `Checked ${state.saved.length} saved locator${state.saved.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
-      toast(message, broken ? "bad" : "ok");
+      toast(message, broken ? "bad" : many ? "warn" : "ok");
       setStatus(message, broken || many ? "warn" : "ok");
     } finally {
       button.disabled = false;
