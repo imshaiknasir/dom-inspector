@@ -201,6 +201,8 @@ test('toolbar popup renders the last picked locators', async () => {
   await popup.reload();
   await expect(popup.locator('#pop-empty')).toBeVisible();
   await expect(popup.locator('#pop-status')).toContainText('Pick an element');
+  await popup.locator('#pop-last-copy').click();
+  await expect(popup.locator('#pop-status')).toContainText('No locators to copy');
   await popup.close();
 });
 
@@ -210,6 +212,11 @@ test('content script answers the picker bridge', async () => {
     return response && response.ok ? response : null;
   }, 10000);
   expect(ping).toMatchObject({ ok: true, picking: false, url: baseURL });
+});
+
+test('copy bridge fails cleanly before any context element is seen', async () => {
+  const response = await sendToFixture({ type: 'DI_COPY_BEST' }, { frameId: 0 });
+  expect(response).toMatchObject({ ok: false, error: 'No context element recorded' });
 });
 
 test('right-click copy bridge returns the best selector for the context element', async () => {
@@ -395,6 +402,16 @@ test('panel tester validates, highlights and clears a locator', async () => {
   await expect.poll(() => fixturePage.evaluate(() =>
     document.getElementById('save').style.outline
   ), { timeout: 5000 }).toBe('');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#does-not-exist';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-test').click();
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toMatch(/invalid|no elements/i);
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
