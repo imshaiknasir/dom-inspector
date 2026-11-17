@@ -530,3 +530,19 @@ test('formats: testRigor uses submit input value', async () => {
   });
   assert.equal(out, '"Place order"');
 });
+
+test('repair: regex role locators are not structurally rewritten', async () => {
+  const out = await page.evaluate(() => {
+    const button = document.createElement('button');
+    button.id = 'regex-paren';
+    button.textContent = 'x)';
+    document.body.appendChild(button);
+    const original = "page.getByRole('button', { name: /x[)]/ })";
+    const result = DI.repair.fix(original);
+    button.remove();
+    return { result, original };
+  });
+  assert.equal(out.result.ok, true);
+  assert.equal(out.result.fixed, out.original);
+  assert.equal(out.result.repaired, false);
+});

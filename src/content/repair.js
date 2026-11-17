@@ -157,7 +157,8 @@
   const fix = (input) => {
     const original = String(input == null ? "" : input).trim();
     const attempts = [];
-    if (original && balanced(original)) attempts.push(original);
+    const hasRegex = /(?:name|hasText):\s*\//.test(original);
+    if (original && (balanced(original) || hasRegex)) attempts.push(original);
     const first = normalize(original);
     if (first && first !== original) attempts.push(first);
     for (const value of attempts) {
