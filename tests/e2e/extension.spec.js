@@ -1293,6 +1293,17 @@ test('panel filters saved locators and hides the filter when empty', async () =>
 
   await extensionPage.evaluate(() => {
     const filter = document.getElementById('di-saved-filter');
+    filter.value = 'example.test/docs';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(1);
+  await expect(extensionPage.locator('#di-saved')).toContainText('#link');
+  await extensionPage.locator('#di-saved-filter').press('Escape');
+
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-saved-filter');
     filter.value = 'no-such-saved';
     filter.dispatchEvent(new Event('input', { bubbles: true }));
   });
