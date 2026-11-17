@@ -977,6 +977,8 @@
     const payload = state.payload;
     $("di-info-card").hidden = !payload;
     $("di-empty").hidden = !!payload;
+    $("di-export").disabled = !payload;
+    $("di-copy-all").disabled = !payload;
     if (!payload) {
       $("di-stats").textContent = "";
       return;
@@ -2502,8 +2504,8 @@
     });
 
     $("di-expand").addEventListener("click", () => {
-      const anyCollapsed = SECTION_CARDS.some((id) => state.settings.collapsed[id]);
-      const shouldCollapse = !anyCollapsed;
+      const button = $("di-expand");
+      const shouldCollapse = !button || button.textContent.trim() === "Collapse all";
       for (const id of SECTION_CARDS) {
         state.settings.collapsed[id] = shouldCollapse;
         const card = $(id);
@@ -2524,7 +2526,6 @@
           state.settings.collapsed[group.card] = next;
           card.classList.toggle("collapsed", next);
           toggle.setAttribute("aria-expanded", next ? "false" : "true");
-          syncExpandLabel();
           persistSettings();
         });
       }
@@ -2547,7 +2548,6 @@
         state.settings.collapsed[id] = next;
         card.classList.toggle("collapsed", next);
         toggle.setAttribute("aria-expanded", next ? "false" : "true");
-        syncExpandLabel();
         persistSettings();
       });
     }
