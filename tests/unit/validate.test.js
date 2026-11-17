@@ -242,7 +242,7 @@ test('validate: highlight caps marks and skips detached nodes', async () => {
   }
 });
 
-test('validate: non-element XPath is not a valid element locator', { todo: 'xpath validation counts attribute and text nodes' }, async () => {
+test('validate: non-element XPath is not a valid element locator', async () => {
   const out = await page.evaluate(() => ({
     attribute: DI.validate.test('xpath', '//button/@id'),
     text: DI.validate.test('xpath', "//button/text()")
@@ -251,7 +251,7 @@ test('validate: non-element XPath is not a valid element locator', { todo: 'xpat
   assert.deepEqual({ ok: out.text.ok, count: out.text.count }, { ok: false, count: 0 });
 });
 
-test('validate: bare XPath id() is detected', { todo: 'detectType treats id() as CSS' }, async () => {
+test('validate: bare XPath id() is detected', async () => {
   const out = await page.evaluate(() => {
     const result = DI.validate.test('auto', "id('save')");
     return { type: DI.validate.detectType("id('save')"), ok: result.ok, count: result.count };
