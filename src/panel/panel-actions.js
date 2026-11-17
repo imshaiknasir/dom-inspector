@@ -50,6 +50,16 @@
       walk(document);
 
       const norm = (input) => String(input == null ? "" : input).replace(/\s+/g, " ").trim();
+      const ignoredText = ["script", "style", "noscript", "template"];
+      const visibleText = (node) => {
+        let out = "";
+        for (const child of node.childNodes) {
+          if (child.nodeType === 3) { out += child.nodeValue; continue; }
+          if (child.nodeType !== 1 || ignoredText.includes(tagOf(child))) continue;
+          out += visibleText(child);
+        }
+        return out;
+      };
       const textEquals = (actual, wanted, exact) => {
         const value = norm(actual);
         const needle = norm(wanted);
@@ -175,18 +185,20 @@
         const role = implicitRole(node);
         if (NAME_FROM_CONTENT.includes(role) ||
             ["button", "a", "option", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
-          const contents = norm(node.textContent);
+          const contents = norm(visibleText(node));
           if (contents) return contents;
         }
         return attr(node, "title") || attr(node, "placeholder") || "";
       };
 
       const textMatches = (node, needle, exact) => {
-        const own = norm(node.textContent);
+        if (ignoredText.includes(tagOf(node))) return false;
+        const own = norm(visibleText(node));
         if (!own) return false;
         if (!textEquals(own, needle, exact)) return false;
         for (const child of node.children) {
-          const childText = norm(child.textContent);
+          if (ignoredText.includes(tagOf(child))) continue;
+          const childText = norm(visibleText(child));
           if (childText && textEquals(childText, needle, exact)) return false;
         }
         return true;
