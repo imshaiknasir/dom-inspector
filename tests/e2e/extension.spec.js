@@ -352,6 +352,43 @@ test('panel filters rows and exports picked locators as JSON', async () => {
   expect(report.locators.some((row) => row.type === 'xpath' && row.value === "//*[@id='save']")).toBe(true);
 });
 
+test('panel filters locators by strategy', async () => {
+  await fixturePage.bringToFront();
+  await startPicking();
+  await clickElement(fixturePage.locator('#save'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
+  }, 10000);
+  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
+
+  await extensionPage.evaluate(() => {
+    const select = document.getElementById('di-strategy');
+    select.value = 'id';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
+  await expect(extensionPage.locator('#di-css')).not.toContainText('data-testid');
+
+  await extensionPage.evaluate(() => {
+    const select = document.getElementById('di-strategy');
+    select.value = 'text';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-css code').length
+  ), { timeout: 5000 }).toBe(0);
+
+  await extensionPage.evaluate(() => {
+    const select = document.getElementById('di-strategy');
+    select.value = 'all';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-css code').length
+  ), { timeout: 5000 }).toBeGreaterThan(0);
+});
+
 test('panel driver template substitutes the picked CSS and XPath values', async () => {
   await fixturePage.bringToFront();
   await startPicking();
@@ -647,7 +684,8 @@ test('panel sanitizes corrupted persisted settings on reload', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.set({
     'di:panel:settings': {
       lang: 'ruby', await: 'yes', unique: 1, continuous: 0,
-      driverBase: 'nonsense', driver: 42, healText: {}, collapsed: 'no'
+      driverBase: 'nonsense', driver: 42, healText: {}, collapsed: 'no',
+      strategy: 'bogus'
     }
   }));
   await extensionPage.reload();
@@ -658,10 +696,11 @@ test('panel sanitizes corrupted persisted settings on reload', async () => {
     unique: document.getElementById('di-unique').checked,
     continuous: document.getElementById('di-continuous').checked,
     driverBase: document.getElementById('di-driver-base').value,
-    driver: document.getElementById('di-driver-template').value
+    driver: document.getElementById('di-driver-template').value,
+    strategy: document.getElementById('di-strategy').value
   })), { timeout: 10000 }).toEqual({
     lang: 'js', await: true, unique: true, continuous: false,
-    driverBase: 'css', driver: ''
+    driverBase: 'css', driver: '', strategy: 'all'
   });
 });
 
