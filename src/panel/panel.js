@@ -964,7 +964,9 @@
     const axes = (payload.axes || [])[0];
     if (axes) lines.push(`Axes XPath: ${axes.xpath} (${axes.count})`);
     const pw = (payload.playwright || [])[0];
-    if (pw) lines.push(`Playwright: ${pw.selector} (${pw.count})`);
+    if (pw) {
+      lines.push(`Playwright: ${convertPlaywright(pw.selector, state.settings.lang, state.settings.await)} (${pw.count})`);
+    }
     return lines.join("\n");
   };
 
