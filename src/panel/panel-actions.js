@@ -50,6 +50,10 @@
       walk(document);
 
       const norm = (input) => String(input == null ? "" : input).replace(/\s+/g, " ").trim();
+      const regexTest = (regex, text) => {
+        regex.lastIndex = 0;
+        return regex.test(String(text));
+      };
       const ignoredText = ["script", "style", "noscript", "template"];
       const visibleText = (node) => {
         let out = "";
@@ -193,7 +197,7 @@
 
       const textMatches = (node, needle, exact, pattern) => {
         if (ignoredText.includes(tagOf(node))) return false;
-        const matches = (text) => (pattern ? pattern.test(text) : textEquals(text, needle, exact));
+        const matches = (text) => (pattern ? regexTest(pattern, text) : textEquals(text, needle, exact));
         const own = norm(visibleText(node));
         if (!own) return false;
         if (!matches(own)) return false;
@@ -325,7 +329,7 @@
           const firstPattern = firstValue ? firstValue.regex : null;
           const rest = firstValue ? args.slice(firstValue.end) : "";
           const exact = /exact:\s*true/.test(rest);
-          const firstMatch = (actual) => (firstPattern ? firstPattern.test(String(actual)) : textEquals(actual, firstText, exact));
+          const firstMatch = (actual) => (firstPattern ? regexTest(firstPattern, actual) : textEquals(actual, firstText, exact));
           let namePattern = null;
           let nameValue = "";
 
@@ -342,7 +346,7 @@
             for (const node of all) {
               if (implicitRole(node) !== firstText) continue;
               if (namePattern) {
-                if (!namePattern.test(norm(accessibleName(node)))) continue;
+                if (!regexTest(namePattern, norm(accessibleName(node)))) continue;
               } else if (nameValue) {
                 if (!textEquals(accessibleName(node), nameValue, exact)) continue;
               }
