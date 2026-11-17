@@ -1,7 +1,7 @@
 /* DOM Inspector — XPath variants: relative, absolute, indexed, text/attribute, axes, SVG. */
 (() => {
   const DI = (globalThis.DI = globalThis.DI || {});
-  const { attr, tagOf, isSvgChild, normalizeText, xpathLiteral } = DI.util;
+  const { attr, rawAttr, tagOf, isSvgChild, normalizeText, xpathLiteral } = DI.util;
 
   const snapshot = (xpath, root = document) => {
     try {
@@ -24,10 +24,10 @@
   ];
 
   const usableValue = (value) => {
-    // Attribute values compare exactly in XPath, so trim only the ends; do not
-    // collapse internal whitespace (test ids and labels may contain it).
-    const v = String(value == null ? "" : value).trim();
-    if (!v || v.length > 60) return "";
+    // Attribute values compare exactly in XPath, so keep the declared value
+    // (including surrounding whitespace) and only reject empty/dynamic ones.
+    const v = String(value == null ? "" : value);
+    if (!v.trim() || v.length > 60) return "";
     if (/^\d+$/.test(v)) return "";
     if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(v)) return "";
     return v;
@@ -36,10 +36,10 @@
   const segment = (el, includeText = true) => {
     const tag = isSvgChild(el) ? "*" : tagOf(el);
     const nameExpr = isSvgChild(el) ? `*[local-name()=${xpathLiteral(tagOf(el))}]` : tag;
-    const id = usableValue(attr(el, "id"));
+    const id = usableValue(rawAttr(el, "id"));
     if (id) return `${nameExpr}[@id=${xpathLiteral(id)}]`;
     for (const name of attrPriority) {
-      const value = usableValue(attr(el, name));
+      const value = usableValue(rawAttr(el, name));
       if (value) return `${nameExpr}[@${name}=${xpathLiteral(value)}]`;
     }
     if (includeText) {
@@ -82,7 +82,7 @@
       if (!parent) break;
       const same = Array.from(parent.children).filter((c) => c.tagName === node.tagName);
       parts.unshift(`${tag}[${same.indexOf(node) + 1}]`);
-      const id = usableValue(attr(node, "id"));
+      const id = usableValue(rawAttr(node, "id"));
       if (id) {
         anchor = `//*[@id=${xpathLiteral(id)}]`;
         parts.shift();
@@ -122,14 +122,14 @@
     if (inShadow(el)) return out;
 
     const tag = isSvgChild(el) ? "*" : tagOf(el);
-    const id = usableValue(attr(el, "id"));
+    const id = usableValue(rawAttr(el, "id"));
     if (id) {
       push(`//*[@id=${xpathLiteral(id)}]`, "id", 1);
       push(`//${tag}[@id=${xpathLiteral(id)}]`, "id+tag", 3);
     }
 
     for (const name of attrPriority) {
-      const value = usableValue(attr(el, name));
+      const value = usableValue(rawAttr(el, name));
       if (!value) continue;
       push(`//${tag}[@${name}=${xpathLiteral(value)}]`, `attr:${name}`, 10);
       push(`//${tag}[contains(@${name},${xpathLiteral(value)})]`, `contains:${name}`, 28);
@@ -248,9 +248,9 @@
     const frames = DI.util.iframeChain(win);
     if (!frames.length) return null;
     const parts = frames.map((frame) => {
-      const id = usableValue(attr(frame, "id"));
+      const id = usableValue(rawAttr(frame, "id"));
       if (id) return `//iframe[@id=${xpathLiteral(id)}]`;
-      const name = usableValue(attr(frame, "name"));
+      const name = usableValue(rawAttr(frame, "name"));
       if (name) return `//iframe[@name=${xpathLiteral(name)}]`;
       const abs = absoluteXPath(frame);
       return abs || `//iframe`;
