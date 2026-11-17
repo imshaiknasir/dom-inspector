@@ -246,3 +246,14 @@ test('repair: nested frames produce chained frame locators', async () => {
     await local.close();
   }
 });
+
+test('repair: normalize keeps whitespace inside quoted values', async () => {
+  const out = await page.evaluate(() => ({
+    preserved: DI.repair.normalize('div[title="a   b"]'),
+    collapsedOutside: DI.repair.normalize('div   >   span[title="a  b"]'),
+    singleQuoted: DI.repair.normalize("div[title='a   b']")
+  }));
+  assert.equal(out.preserved, 'div[title="a   b"]');
+  assert.equal(out.collapsedOutside, 'div > span[title="a  b"]');
+  assert.equal(out.singleQuoted, "div[title='a   b']");
+});

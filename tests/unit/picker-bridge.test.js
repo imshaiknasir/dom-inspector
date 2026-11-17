@@ -89,6 +89,10 @@ test('picker bridge: unknown and clear messages behave', async () => {
 });
 
 test('picker bridge: child frames stay silent unless allowFrames is set', async () => {
+  const ping = await send(child, { type: 'DI_PING' });
+  assert.equal(ping.returned, false);
+  assert.equal(ping.response.called, false);
+
   const ignored = await send(child, { type: 'DI_TEST', locatorType: 'css', value: '#inner' });
   assert.notEqual(ignored.error, 'no listener');
   assert.equal(ignored.returned, false);
