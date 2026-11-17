@@ -20,8 +20,8 @@ const SOURCE = fs.readFileSync(path.join(ROOT, 'src/background.js'), 'utf8');
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
 const loadBackground = () => {
-  const calls = { menus: [], opened: [], sent: [], session: {}, behavior: [], created: [], removeAll: 0 };
-  const listeners = { installed: [], clicked: [], action: [], message: [] };
+  const calls = { menus: [], opened: [], sent: [], session: {}, behavior: [], created: [], removeAll: 0, queries: [], activeTabs: [{ id: 5, windowId: 2 }] };
+  const listeners = { installed: [], clicked: [], action: [], message: [], command: [] };
   const chrome = {
     runtime: {
       lastError: undefined,
@@ -39,8 +39,12 @@ const loadBackground = () => {
     },
     action: { onClicked: { addListener: (fn) => listeners.action.push(fn) } },
     tabs: {
+      query: async (query) => { calls.queries.push(query); return calls.activeTabs; },
       sendMessage: async (tabId, message) => { calls.sent.push({ tabId, message }); },
       create: async (options) => { calls.created.push(options); }
+    },
+    commands: {
+      onCommand: { addListener: (fn) => listeners.command.push(fn) }
     },
     storage: {
       session: {
@@ -135,4 +139,28 @@ test('background: install/update recreates menus without stale ids', async () =>
   assert.equal(calls.removeAll, 2);
   assert.equal(calls.menus.length, 4);
   assert.deepEqual(calls.menus.map((item) => item.id), ['di-pick', 'di-copy-best', 'di-pick', 'di-copy-best']);
+});
+
+test('background: start-pick command opens the panel and starts picking', async () => {
+  const { calls, listeners } = loadBackground();
+  assert.equal(listeners.command.length, 1);
+  await listeners.command[0]('start-pick');
+  await tick();
+  assert.deepEqual(calls.queries, [{ active: true, currentWindow: true }]);
+  assert.deepEqual(calls.opened, [{ windowId: 2 }]);
+  assert.deepEqual(calls.sent, [{ tabId: 5, message: { type: 'DI_START' } }]);
+
+  await listeners.command[0]('something-else');
+  await tick();
+  assert.equal(calls.sent.length, 1);
+  assert.equal(calls.opened.length, 1);
+});
+
+test('background: start-pick command ignores a missing active tab', async () => {
+  const { calls, listeners } = loadBackground();
+  calls.activeTabs = [];
+  await listeners.command[0]('start-pick');
+  await tick();
+  assert.deepEqual(calls.opened, []);
+  assert.deepEqual(calls.sent, []);
 });

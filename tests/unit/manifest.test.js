@@ -69,6 +69,8 @@ test('manifest: permissions are explicit and avoid unused sensitive grants', () 
 test('manifest: keyboard command opens the action', () => {
   assert.ok(manifest.commands && manifest.commands._execute_action);
   assert.ok(manifest.commands._execute_action.suggested_key.default);
+  assert.ok(manifest.commands['start-pick']);
+  assert.equal(manifest.commands['start-pick'].suggested_key.default, 'Alt+Shift+P');
 });
 
 test('manifest: generator scripts load in dependency order', () => {

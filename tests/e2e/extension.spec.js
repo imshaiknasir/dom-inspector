@@ -249,6 +249,14 @@ test('right-click copy bridge returns the best selector for the context element'
   expect(duplicate.value).not.toBe('.rowbtn');
   const resolved = await sendToFixture({ type: 'DI_TEST', locatorType: 'auto', value: duplicate.value }, { frameId: 0 });
   expect(resolved).toMatchObject({ ok: true, count: 1 });
+
+  await fixturePage.locator('#shadowbtn').dispatchEvent('contextmenu', { bubbles: true, composed: true, button: 2 });
+  const shadowCopy = await sendToFixture({ type: 'DI_COPY_BEST' }, { frameId: 0 });
+  expect(shadowCopy.ok).toBe(true);
+  expect(shadowCopy.value).toMatch(/getBy(TestId|Role|Text)/);
+  expect(shadowCopy.value).not.toBe('#shadowbtn');
+  const shadowResolved = await sendToFixture({ type: 'DI_TEST', locatorType: 'auto', value: shadowCopy.value }, { frameId: 0 });
+  expect(shadowResolved).toMatchObject({ ok: true, count: 1 });
 });
 
 test('repair bridge fixes single, batch and in-frame selectors', async () => {
@@ -503,6 +511,36 @@ test('panel tester Fix repairs, accepts valid and reports unfixable locators', a
   await expect.poll(() => extensionPage.evaluate(() =>
     document.getElementById('di-result').textContent
   ), { timeout: 5000 }).toMatch(/could not fix/i);
+});
+
+test('panel exports saved locators as a Playwright POM snippet', async () => {
+  const saved = [
+    {
+      id: 'pom-1', key: 'pw::save', name: 'Save button', type: 'playwright',
+      value: "page.getByTestId('save-btn')", testType: 'playwright', testValue: "page.getByTestId('save-btn')", count: 1
+    },
+    {
+      id: 'pom-2', key: 'css::save-link', name: 'Save CSS', type: 'css',
+      value: '#link', testType: 'css', testValue: '#link', count: 1
+    }
+  ];
+  await extensionPage.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), saved);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+
+  const downloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-saved-pom').click());
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^dom-inspector-page-locators-.*\.js$/);
+  const source = fs.readFileSync(await download.path(), 'utf8');
+  expect(source).toContain('export class PageLocators');
+  expect(source).toContain('this.page = page;');
+  expect(source).toContain('saveButton()');
+  expect(source).toContain("this.page.getByTestId('save-btn')");
+  expect(source).toContain('saveCSS()');
+  expect(source).toContain('this.page.locator("#link")');
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
