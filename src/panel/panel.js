@@ -1749,6 +1749,7 @@
     persistSaved();
     renderSaved();
     refreshSaveButtons();
+    setStatus("Saved locators cleared.");
     toast("Saved locators cleared");
   };
 
