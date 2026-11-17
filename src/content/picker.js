@@ -176,6 +176,13 @@
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || !message.type) return undefined;
+    // Validation/repair is answered by the top frame, which also searches
+    // same-origin child frames. This prevents a child frame from winning the
+    // response race when the panel did not address a specific frame.
+    if ((message.type === "DI_TEST" || message.type === "DI_FIX") &&
+        window.top !== window.self && !message.allowFrames) {
+      return undefined;
+    }
     if (message.type === "DI_START") {
       continuous = !!message.continuous;
       pickMode = message.mode === "reference" ? "reference" : "element";
