@@ -1298,14 +1298,14 @@
     if (!entry || state.savedBusy) return;
     const target = savedTestTarget(entry);
     if (!target) return toast("Saved snippet is not a testable locator", "bad");
-    const pageUrl = await currentPageUrl();
-    if (!samePage(entry.url, pageUrl)) {
-      return toast("Saved locator belongs to another page: " + entry.url, "bad");
-    }
     state.savedBusy = true;
     renderSaved();
     setStatus("Fixing saved locator…");
     try {
+      const pageUrl = await currentPageUrl();
+      if (!samePage(entry.url, pageUrl)) {
+        return toast("Saved locator belongs to another page: " + entry.url, "bad");
+      }
       const repair = await repairSelector(target.value);
       if (!repair || !repair.ok || !repair.fixed) {
         const message = (repair && repair.error) || "No matching element found";
