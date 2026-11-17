@@ -1165,11 +1165,14 @@
       if (entry.error) main.appendChild(el("div", "heal-note bad", entry.error));
 
       const rowMeta = el("div", "loc-meta");
-      rowMeta.appendChild(el("span", "pill", entry.label || entry.type));
+      const labelText = entry.label || entry.type;
+      rowMeta.appendChild(el("span", "pill", labelText));
       if (typeof entry.count === "number") {
         rowMeta.appendChild(el("span", "pill count " + countTone(entry.count), countText(entry.count)));
       }
-      if (entry.scope) rowMeta.appendChild(el("span", "pill", entry.scope));
+      if (entry.scope && String(entry.scope).toLowerCase() !== String(labelText).toLowerCase()) {
+        rowMeta.appendChild(el("span", "pill", entry.scope));
+      }
       main.appendChild(rowMeta);
       row.appendChild(main);
 
