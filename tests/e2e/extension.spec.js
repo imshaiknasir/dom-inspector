@@ -1412,6 +1412,27 @@ test('panel normalises duplicate saved locator ids', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
 });
 
+test('panel applies a focus request to the tester', async () => {
+  const toggle = extensionPage.locator('#di-tester-card .section-toggle');
+  if ((await toggle.getAttribute('aria-expanded')) === 'true') await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+  await extensionPage.evaluate(() => chrome.storage.local.set({
+    'di:panel:focus': { target: 'tester', at: Date.now(), type: 'css', value: '#save' }
+  }));
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true', { timeout: 5000 });
+  await expect(extensionPage.locator('#di-input')).toHaveValue('#save');
+  await expect.poll(() => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:focus');
+    return data['di:panel:focus'];
+  }), { timeout: 5000 }).toBeUndefined();
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+});
+
 test('panel reorders saved locators with up/down controls', async () => {
   const entries = [
     { id: 'order-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
