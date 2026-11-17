@@ -67,6 +67,7 @@
     healRows: [],
     healBusy: false,
     healSeq: 0,
+    actionBusy: false,
     repairInjected: false,
     groups: { css: [], xpath: [], axes: [], pw: [], selenium: [], formats: [] },
     reference: null,
@@ -1800,7 +1801,17 @@
   /* Page actions                                                     */
   /* ---------------------------------------------------------------- */
 
+  const actionButtons = ["di-click", "di-hover", "di-type-action"];
+  const setActionBusy = (busy) => {
+    state.actionBusy = busy;
+    for (const id of actionButtons) {
+      const button = $(id);
+      if (button) button.disabled = busy;
+    }
+  };
+
   const runAction = async (kind) => {
+    if (state.actionBusy) return;
     const value = $("di-input").value.trim();
     if (!value) return toast("Enter a locator first", "bad");
     if (!api || !api.scripting || !api.scripting.executeScript) {
@@ -1813,10 +1824,11 @@
       return toast("Enter text to type first", "bad");
     }
     const type = $("di-type").value;
-    const tabId = await resolveTabId(true);
-    if (tabId == null) return toast("No active web page", "bad");
+    setActionBusy(true);
     showResult("Running " + kind + "…");
     try {
+      const tabId = await resolveTabId(true);
+      if (tabId == null) return toast("No active web page", "bad");
       const probe = await api.scripting.executeScript({
         target: { tabId, allFrames: true },
         func: pageAction,
@@ -1849,6 +1861,8 @@
       const message = friendlyError(error);
       showResult("Action failed: " + message, "bad");
       toast(message, "bad");
+    } finally {
+      setActionBusy(false);
     }
   };
 
