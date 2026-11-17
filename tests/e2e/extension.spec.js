@@ -75,11 +75,6 @@ const clickElement = async (locator) => {
   await fixturePage.mouse.click(x, y);
 };
 
-const PLAIN = `<!doctype html><html><body>
-  <button id="save" data-testid="save-btn">Save changes</button>
-  <a id="link" href="/docs">Read the docs</a>
-</body></html>`;
-
 test.beforeAll(async () => {
   const html = fs.readFileSync(FIXTURE);
   server = http.createServer((request, response) => {
@@ -89,7 +84,7 @@ test.beforeAll(async () => {
       return;
     }
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-    response.end(request.url.startsWith('/plain') ? PLAIN : html);
+    response.end(html);
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   baseURL = `http://127.0.0.1:${server.address().port}/`;
@@ -297,7 +292,7 @@ test('continuous picking survives multiple picks and Escape cancels it', async (
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
-  await fixturePage.goto(baseURL + 'plain');
+  await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
   await fixturePage.bringToFront();
   const ready = await waitFor(async () => {
