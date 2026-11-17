@@ -170,3 +170,20 @@ test('validate: resolve returns elements and parser errors directly', async () =
   assert.equal(out.pw.elements.length, 1);
   assert.equal(out.pwId, 'save');
 });
+
+test('validate: bare Playwright locator() expressions are auto-detected', async () => {
+  const out = await page.evaluate(() => ({
+    css: DI.validate.detectType("locator('#save')"),
+    xpath: DI.validate.detectType('locator(`//button[@id="save"]`)'),
+    tested: DI.validate.test('auto', "locator('#save')"),
+    xpathTested: DI.validate.test('auto', 'locator(`//button[@id="save"]`)')
+  }));
+  assert.equal(out.css, 'playwright');
+  assert.equal(out.xpath, 'playwright');
+  assert.equal(out.tested.type, 'playwright');
+  assert.equal(out.tested.ok, true);
+  assert.equal(out.tested.count, 1);
+  assert.equal(out.xpathTested.type, 'playwright');
+  assert.equal(out.xpathTested.ok, true);
+  assert.equal(out.xpathTested.count, 1);
+});
