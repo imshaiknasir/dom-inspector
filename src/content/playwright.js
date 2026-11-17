@@ -126,9 +126,24 @@
     ul: () => "list"
   };
 
+  const ARIA_ROLES = new Set((
+    "alert alertdialog application article banner blockquote button caption cell checkbox code " +
+    "columnheader combobox comment complementary contentinfo definition deletion dialog directory " +
+    "document emphasis feed figure form generic grid gridcell group heading img insertion link list " +
+    "listbox listitem log main mark marquee math menu menubar menuitem menuitemcheckbox menuitemradio " +
+    "meter navigation none note option paragraph presentation progressbar radio radiogroup region row " +
+    "rowgroup rowheader scrollbar search searchbox separator slider spinbutton status strong subscript " +
+    "suggestion superscript switch tab table tablist tabpanel term textbox time timer toolbar tooltip " +
+    "tree treegrid treeitem"
+  ).split(" "));
+
   const implicitRole = (el) => {
-    const explicit = (el.getAttribute("role") || "").split(/\s+/)[0];
-    if (explicit) return explicit;
+    const explicit = (el.getAttribute("role") || "").split(/\s+/).find(Boolean);
+    if (explicit) {
+      const role = explicit.toLowerCase();
+      // Unknown role tokens are ignored by the accessibility tree.
+      if (ARIA_ROLES.has(role)) return role;
+    }
     const fn = ROLE_MAP[U.tagOf(el)];
     return fn ? fn(el) : null;
   };
