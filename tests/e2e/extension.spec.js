@@ -650,6 +650,48 @@ test('panel exports saved locators as a Playwright POM snippet', async () => {
   expect(source).not.toMatch(/\bconstructor\(\) \{/);
 });
 
+test('panel imports saved locators from JSON and skips duplicates', async () => {
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(0);
+
+  const payload = {
+    saved: [
+      {
+        key: 'css::#save', type: 'css', value: '#save', name: 'Imported save', scope: 'CSS',
+        testType: 'css', testValue: '#save', count: 1
+      }
+    ]
+  };
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'saved.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(payload))
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+  await expect(extensionPage.locator('#di-toast')).toContainText('Imported 1 saved locator');
+  const stored = await extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return data['di:panel:saved'];
+  });
+  expect(stored.length).toBe(1);
+  expect(stored[0]).toMatchObject({ key: 'css::#save', type: 'css', value: '#save' });
+
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'saved.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(payload))
+  });
+  await expect(extensionPage.locator('#di-toast')).toContainText('No new saved locators to import');
+  expect(await extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  )).toBe(1);
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
