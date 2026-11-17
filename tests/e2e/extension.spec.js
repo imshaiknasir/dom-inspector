@@ -914,6 +914,46 @@ test('panel re-checks saved locators and records counts and errors', async () =>
   expect(byId['check-c'].error).toBe('');
 });
 
+test('panel saves and removes a locator with the star action', async () => {
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+  await extensionPage.reload();
+  await fixturePage.bringToFront();
+  await startPicking();
+  await clickElement(fixturePage.locator('#save'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
+  }, 10000);
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-css button[data-save-key]').length
+  ), { timeout: 10000 }).toBeGreaterThan(0);
+
+  await extensionPage.evaluate(() => {
+    document.querySelector('#di-css button[data-save-key="css::#save"]').click();
+  });
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return (data['di:panel:saved'] || []).length;
+  }), { timeout: 5000 }).toBe(1);
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(1);
+  expect(await extensionPage.evaluate(() =>
+    document.querySelector('#di-css button[data-save-key="css::#save"]').getAttribute('aria-pressed')
+  )).toBe('true');
+
+  await extensionPage.evaluate(() => {
+    document.querySelector('#di-css button[data-save-key="css::#save"]').click();
+  });
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return (data['di:panel:saved'] || []).length;
+  }), { timeout: 5000 }).toBe(0);
+  expect(await extensionPage.evaluate(() =>
+    document.querySelector('#di-css button[data-save-key="css::#save"]').getAttribute('aria-pressed')
+  )).toBe('false');
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
