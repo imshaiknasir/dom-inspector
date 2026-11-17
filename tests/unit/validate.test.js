@@ -23,6 +23,8 @@ test('validate: detects CSS, XPath and Playwright inputs', async () => {
     indexedXPath: DI.validate.detectType('(//button)[1]'),
     playwright: DI.validate.detectType("page.getByText('x')"),
     shorthandPlaywright: DI.validate.detectType('getByRole("button")'),
+    relativeXPath: DI.validate.detectType('html/body/button[1]'),
+    axisXPath: DI.validate.detectType('following-sibling::button'),
     empty: DI.validate.detectType('')
   }));
   assert.equal(out.css, 'css');
@@ -30,6 +32,8 @@ test('validate: detects CSS, XPath and Playwright inputs', async () => {
   assert.equal(out.indexedXPath, 'xpath');
   assert.equal(out.playwright, 'playwright');
   assert.equal(out.shorthandPlaywright, 'playwright');
+  assert.equal(out.relativeXPath, 'xpath');
+  assert.equal(out.axisXPath, 'xpath');
   assert.equal(out.empty, 'css');
 });
 
