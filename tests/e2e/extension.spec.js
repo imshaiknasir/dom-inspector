@@ -1264,6 +1264,38 @@ test('panel re-checks saved locators and records counts and errors', async () =>
   expect(byId['check-d'].error).toBe('');
 });
 
+test('panel fixes a broken saved locator in place', async () => {
+  await fixturePage.goto(baseURL);
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await fixturePage.bringToFront();
+  await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+
+  const entry = {
+    id: 'fix-saved', key: 'css::#sav', name: 'Broken save', scope: 'CSS', type: 'css',
+    value: '#sav', testType: 'css', testValue: '#sav', count: 0, error: 'No elements matched'
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  await extensionPage.evaluate(() => {
+    document.querySelector('#di-saved .saved-row button[title="Fix saved locator with the repair engine"]').click();
+  });
+  await expect(extensionPage.locator('#di-toast')).toContainText('Saved locator fixed');
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    const saved = (data['di:panel:saved'] || [])[0];
+    return saved && { value: saved.value, testValue: saved.testValue, count: saved.count, error: saved.error };
+  }), { timeout: 10000 }).toEqual({ value: '#save', testValue: '#save', count: 1, error: '' });
+  await expect(extensionPage.locator('#di-saved')).toContainText('#save');
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel saves and removes a locator with the star action', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
   await extensionPage.reload();
