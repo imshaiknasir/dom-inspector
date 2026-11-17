@@ -813,8 +813,8 @@
     input.value = row.testValue || row.raw || row.value;
     const type = row.testType || "auto";
     $("di-type").value = ["css", "xpath", "playwright"].includes(type) ? type : "auto";
-    $("di-tester-card").scrollIntoView({ block: "nearest", behavior: "smooth" });
-    input.focus();
+    scrollCardBelowHeader($("di-tester-card"), true);
+    input.focus({ preventScroll: true });
     input.select();
     scheduleLiveTest();
   };
