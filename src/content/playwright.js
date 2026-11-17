@@ -91,7 +91,31 @@
     return wrapping ? U.normalizeText(wrapping.textContent) : "";
   };
 
-  const CONTENT_NAMED = ["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th", "summary"];
+  const CONTENT_NAMED = ["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th", "summary", "legend", "caption"];
+
+  /* Name from a labelled descendant such as an icon: img/area alt text,
+     svg aria-label or svg > title. Text-only controls reach this fallback. */
+  const descendantName = (el) => {
+    for (const node of el.querySelectorAll("[aria-label], img[alt], area[alt], svg")) {
+      const label = U.attr(node, "aria-label");
+      if (label) return label;
+      if (node.tagName === "IMG" || node.tagName === "AREA") {
+        const alt = U.attr(node, "alt");
+        if (alt) return alt;
+      }
+      if (node.tagName.toLowerCase() === "svg") {
+        const title = node.querySelector("title");
+        const text = title ? U.normalizeText(title.textContent) : "";
+        if (text) return text;
+      }
+    }
+    return "";
+  };
+
+  const directChildText = (el, selector) => {
+    const node = el.querySelector(selector);
+    return node ? U.normalizeText(node.textContent) : "";
+  };
 
   const accessibleName = (el) => {
     const aria = U.attr(el, "aria-label");
@@ -113,13 +137,28 @@
       const type = (U.attr(el, "type") || "text").toLowerCase();
       if (["button", "submit", "reset"].includes(type) && U.attr(el, "value")) return U.attr(el, "value");
     }
+    if (tag === "fieldset") {
+      const legend = directChildText(el, "legend");
+      if (legend) return legend;
+    }
+    if (tag === "table") {
+      const caption = directChildText(el, "caption");
+      if (caption) return caption;
+    }
+    if (tag === "figure") {
+      const caption = directChildText(el, "figcaption");
+      if (caption) return caption;
+    }
     // Natively content-named elements and custom widgets (role=button etc.)
     // take their name from their contents when nothing earlier applied.
     if (CONTENT_NAMED.includes(tag) || U.attr(el, "role")) {
       const content = U.normalizeText(el.textContent);
       if (content) return content;
     }
-    return U.attr(el, "placeholder") || U.attr(el, "title") || "";
+    const icon = descendantName(el);
+    if (icon) return icon;
+    // Playwright prefers title over placeholder for text inputs.
+    return U.attr(el, "title") || U.attr(el, "placeholder") || "";
   };
 
   /* Playwright's role filters hide aria-hidden subtrees and nodes whose own

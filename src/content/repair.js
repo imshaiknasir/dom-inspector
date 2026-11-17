@@ -98,8 +98,55 @@
     for (const m of value.matchAll(/\.([A-Za-z0-9_\-]+)/g)) add("class", m[1]);
     for (const m of value.matchAll(/\[\s*([A-Za-z0-9_\-:]+)\s*=\s*(['"]?)([^'"\]]+)\2\s*\]/g)) add("attr:" + m[1], m[3]);
     for (const m of value.matchAll(/(?:^|[\/\s>+~])([a-zA-Z][a-zA-Z0-9-]{0,20})(?=[\[\s.:#>\[]|$)/g)) add("tag", m[1].toLowerCase());
-    for (const m of value.matchAll(/['"]([^'"]{2,40})['"]/g)) add("text", m[1]);
+
+    if (/getBy[A-Za-z]+\(/.test(value)) {
+      // Playwright arguments carry the intent: role + name, label, placeholder,
+      // alt, title or test id. Score these fuzzily so near-miss wording still
+      // finds the element the author meant.
+      const roleCall = value.match(/getByRole\(\s*(['"])((?:\\.|[^'"])+)\1\s*(?:,\s*\{([\s\S]*?)\})?/);
+      if (roleCall) {
+        add("role", U.unescapeString(roleCall[2]));
+        const named = roleCall[3] && roleCall[3].match(/name:\s*(['"])((?:\\.|[^'"])+)\1/);
+        if (named) add("text", U.unescapeString(named[2]));
+      }
+      const kinds = { Label: "label", Placeholder: "placeholder", AltText: "alt", Title: "title", TestId: "testid", Text: "text" };
+      for (const m of value.matchAll(/getBy(Label|Placeholder|AltText|Title|TestId|Text)\(\s*(['"])((?:\\.|[^'"])+)\2/g)) {
+        add(kinds[m[1]], U.unescapeString(m[3]));
+      }
+    } else {
+      for (const m of value.matchAll(/['"]([^'"]{2,40})['"]/g)) add("text", m[1]);
+    }
     return out;
+  };
+
+  /* Levenshtein-based similarity in [0, 1]; tokens are short. */
+  const similarity = (a, b) => {
+    const x = U.normalizeText(a).toLowerCase();
+    const y = U.normalizeText(b).toLowerCase();
+    if (!x || !y) return 0;
+    if (x === y) return 1;
+    if (x.includes(y) || y.includes(x)) return 0.86;
+    const longest = Math.max(x.length, y.length);
+    if (Math.abs(x.length - y.length) > longest * 0.5) return 0;
+    let prev = Array.from({ length: y.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= x.length; i += 1) {
+      const row = [i];
+      for (let j = 1; j <= y.length; j += 1) {
+        row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+      }
+      prev = row;
+    }
+    return 1 - prev[y.length] / longest;
+  };
+
+  const nameScore = (values, token) => {
+    let best = 0;
+    for (const value of values) {
+      if (!value) continue;
+      const sim = similarity(value, token);
+      if (sim >= 0.62) best = Math.max(best, Math.round(sim * 26));
+    }
+    return best;
   };
 
   const score = (el, list) => {
@@ -109,14 +156,29 @@
     const name = U.attr(el, "name");
     const tag = U.tagOf(el);
     const text = tag === "html" || tag === "body" ? "" : U.normalizeText(el.textContent);
+    const labels = el.labels && el.labels.length
+      ? Array.from(el.labels).map((label) => U.normalizeText(label.textContent))
+      : [];
+    const accessibleName = () => (DI.playwright ? DI.playwright.accessibleName(el) : "");
     for (const { type, token } of list) {
       if (type === "id") total += id === token ? 60 : id.includes(token) ? 24 : 0;
       else if (type === "class") total += cls.split(/\s+/).includes(token) ? 20 : cls.includes(token) ? 8 : 0;
-      else if (type === "tag") total += U.tagOf(el) === token ? 4 : 0;
+      else if (type === "tag") total += tag === token ? 4 : 0;
       else if (type.startsWith("attr:")) {
         const attr = type.slice(5);
         total += U.attr(el, attr) === token ? 26 : U.attr(el, attr).includes(token) ? 10 : 0;
-      } else if (type === "text") total += text.includes(token) ? 12 : 0;
+      } else if (type === "role") total += DI.playwright && DI.playwright.implicitRole(el) === token ? 8 : 0;
+      else if (type === "label") {
+        // getByLabel resolves the labelled control, not the label element.
+        const explicit = nameScore(labels, token);
+        const viaName = tag === "label" ? 0 : nameScore([accessibleName()], token);
+        total += Math.max(explicit, viaName);
+      }
+      else if (type === "placeholder") total += nameScore([U.attr(el, "placeholder")], token);
+      else if (type === "alt") total += nameScore([U.attr(el, "alt")], token);
+      else if (type === "title") total += nameScore([U.attr(el, "title")], token);
+      else if (type === "testid") total += U.attr(el, "data-testid") === token ? 28 : U.attr(el, "data-testid").includes(token) ? 12 : 0;
+      else if (type === "text") total += nameScore([text, accessibleName()], token);
     }
     return total;
   };
