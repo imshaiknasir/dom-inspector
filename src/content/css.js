@@ -27,6 +27,11 @@
     return false;
   };
 
+  const attrValue = (value) => String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, " ");
+
   const classList = (el) => String(el.getAttribute("class") || "")
     .split(/\s+/)
     .map((c) => c.trim())
@@ -95,9 +100,9 @@
     for (const [name, score] of ATTR_PRIORITY) {
       const value = attr(el, name);
       if (!value || looksGenerated(value)) continue;
-      pushCandidate(list, seen, `${tag}[${name}="${value.replace(/"/g, '\\"')}"]`, `attr:${name}`, score, el);
+      pushCandidate(list, seen, `${tag}[${name}="${attrValue(value)}"]`, `attr:${name}`, score, el);
       if (name === "data-testid" || name === "data-test" || name === "data-cy") {
-        pushCandidate(list, seen, `[${name}="${value.replace(/"/g, '\\"')}"]`, `attr:${name}`, score + 1, el);
+        pushCandidate(list, seen, `[${name}="${attrValue(value)}"]`, `attr:${name}`, score + 1, el);
       }
     }
 

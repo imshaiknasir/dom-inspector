@@ -244,6 +244,20 @@
     const xp = DI.xpath.best(el);
     if (xp) add("locator", `${base}.locator(\`${xp.xpath}\`)`, xp.count, 48);
 
+    // Guarantee at least one exact locator when nothing is unique: nth fallback.
+    if (!out.some((item) => item.count === 1)) {
+      if (css) {
+        const matches = U.deepQueryAll(css.selector, root);
+        const index = matches.indexOf(el);
+        if (index >= 0) add("locator+nth", `${base}.locator(${quote(css.selector)}).nth(${index})`, 1, 58);
+      }
+      if (xp) {
+        const nodes = DI.xpath.snapshot(xp.xpath, root);
+        const index = nodes.indexOf(el) + 1;
+        if (index > 0) add("locator+nth", `${base}.locator(\`(${xp.xpath})[${index}]\`)`, 1, 59);
+      }
+    }
+
     return out
       .filter((item, index, arr) => arr.findIndex((other) => other.selector === item.selector) === index)
       .sort((a, b) => (a.count === 1 ? 0 : 1) - (b.count === 1 ? 0 : 1) || a.score - b.score || a.count - b.count);
