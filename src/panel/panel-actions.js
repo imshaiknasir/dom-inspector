@@ -64,6 +64,26 @@
         }
         return out;
       };
+      /* Accessible name from content also incorporates image alt text and
+         embedded input values, unlike rendered text matching. */
+      const contentName = (node) => {
+        let out = "";
+        for (const child of node.childNodes) {
+          if (child.nodeType === 3) { out += " " + child.nodeValue; continue; }
+          if (child.nodeType !== 1 || ignoredText.includes(tagOf(child))) continue;
+          const tag = tagOf(child);
+          if (tag === "img") { out += " " + attr(child, "alt"); continue; }
+          if (tag === "input") {
+            const inputType = (attr(child, "type") || "text").toLowerCase();
+            if (["submit", "button", "reset"].includes(inputType)) {
+              out += " " + (attr(child, "value") || (inputType === "submit" ? "Submit" : ""));
+            }
+            continue;
+          }
+          out += " " + contentName(child);
+        }
+        return out;
+      };
       const textEquals = (actual, wanted, exact) => {
         const value = norm(actual);
         const needle = norm(wanted);
@@ -189,7 +209,7 @@
         const role = implicitRole(node);
         if (NAME_FROM_CONTENT.includes(role) ||
             ["button", "a", "option", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
-          const contents = norm(visibleText(node));
+          const contents = norm(contentName(node));
           if (contents) return contents;
         }
         return attr(node, "title") || attr(node, "placeholder") || "";
