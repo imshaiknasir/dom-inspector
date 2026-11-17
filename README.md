@@ -69,10 +69,12 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   filter, reorder, re-check every saved locator's live count, re-test, edit,
   copy, delete, import JSON/CSV, export JSON/CSV, clear the list, or download a
   Playwright page-object snippet (`POM`) generated from the saved locators.
-  When a re-check flags a broken entry, a **Fix** action repairs it in place
-  with a verified unique CSS/XPath/Playwright replacement. Saved code snippets
-  that are not locators (Cypress/JS/jQuery/frame helpers) are kept and exported
-  but skipped by Check.
+  Each saved row shows its source URL. When a re-check flags a broken entry, a **Fix** action repairs it in place
+  with a verified unique CSS/XPath/Playwright replacement. Check, Test and Fix
+  stay scoped to the entry's saved source page; entries from other pages are
+  skipped/refused so they are never rewritten against the wrong DOM. Saved code
+  snippets that are not locators (Cypress/JS/jQuery/frame helpers) are kept and
+  exported but skipped by Check.
 - **Right-click copy** — the page context menu can pick an element or copy its
   best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
@@ -183,8 +185,8 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 209 unit checks (206 passing, 3 tracked as `todo`
-parity probes for the remaining Playwright engine work) and 36/36 extension
+popup copy. Current status: 218 unit checks (215 passing, 3 tracked as `todo`
+parity probes for the remaining Playwright engine work) and 38/38 extension
 e2e checks pass, including real-extension coverage for the popup, axes
 reference, right-click bridge, repair and batch healing.
 

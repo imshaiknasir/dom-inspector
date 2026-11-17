@@ -74,9 +74,9 @@ not shipped). Last updated 17 Nov 2026.
 | Export all locators to JSON | done | includes element, counts, raw values, saved list |
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator reorder | done | up/down controls; order drives POM method order |
-| Saved locator filter | done | name/type/value/URL filter; empty-state feedback; `Esc` clears it |
-| Re-check saved locators | done | re-tests all testable saved values, updates counts, shows per-row errors, and skips saved code snippets |
-| Saved locator repair | done | per-row **Fix** on a broken saved entry uses the repair engine and only keeps a replacement verified as unique |
+| Saved locator filter | done | name/type/value/URL filter; source URL shown on each row; empty-state feedback; `Esc` clears it |
+| Re-check saved locators | done | re-tests testable saved values on their source page, updates counts, shows per-row errors, and skips snippets and other-page entries |
+| Saved locator repair | done | per-row **Fix** on a broken saved entry uses the repair engine, only keeps a replacement verified as unique, and refuses entries from another page |
 | Saved locator import / export | done | JSON/CSV import with dedupe + JSON/CSV export |
 | Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries; comment labels are sanitised |
 | Saved locator delete / clear | done | confirm before clearing all |
@@ -109,9 +109,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 209 checks: 206 pass, 3 tracked `todo` parity probes |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 218 checks: 215 pass, 3 tracked `todo` parity probes |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 36/36 checks, including popup history, axes, tester Fix, saved filter/re-check/reorder, POM export, JSON/CSV import, settings recovery and batch healing |
+| Extension e2e suites | done | 38/38 checks, including popup history, axes, tester Fix, collapsible cards, saved filter/re-check/reorder/repair, POM export, JSON/CSV import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
