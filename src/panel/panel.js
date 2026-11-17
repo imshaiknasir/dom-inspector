@@ -2486,6 +2486,7 @@
     card.classList.remove("collapsed");
     const toggle = card.querySelector(".section-toggle");
     if (toggle) toggle.setAttribute("aria-expanded", "true");
+    syncBulkLabelAfterToggle();
     persistSettings();
   };
 
