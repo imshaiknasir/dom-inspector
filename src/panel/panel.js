@@ -1152,6 +1152,7 @@
     const button = $("di-saved-check");
     button.disabled = true;
     let unique = 0;
+    let many = 0;
     let broken = 0;
     try {
       for (const entry of state.saved) {
@@ -1168,13 +1169,17 @@
           entry.error = friendlyError(error);
         }
         if (entry.count === 1) unique += 1;
+        else if (typeof entry.count === "number" && entry.count > 1) many += 1;
         else broken += 1;
         renderSaved();
       }
       persistSaved();
-      const message = `Checked ${state.saved.length} saved locator${state.saved.length === 1 ? "" : "s"} · ${unique} unique · ${broken} broken`;
+      const notes = [`${unique} unique`];
+      if (many) notes.push(`${many} not unique`);
+      if (broken) notes.push(`${broken} broken`);
+      const message = `Checked ${state.saved.length} saved locator${state.saved.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
       toast(message, broken ? "bad" : "ok");
-      setStatus(message, broken ? "warn" : "ok");
+      setStatus(message, broken || many ? "warn" : "ok");
     } finally {
       button.disabled = false;
       renderSaved();
