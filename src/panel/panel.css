@@ -221,13 +221,7 @@ select { cursor: pointer; }
   overflow: hidden;
 }
 
-.info-card .section-head {
-  padding: 10px 12px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
+.info-card .section-head,
 .loc-card .section-head,
 #di-tester-card .section-head,
 #di-heal-card .section-head,
