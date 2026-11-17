@@ -405,3 +405,15 @@ test('repair: locator generation failures do not break the response', async () =
   assert.equal(out.fixed, '#save');
   assert.equal(out.locators, null);
 });
+
+test('validate: top-frame matches are not inflated by iframes', async () => {
+  const frame = page.frames().find((f) => f !== page.mainFrame());
+  await frame.waitForSelector('#inner');
+  const out = await page.evaluate(() => ({
+    buttons: DI.validate.test('css', 'button').count,
+    topButtons: DI.util.deepQueryAll('button').length,
+    inner: DI.validate.test('css', '#inner').count
+  }));
+  assert.equal(out.buttons, out.topButtons);
+  assert.equal(out.inner, 1);
+});

@@ -174,12 +174,14 @@
 
   const queryAllWithFrames = (selector) => {
     const out = U.deepQueryAll(selector);
+    if (out.length) return out;
     for (const doc of frameDocs()) out.push(...U.deepQueryAll(selector, doc));
     return out;
   };
 
   const xpathWithFrames = (xpath) => {
     const out = DI.xpath.snapshot(xpath);
+    if (out.length) return out;
     for (const doc of frameDocs()) out.push(...DI.xpath.snapshot(xpath, doc));
     return out;
   };
