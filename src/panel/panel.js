@@ -2770,8 +2770,10 @@
       api.runtime.onMessage.addListener((message, sender) => {
         if (!message || !message.type) return undefined;
         const senderTab = sender && sender.tab && sender.tab.id;
-        if (senderTab != null && state.tabId != null && senderTab !== state.tabId) return undefined;
-        if (state.tabId == null && senderTab != null) state.tabId = senderTab;
+        if (senderTab != null) {
+          if (hasDevtools && state.tabId != null && senderTab !== state.tabId) return undefined;
+          state.tabId = senderTab;
+        }
         if (message.type === "DI_REFERENCE" && message.payload) {
           state.reference = message.payload;
           if (state.payload) {
