@@ -50,12 +50,18 @@
   const resolvePlaywright = (expr) => {
     const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
     if (role) {
+      const regex = expr.match(/name:\s*\/(.+?)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]([^'"]+)['"]/);
       const exact = /exact:\s*true/.test(expr);
+      let re = null;
+      if (regex) {
+        try { re = new RegExp(regex[1].replace(/\\\//g, "/"), regex[2]); } catch (_) { re = null; }
+      }
       return U.deepEveryElement(document, []).filter((el) => {
         if (DI.playwright.implicitRole(el) !== role[1]) return false;
-        if (!name) return true;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
+        if (re) return re.test(actual);
+        if (!name) return true;
         return exact ? actual === name[1] : actual.includes(name[1]);
       });
     }

@@ -133,9 +133,17 @@
   const countExpr = (expr, root = document) => {
     if (/getByRole\(/.test(expr)) {
       const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
+      const regex = expr.match(/name:\s*\/(.+?)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]([^'"]+)['"]/);
       const exact = /exact:\s*true/.test(expr);
-      return role ? countRole(role[1], name ? name[1] : "", exact, root) : 0;
+      if (!role) return 0;
+      if (regex) {
+        let re;
+        try { re = new RegExp(regex[1].replace(/\\\//g, "/"), regex[2]); } catch (_) { return 0; }
+        return allElements(root).filter((el) =>
+          implicitRole(el) === role[1] && re.test(U.normalizeText(accessibleName(el)))).length;
+      }
+      return countRole(role[1], name ? name[1] : "", exact, root);
     }
     if (/getByLabel\(/.test(expr)) {
       const m = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
@@ -239,7 +247,7 @@
       if (name && name.length <= 80) {
         add("getByRole", `${base}.getByRole(${quote(role)}, { name: ${quote(name)}, exact: true })`, countRole(role, name, true, root), 2);
         add("getByRole", `${base}.getByRole(${quote(role)}, { name: ${quote(name)} })`, countRole(role, name, false, root), 4);
-        const pattern = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const pattern = name.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
         add("getByRole-regex", `${base}.getByRole(${quote(role)}, { name: /${pattern}/i })`, countRole(role, name, false, root), 5);
       }
       add("getByRole", `${base}.getByRole(${quote(role)})`, countRole(role, "", false, root), 30);

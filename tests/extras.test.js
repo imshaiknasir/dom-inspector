@@ -46,3 +46,16 @@ test('iframe chain and shadow chain are bounded', async () => {
   assert.equal(out.frames, 0);
   assert.equal(out.hosts.length, 1);
 });
+
+test('playwright: regex role locators count and validate', async () => {
+  const out = await page.evaluate(() => {
+    const expr = "page.getByRole('button', { name: /^Save changes$/i })";
+    return {
+      count: DI.playwright.countExpr(expr),
+      validated: DI.validate.test('playwright', expr)
+    };
+  });
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.ok, true);
+  assert.equal(out.validated.count, 1);
+});
