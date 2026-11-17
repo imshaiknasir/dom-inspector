@@ -159,15 +159,24 @@
       if (overlay) overlay.classList.add("di-picked");
     }, 0);
     if (!continuous) {
-      // Keep the overlay visible on the last pick; the next DI_START resets it.
+      // Keep the overlay (and Escape handling) visible on the last pick; the
+      // next DI_START resets it.
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("mousemove", onMove, true);
       active = false;
     }
   };
 
+  const detach = () => {
+    document.removeEventListener("mousemove", onMove, true);
+    document.removeEventListener("click", onClick, true);
+    document.removeEventListener("keydown", onKey, true);
+  };
+
   const start = () => {
-    if (active) return;
+    // Always detach first so a restarted picker never stacks listeners (for
+    // example after a non-continuous pick leaves the Escape handler active).
+    detach();
     active = true;
     ensureOverlay().classList.remove("di-picked");
     document.addEventListener("mousemove", onMove, true);
@@ -177,9 +186,7 @@
 
   const stop = () => {
     active = false;
-    document.removeEventListener("mousemove", onMove, true);
-    document.removeEventListener("click", onClick, true);
-    document.removeEventListener("keydown", onKey, true);
+    detach();
     if (overlay) overlay.remove();
     overlay = null;
     lastTarget = null;

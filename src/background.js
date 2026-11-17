@@ -25,7 +25,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab || tab.id == null) return;
   if (info.menuItemId === "di-pick") {
     if (tab.windowId != null) chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
-    chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+    // Start the picker only in the clicked frame: broadcasting to every frame
+    // would leave several overlays listening for the next click.
+    if (info.frameId != null) {
+      chrome.tabs.sendMessage(tab.id, { type: "DI_START" }, { frameId: info.frameId }).catch(() => {});
+    } else {
+      chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+    }
   }
   if (info.menuItemId === "di-copy-best") {
     if (info.frameId != null) {
