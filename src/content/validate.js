@@ -64,6 +64,40 @@
     return [...out];
   };
 
+  const labelTargetsRegex = (regex, doc = document) => {
+    const out = new Set();
+    const test = (text) => { regex.lastIndex = 0; return regex.test(text); };
+    for (const el of U.deepEveryElement(doc, [])) {
+      if (U.tagOf(el) === "label") {
+        if (test(U.normalizeText(el.textContent))) {
+          const id = el.getAttribute("for");
+          const root = el.getRootNode ? el.getRootNode() : document;
+          let target = null;
+          if (id) {
+            target = (root.getElementById && root.getElementById(id)) ||
+              U.deepQueryAll("#" + U.cssEscape(id), root)[0] ||
+              (doc.getElementById ? doc.getElementById(id) : null);
+          } else {
+            target = el.querySelector("input, select, textarea");
+          }
+          if (target) out.add(target);
+        }
+      }
+      const aria = U.attr(el, "aria-label");
+      if (aria && test(aria)) out.add(el);
+      const ids = U.attr(el, "aria-labelledby");
+      if (ids) {
+        const root = el.getRootNode ? el.getRootNode() : doc;
+        const by = ids.split(/\s+/).map((id) => {
+          const node = root.getElementById ? root.getElementById(id) : null;
+          return node ? U.normalizeText(node.textContent) : "";
+        }).join(" ").trim();
+        if (by && test(by)) out.add(el);
+      }
+    }
+    return [...out];
+  };
+
   const resolvePlaywright = (expr, doc = document) => {
     const modifier = expr.match(/\.(first|last|nth)\((\d*)\)$/);
     if (modifier) {
@@ -71,6 +105,32 @@
       if (modifier[1] === "first") return base.slice(0, 1);
       if (modifier[1] === "last") return base.slice(-1);
       return base[Number(modifier[2])] ? [base[Number(modifier[2])]] : [];
+    }
+    const filterMatch = expr.match(/\.filter\(\s*\{\s*hasText\s*:\s*([^}]+?)\s*\}\s*\)/);
+    if (filterMatch && filterMatch.index > 0) {
+      const spec = DI.playwright.parseTextFilter(filterMatch[1]);
+      if (!spec) return [];
+      return resolvePlaywright(expr.slice(0, filterMatch.index), doc)
+        .filter((el) => DI.playwright.matchesHasText(el, spec));
+    }
+    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{\s*hasText\s*:\s*([^}]+?)\s*\}\s*\)\s*$/);
+    if (locatorOption) {
+      const spec = DI.playwright.parseTextFilter(locatorOption[3]);
+      if (!spec) return [];
+      return U.deepQueryAll(locatorOption[2], doc).filter((el) => DI.playwright.matchesHasText(el, spec));
+    }
+    const cssEngine = expr.match(/locator\(\s*['"]css=([\s\S]*?)['"]\s*\)\s*$/);
+    if (cssEngine) return U.deepQueryAll(cssEngine[1], doc);
+    const xpathEngine = expr.match(/locator\(\s*['"]xpath=([\s\S]*?)['"]\s*\)\s*$/);
+    if (xpathEngine) return DI.xpath.snapshot(xpathEngine[1], doc);
+    const textEngine = expr.match(/locator\(\s*['"]text=([\s\S]*?)['"]\s*\)\s*$/);
+    if (textEngine) {
+      const spec = DI.playwright.parseTextFilter(textEngine[1]);
+      if (!spec) return [];
+      const quoted = /^(['"])[\s\S]*\1$/.test(textEngine[1].trim());
+      const all = U.deepEveryElement(doc, []);
+      if (spec.regex) return all.filter((el) => DI.playwright.matchesTextRegexSmallest(el, spec.regex));
+      return all.filter((el) => textMatches(el, spec.text, quoted));
     }
     const framePattern = /\.frameLocator\(\s*(['"])(.*?)\1\s*\)/g;
     const frameSelectors = [];
@@ -101,21 +161,33 @@
       return U.deepEveryElement(doc, []).filter((el) => {
         if (DI.playwright.implicitRole(el) !== role[1]) return false;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
-        if (re) return re.test(actual);
+        if (re) { re.lastIndex = 0; return re.test(actual); }
         if (!name) return true;
         const wanted = U.normalizeText(U.unescapeString(name[1]));
         return exact ? actual === wanted : actual.toLowerCase().includes(wanted.toLowerCase());
       });
     }
+    const labelRegex = expr.match(/getByLabel\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+    if (labelRegex) {
+      const re = DI.playwright.buildRegex(labelRegex[1], labelRegex[2]);
+      return re ? labelTargetsRegex(re, doc) : [];
+    }
     const label = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (label) return labelTargets(U.unescapeString(label[1]), /exact:\s*true/.test(expr), doc);
+    const textRegex = expr.match(/getByText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+    if (textRegex) {
+      const re = DI.playwright.buildRegex(textRegex[1], textRegex[2]);
+      return re ? U.deepEveryElement(doc, []).filter((el) => DI.playwright.matchesTextRegexSmallest(el, re)) : [];
+    }
     const text = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
-    const byAttr = (name, raw, exact = false) => {
-      const wanted = U.unescapeString(raw);
+    const byAttr = (name, raw, exact = false, normalize = true) => {
+      const value = U.unescapeString(raw);
+      const wanted = normalize ? U.normalizeText(value) : String(value).trim();
       const needle = exact ? wanted : wanted.toLowerCase();
       return U.deepEveryElement(doc, []).filter((el) => {
-        const actual = U.attr(el, name);
+        const rawActual = U.attr(el, name);
+        const actual = normalize ? U.normalizeText(rawActual) : rawActual;
         return exact ? actual === needle : actual.toLowerCase().includes(needle);
       });
     };
@@ -126,8 +198,17 @@
     if (alt) return byAttr("alt", alt[1], isExact);
     const title = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (title) return byAttr("title", title[1], isExact);
+    const testIdRegex = expr.match(/getByTestId\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+    if (testIdRegex) {
+      const re = DI.playwright.buildRegex(testIdRegex[1], testIdRegex[2]);
+      if (!re) return [];
+      return U.deepEveryElement(doc, []).filter((el) => {
+        re.lastIndex = 0;
+        return re.test(U.attr(el, "data-testid"));
+      });
+    }
     const testId = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (testId) return byAttr("data-testid", testId[1], true);
+    if (testId) return byAttr("data-testid", testId[1], true, false);
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
       const base = (visibility[1] || "*").trim() || "*";
@@ -138,10 +219,17 @@
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
       const value = U.unescapeString(engine[2]);
-      const exact = expr.includes(":text-is(");
+      const mode = expr.includes(":has-text(") ? "has-text"
+        : expr.includes(":text-is(") ? "text-is" : "text";
       return U.deepEveryElement(doc, []).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
-        return textMatches(el, value, exact);
+        // `:has-text` also matches ancestors; `:text`/`:text-is` keep the
+        // smallest matching element, mirroring Playwright.
+        if (mode === "has-text") {
+          const hay = U.normalizeText(el.textContent).toLowerCase();
+          return hay.includes(U.normalizeText(value).toLowerCase());
+        }
+        return textMatches(el, value, mode === "text-is");
       });
     }
     const chained = [...expr.matchAll(/\.locator\(\s*['"`]([^'"`]+)['"`]\s*\)/g)].map((m) => m[1]);
@@ -158,10 +246,6 @@
         nodes = next;
       }
       return nodes;
-    }
-    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]((?:\\.|[^'"])+)['"]\s*\}\)/);
-    if (filtered) {
-      return U.deepQueryAll(filtered[1], doc).filter((el) => U.normalizeText(el.textContent).includes(U.unescapeString(filtered[2])));
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1], doc);

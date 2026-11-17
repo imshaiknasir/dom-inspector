@@ -153,13 +153,81 @@
 
   const countText = (value, exact, root) => allElements(root).filter((el) => textMatches(el, value, exact)).length;
 
-  const countAttr = (name, value, root, exact = false) => {
-    const wanted = String(value == null ? "" : value).trim();
+  /* `:has-text` also matches ancestors, unlike getByText's smallest element. */
+  const countHasText = (tag, value, root) => {
+    const needle = U.normalizeText(value).toLowerCase();
+    return allElements(root).filter((el) => {
+      if (tag !== "*" && U.tagOf(el) !== tag) return false;
+      return U.normalizeText(el.textContent).toLowerCase().includes(needle);
+    }).length;
+  };
+
+  const countAttr = (name, value, root, exact = false, normalize = true) => {
+    const wanted = normalize ? U.normalizeText(value) : String(value == null ? "" : value).trim();
     const needle = exact ? wanted : wanted.toLowerCase();
     return allElements(root).filter((el) => {
-      const actual = U.attr(el, name);
+      const raw = U.attr(el, name);
+      const actual = normalize ? U.normalizeText(raw) : raw;
       return exact ? actual === needle : actual.toLowerCase().includes(needle);
     }).length;
+  };
+
+  const testRegex = (regex, text) => {
+    regex.lastIndex = 0;
+    return regex.test(text);
+  };
+
+  const buildRegex = (body, flags) => {
+    try { return new RegExp(body.replace(/\\\//g, "/"), flags); } catch (_) { return null; }
+  };
+
+  /** Parse a Playwright text argument: `/re/flags`, `'text'`, `"text"` or bare text. */
+  const parseTextFilter = (raw) => {
+    const value = String(raw == null ? "" : raw).trim();
+    if (!value) return null;
+    const regex = value.match(/^\/([\s\S]*)\/([gimsuy]*)$/);
+    if (regex) {
+      const re = buildRegex(regex[1], regex[2]);
+      return re ? { regex: re } : null;
+    }
+    const quoted = value.match(/^(['"])([\s\S]*)\1$/);
+    return { text: U.unescapeString(quoted ? quoted[2] : value) };
+  };
+
+  const matchesHasText = (el, spec) => {
+    if (!spec) return false;
+    const text = U.normalizeText(el.textContent);
+    if (spec.regex) return testRegex(spec.regex, text);
+    return text.toLowerCase().includes(U.normalizeText(spec.text).toLowerCase());
+  };
+
+  /* Playwright text engines pick the smallest element that matches. */
+  const matchesTextRegexSmallest = (el, regex) => {
+    const own = U.normalizeText(el.textContent);
+    if (!testRegex(regex, own)) return false;
+    for (const child of el.children) {
+      if (testRegex(regex, U.normalizeText(child.textContent))) return false;
+    }
+    return true;
+  };
+
+  const countLabelRegex = (regex, root) => {
+    const seen = new Set();
+    const add = (el) => { if (el) seen.add(el); };
+    for (const el of allElements(root)) {
+      if (U.tagOf(el) === "label") {
+        if (testRegex(regex, U.normalizeText(el.textContent))) {
+          const id = el.getAttribute("for");
+          if (id) add((el.getRootNode ? el.getRootNode() : document).getElementById(id));
+          else add(el.querySelector("input, select, textarea"));
+        }
+      }
+      const aria = U.attr(el, "aria-label");
+      if (aria && testRegex(regex, aria)) add(el);
+      const by = labelledByText(el);
+      if (by && testRegex(regex, by)) add(el);
+    }
+    return seen.size;
   };
 
   const countExpr = (expr, root = document) => {
@@ -170,6 +238,24 @@
       if (modifier[1] === "first" || modifier[1] === "last") return total > 0 ? 1 : 0;
       return Number(modifier[2]) < total ? 1 : 0;
     }
+
+    const filterMatch = expr.match(/\.filter\(\s*\{\s*hasText\s*:\s*([^}]+?)\s*\}\s*\)/);
+    if (filterMatch && filterMatch.index > 0) {
+      const spec = parseTextFilter(filterMatch[1]);
+      if (!spec) return 0;
+      const baseExpr = expr.slice(0, filterMatch.index);
+      const elements = DI.validate && DI.validate.resolve
+        ? DI.validate.resolve("playwright", baseExpr).elements
+        : [];
+      return elements.filter((el) => matchesHasText(el, spec)).length;
+    }
+    const locatorOption = expr.match(/locator\(\s*(['"])([\s\S]*?)\1\s*,\s*\{\s*hasText\s*:\s*([^}]+?)\s*\}\s*\)\s*$/);
+    if (locatorOption) {
+      const spec = parseTextFilter(locatorOption[3]);
+      if (!spec) return 0;
+      try { return U.deepQueryAll(locatorOption[2], root).filter((el) => matchesHasText(el, spec)).length; } catch (_) { return 0; }
+    }
+
     if (/getByRole\(/.test(expr)) {
       const role = expr.match(/getByRole\(\s*['"]((?:\\.|[^'"])+)['"]/);
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
@@ -177,18 +263,28 @@
       const exact = /exact:\s*true/.test(expr);
       if (!role) return 0;
       if (regex) {
-        let re;
-        try { re = new RegExp(regex[1].replace(/\\\//g, "/"), regex[2]); } catch (_) { return 0; }
+        const re = buildRegex(regex[1], regex[2]);
+        if (!re) return 0;
         return allElements(root).filter((el) =>
-          implicitRole(el) === role[1] && re.test(U.normalizeText(accessibleName(el)))).length;
+          implicitRole(el) === role[1] && testRegex(re, U.normalizeText(accessibleName(el)))).length;
       }
       return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root);
     }
     if (/getByLabel\(/.test(expr)) {
+      const regex = expr.match(/getByLabel\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+      if (regex) {
+        const re = buildRegex(regex[1], regex[2]);
+        return re ? countLabelRegex(re, root) : 0;
+      }
       const m = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countLabel(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByText\(/.test(expr)) {
+      const regex = expr.match(/getByText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+      if (regex) {
+        const re = buildRegex(regex[1], regex[2]);
+        return re ? allElements(root).filter((el) => matchesTextRegexSmallest(el, re)).length : 0;
+      }
       const m = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countText(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
     }
@@ -205,10 +301,32 @@
       return m ? countAttr("title", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByTestId\(/.test(expr)) {
+      const regex = expr.match(/getByTestId\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+      if (regex) {
+        const re = buildRegex(regex[1], regex[2]);
+        return re ? allElements(root).filter((el) => testRegex(re, U.attr(el, "data-testid"))).length : 0;
+      }
       const m = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
       if (!m) return 0;
-      return countAttr("data-testid", U.unescapeString(m[1]), root, true);
+      return countAttr("data-testid", U.unescapeString(m[1]), root, true, false);
     }
+
+    const cssEngine = expr.match(/locator\(\s*['"]css=([\s\S]*?)['"]\s*\)\s*$/);
+    if (cssEngine) {
+      try { return U.deepQueryAll(cssEngine[1], root).length; } catch (_) { return 0; }
+    }
+    const xpathEngine = expr.match(/locator\(\s*['"]xpath=([\s\S]*?)['"]\s*\)\s*$/);
+    if (xpathEngine) return DI.xpath.count(xpathEngine[1], root);
+    const textEngine = expr.match(/locator\(\s*['"]text=([\s\S]*?)['"]\s*\)\s*$/);
+    if (textEngine) {
+      const spec = parseTextFilter(textEngine[1]);
+      if (!spec) return 0;
+      const quoted = /^(['"])[\s\S]*\1$/.test(textEngine[1].trim());
+      return allElements(root).filter((el) => (spec.regex
+        ? matchesTextRegexSmallest(el, spec.regex)
+        : textMatches(el, spec.text, quoted))).length;
+    }
+
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
       const base = (visibility[1] || "*").trim() || "*";
@@ -219,11 +337,15 @@
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
       const value = U.unescapeString(engine[2]);
-      const mode = expr.includes(":text-is(") ? "exact" : "contains";
+      const mode = expr.includes(":has-text(") ? "has-text"
+        : expr.includes(":text-is(") ? "text-is" : "text";
       return allElements(root).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
-        const text = U.normalizeText(el.textContent);
-        return mode === "exact" ? text === value : text.includes(value);
+        if (mode === "has-text") {
+          const hay = U.normalizeText(el.textContent).toLowerCase();
+          return hay.includes(U.normalizeText(value).toLowerCase());
+        }
+        return textMatches(el, value, mode === "text-is");
       }).length;
     }
     const chained = [...expr.matchAll(/\.locator\(\s*['"`]([^'"`]+)['"`]\s*\)/g)].map((m) => m[1]);
@@ -240,10 +362,6 @@
         nodes = next;
       }
       return nodes.length;
-    }
-    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]((?:\\.|[^'"])+)['"]\s*\}\)/);
-    if (filtered) {
-      return U.deepQueryAll(filtered[1], root).filter((el) => U.normalizeText(el.textContent).includes(U.unescapeString(filtered[2]))).length;
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/") && !css[1].startsWith("(")) {
@@ -331,7 +449,7 @@
       if (exactMatch) add("getByText", `${base}.getByText(${quote(text)}, { exact: true })`, countText(text, true, root), 9);
       if (looseMatch) {
         add("getByText", `${base}.getByText(${quote(text)})`, countText(text, false, root), 10);
-        add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${cssString(text)}")')`, countText(text, false, root), 22);
+        add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${cssString(text)}")')`, countHasText(U.tagOf(el), text, root), 22);
       }
     }
     const alt = U.attr(el, "alt");
@@ -443,5 +561,9 @@
       .replace(/^page/, "Page");
   };
 
-  DI.playwright = { implicitRole, accessibleName, labelledByText, countExpr, generate, best, framePrefix, toPython, toJava, toCSharp };
+  DI.playwright = {
+    implicitRole, accessibleName, labelledByText, countExpr, countHasText,
+    parseTextFilter, matchesHasText, matchesTextRegexSmallest, buildRegex,
+    generate, best, framePrefix, toPython, toJava, toCSharp
+  };
 })();
