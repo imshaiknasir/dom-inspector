@@ -182,6 +182,25 @@ test('toolbar popup renders the last picked locators', async () => {
   await expect(popup.locator('#pop-saved-rows')).toContainText('#save');
   await expect(popup.locator('#pop-saved-rows')).toContainText('//input');
 
+  const history = [
+    { at: 20, url: 'https://old.example/', css: '#old-save', cssCount: 1, element: { tag: 'button', id: 'old-save' } },
+    { at: 10, url: 'https://older.example/', xpath: '//div[@id="old"]', xpathCount: 2, element: { tag: 'div', id: 'old' } }
+  ];
+  await popup.evaluate((entries) => chrome.storage.local.set({ 'di:panel:history': entries }), history);
+  await popup.locator('#pop-refresh').click();
+  await expect(popup.locator('#pop-history-card')).toBeVisible();
+  await expect(popup.locator('#pop-history-meta')).toHaveText('2');
+  expect(await popup.locator('#pop-history-rows .loc-row').count()).toBe(2);
+  await expect(popup.locator('#pop-history-rows')).toContainText('#old-save');
+  await expect(popup.locator('#pop-history-rows')).toContainText('//div[@id="old"]');
+  await popup.locator('#pop-history-clear').click();
+  await expect.poll(() => popup.evaluate(() =>
+    document.getElementById('pop-history-card').hidden
+  ), { timeout: 5000 }).toBe(true);
+  expect(await popup.locator('#pop-history-rows .loc-row').count()).toBe(0);
+  await expect(popup.locator('#pop-status')).toContainText('Pick history cleared');
+  expect(await popup.evaluate(() => chrome.storage.local.get('di:panel:history'))).toEqual({});
+
   const linkPayload = {
     url: 'https://example.test/docs',
     element: { tag: 'a', id: 'link' },
@@ -412,6 +431,46 @@ test('panel tester validates, highlights and clears a locator', async () => {
   await expect.poll(() => extensionPage.evaluate(() =>
     document.getElementById('di-result').textContent
   ), { timeout: 5000 }).toMatch(/invalid|no elements/i);
+});
+
+test('panel tester Fix repairs, accepts valid and reports unfixable locators', async () => {
+  await fixturePage.bringToFront();
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#sav';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-fix').click();
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-input').value
+  ), { timeout: 5000 }).toBe('#save');
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toContain('1 match');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-fix').click();
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-input').value
+  ), { timeout: 5000 }).toBe('#save');
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toMatch(/valid/i);
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '.definitely-not-here';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-fix').click();
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toMatch(/could not fix/i);
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
