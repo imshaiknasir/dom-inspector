@@ -1170,6 +1170,11 @@
       const code = el("code", "loc-value", entry.value);
       code.title = entry.value;
       main.appendChild(code);
+      if (entry.url) {
+        const url = el("div", "saved-url", entry.url);
+        url.title = entry.url;
+        main.appendChild(url);
+      }
       if (entry.error) main.appendChild(el("div", "heal-note bad", entry.error));
 
       const rowMeta = el("div", "loc-meta");
