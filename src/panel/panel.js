@@ -1134,10 +1134,19 @@
     saved: state.saved
   });
 
+  const savedDisplayValue = (entry) => {
+    if (!entry) return "";
+    const isPlaywright = entry.testType === "playwright" || entry.type === "playwright";
+    if (isPlaywright && entry.testValue) {
+      return convertPlaywright(entry.testValue, state.settings.lang, state.settings.await);
+    }
+    return entry.value;
+  };
+
   const matchesSavedFilter = (entry) => {
     const filter = state.savedFilter.trim().toLowerCase();
     if (!filter) return true;
-    return [entry.name, entry.type, entry.value, entry.url, entry.scope, entry.label]
+    return [entry.name, entry.type, entry.value, savedDisplayValue(entry), entry.url, entry.scope, entry.label]
       .filter(Boolean).join(" ").toLowerCase().includes(filter);
   };
 
@@ -1215,8 +1224,9 @@
       });
       main.appendChild(name);
 
-      const code = el("code", "loc-value", entry.value);
-      code.title = entry.value;
+      const shownValue = savedDisplayValue(entry);
+      const code = el("code", "loc-value", shownValue);
+      code.title = shownValue;
       main.appendChild(code);
       if (entry.url) {
         const url = el("div", "saved-url", entry.url);
@@ -1256,7 +1266,7 @@
         edit.disabled = state.savedBusy;
         actions.appendChild(edit);
       }
-      actions.appendChild(iconButton("copy", "Copy locator", () => copyText(entry.value, "Copied saved locator")));
+      actions.appendChild(iconButton("copy", "Copy locator", () => copyText(savedDisplayValue(entry), "Copied saved locator")));
       const up = iconButton("up", "Move up", () => moveSaved(entry, -1));
       up.disabled = state.savedBusy || visibleIndex === 0;
       actions.appendChild(up);
@@ -2792,6 +2802,7 @@
       $("di-await").disabled = state.settings.lang !== "js";
       persistSettings();
       renderGroup(GROUPS.find((group) => group.key === "pw"));
+      renderSaved();
       refreshSaveButtons();
     });
 
@@ -2799,6 +2810,7 @@
       state.settings.await = event.target.checked;
       persistSettings();
       renderGroup(GROUPS.find((group) => group.key === "pw"));
+      renderSaved();
       refreshSaveButtons();
     });
 
