@@ -498,6 +498,32 @@ test('panel shows a locator diff between two picks on the same page', async () =
   expect(text).toContain('#email');
 });
 
+test('panel hides the diff when the top page changes', async () => {
+  await fixturePage.bringToFront();
+  await startPicking();
+  await clickElement(fixturePage.locator('#save'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
+  }, 10000);
+
+  await fixturePage.goto(baseURL + 'other-page');
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await startPicking();
+  await clickElement(fixturePage.locator('#email'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'email';
+  }, 10000);
+
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-diff').hidden
+  ), { timeout: 5000 }).toBe(true);
+
+  await fixturePage.goto(baseURL);
+  await fixturePage.waitForLoadState('domcontentloaded');
+});
+
 test('panel filters rows and exports picked locators as JSON', async () => {
   await fixturePage.bringToFront();
   await startPicking();
