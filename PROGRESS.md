@@ -12,7 +12,7 @@ not shipped). Last updated 17 Nov 2026.
 | Chrome side panel | done | same panel; toolbar icon opens it |
 | Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
 | Recent pick history in popup | done | panel stores the latest distinct picks; popup lists and clears them |
-| Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `C` copy last |
+| Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `T` test best, `C` copy last |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
 | Light/dark theme | done | `prefers-color-scheme` and responsive CSS |
@@ -107,7 +107,7 @@ not shipped). Last updated 17 Nov 2026.
 |---|---|---|
 | Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 161/161 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 25/25 checks, including popup, axes, tester Fix, POM export/import, settings recovery and batch healing |
+| Extension e2e suites | done | 26/26 checks, including popup, axes, tester Fix, POM export/import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
