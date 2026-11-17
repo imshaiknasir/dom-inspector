@@ -292,7 +292,10 @@ test('popup history expands past four rows and collapses again', async () => {
   await expect(popup.locator('#pop-history-rows .loc-row')).toHaveCount(6);
   await expect(popup.locator('#pop-history-more')).toHaveText('Show less');
   await expect(popup.locator('#pop-history-more')).toHaveAttribute('aria-expanded', 'true');
-  await expect(popup.locator('#pop-history-rows')).toContainText('#recent-5');
+  const order = await popup.evaluate(() =>
+    [...document.querySelectorAll('#pop-history-rows .loc-row')].map((row) => row.textContent));
+  expect(order[0]).toContain('#recent-0');
+  expect(order[5]).toContain('#recent-5');
 
   await popup.locator('#pop-history-more').click();
   await expect(popup.locator('#pop-history-rows .loc-row')).toHaveCount(4);
