@@ -104,3 +104,14 @@ test('panel actions: chained shadow locator targets the inner element', { todo: 
   assert.equal(out.tag, 'button');
   assert.equal(out.text, 'Shadow action');
 });
+
+test('panel actions: first/last/filter modifiers narrow the match set', { todo: 'BLOCKERS.md — panel-actions only honours .nth(); .first/.last/.filter are ignored (src/panel/panel-actions.js:185-300)' }, async () => {
+  const out = await page.evaluate(() => ({
+    first: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn').first()", '', false),
+    last: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn').last()", '', false),
+    filtered: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn').filter({ hasText: 'No such text' })", '', false)
+  }));
+  assert.equal(out.first.matched, 1);
+  assert.equal(out.last.matched, 1);
+  assert.equal(out.filtered.matched, 0);
+});
