@@ -23,12 +23,51 @@
     return match ? Number(match[1]) : null;
   };
 
+  const boolOption = (expr, name) => {
+    const match = expr.match(new RegExp(name + ":\\s*(true|false)"));
+    return match ? match[1] === "true" : null;
+  };
+
   const roleOptions = (expr) => {
     const level = expr.match(/level:\s*(\d+)/);
     return {
       level: level ? Number(level[1]) : null,
-      includeHidden: /includeHidden:\s*true/.test(expr)
+      includeHidden: /includeHidden:\s*true/.test(expr),
+      checked: boolOption(expr, "checked"),
+      selected: boolOption(expr, "selected"),
+      expanded: boolOption(expr, "expanded"),
+      disabled: boolOption(expr, "disabled"),
+      pressed: boolOption(expr, "pressed")
     };
+  };
+
+  /* ARIA state filters for getByRole options ({ checked, selected, ... }). */
+  const roleStateMatches = (el, options) => {
+    const isDisabled = () => {
+      const aria = U.attr(el, "aria-disabled");
+      if (aria) return aria === "true";
+      try { return !!el.matches(":disabled"); } catch (_) { return false; }
+    };
+    if (options.disabled != null && isDisabled() !== options.disabled) return false;
+    if (options.checked != null) {
+      const aria = U.attr(el, "aria-checked");
+      const checked = aria ? aria === "true" : !!el.checked;
+      if (checked !== options.checked) return false;
+    }
+    if (options.selected != null) {
+      const aria = U.attr(el, "aria-selected");
+      const selected = aria ? aria === "true" : !!el.selected;
+      if (selected !== options.selected) return false;
+    }
+    if (options.expanded != null) {
+      const aria = U.attr(el, "aria-expanded");
+      if (!aria || (aria === "true") !== options.expanded) return false;
+    }
+    if (options.pressed != null) {
+      const aria = U.attr(el, "aria-pressed");
+      if (!aria || (aria === "true") !== options.pressed) return false;
+    }
+    return true;
   };
 
   const ROLE_MAP = {
@@ -229,6 +268,7 @@
     if (implicitRole(el) !== role) return false;
     if (!options.includeHidden && !roleEligible(el)) return false;
     if (options.level && role === "heading" && roleLevel(el) !== options.level) return false;
+    if (!roleStateMatches(el, options)) return false;
     if (!name) return true;
     const actual = U.normalizeText(accessibleName(el));
     const wanted = exact ? U.normalizeText(name) : U.normalizeText(name).toLowerCase();
@@ -416,6 +456,7 @@
           implicitRole(el) === role[1] &&
           (options.includeHidden || roleEligible(el)) &&
           (!options.level || role[1] !== "heading" || roleLevel(el) === options.level) &&
+          roleStateMatches(el, options) &&
           testRegex(re, U.normalizeText(accessibleName(el)))).length;
       }
       return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root, options);
@@ -754,7 +795,7 @@
   DI.playwright = {
     implicitRole, accessibleName, labelledByText, countExpr, countHasText,
     parseTextFilter, matchesHasText, matchesTextRegexSmallest, buildRegex,
-    isAriaHidden, roleEligible, roleLevel, roleOptions, shadowLocator, parseLocatorCall, callArg,
+    isAriaHidden, roleEligible, roleLevel, roleOptions, roleStateMatches, shadowLocator, parseLocatorCall, callArg,
     generate, best, framePrefix, toPython, toJava, toCSharp
   };
 })();

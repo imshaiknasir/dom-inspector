@@ -287,7 +287,28 @@
         };
       }
     }
-    const list = tokens(first || original);
+    // A structurally valid XPath that selects text/attribute nodes is not an
+    // element locator, but it is not "broken" either: report it as-is.
+    const candidate = first || original;
+    if (DI.validate.detectType(candidate) === "xpath") {
+      let nodes = [];
+      try { nodes = DI.xpath.snapshot(candidate); } catch (_) { nodes = []; }
+      if (!nodes.length) {
+        for (const doc of frameDocs()) nodes.push(...DI.xpath.snapshot(candidate, doc));
+      }
+      if (nodes.length && !nodes.some((node) => node && node.nodeType === 1)) {
+        return {
+          ok: true,
+          repaired: candidate !== original,
+          fixed: candidate,
+          count: nodes.length,
+          type: "xpath",
+          element: null,
+          locators: null
+        };
+      }
+    }
+    const list = tokens(candidate);
     const found = bestElement(list);
     if (!found) {
       return { ok: false, fixed: first || original, error: "No matching element found", tokens: list };

@@ -28,6 +28,7 @@
     if (!v) return "css";
     if (v.startsWith("page.") || v.startsWith("getBy") || v.startsWith("locator(") || v.includes(".locator(")) return "playwright";
     if (v.startsWith("//") || v.startsWith("(/") || v.startsWith("./") || v.startsWith("(")) return "xpath";
+    if (/^id\(\s*['"]/.test(v)) return "xpath";
     // A bare relative path (`html/body/div`) or an explicit axis
     // (`following-sibling::button`) is XPath even without a leading slash.
     const plain = unquoted(v);
@@ -183,6 +184,7 @@
         if (DI.playwright.implicitRole(el) !== roleCall.value) return false;
         if (!options.includeHidden && !DI.playwright.roleEligible(el)) return false;
         if (options.level && roleCall.value === "heading" && DI.playwright.roleLevel(el) !== options.level) return false;
+        if (!DI.playwright.roleStateMatches(el, options)) return false;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) { re.lastIndex = 0; return re.test(actual); }
         if (!name) return true;
@@ -389,12 +391,14 @@
   const test = (type, value) => {
     const actualType = type === "auto" ? detectType(value) : type;
     const { elements, error } = resolve(actualType, value);
+    // Attribute and text node XPath results are not element locators.
+    const nodes = (elements || []).filter((node) => node && node.nodeType === 1);
     return {
-      ok: !error && elements.length > 0,
+      ok: !error && nodes.length > 0,
       type: actualType,
-      count: elements.length,
-      error: error || (elements.length ? null : "No elements matched"),
-      elements
+      count: nodes.length,
+      error: error || (nodes.length ? null : "No elements matched"),
+      elements: nodes
     };
   };
 
