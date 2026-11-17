@@ -2312,6 +2312,9 @@
   };
 
   const resetSettings = () => {
+    if (state.savedBusy || state.healBusy) {
+      return toast("Wait for the current check to finish", "bad");
+    }
     state.settings = Object.assign({}, DEFAULT_SETTINGS, { collapsed: {} });
     state.filter = "";
     state.previousPayload = null;
