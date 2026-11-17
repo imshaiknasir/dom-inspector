@@ -271,7 +271,8 @@
   };
 
   const quote = (value) => `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\r/g, "\\r").replace(/\n/g, "\\n")}'`;
-  const cssString = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const cssString = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+    .replace(/\r/g, "\\d ").replace(/\n/g, "\\a ");
 
   const generate = (el) => {
     const out = [];
@@ -298,7 +299,7 @@
 
     for (const name of ["data-test-id", "data-test", "data-cy"]) {
       const value = U.attr(el, name);
-      if (value) add("locator", `${base}.locator('[${name}="${value.replace(/"/g, '\\"')}"]')`, countAttr(name, value, root), 3);
+      if (value) add("locator", `${base}.locator('[${name}="${cssString(value)}"]')`, countAttr(name, value, root, true), 3);
     }
 
     const role = implicitRole(el);
@@ -355,7 +356,11 @@
     }
     if (css) {
       add("locator", `${base}.locator(${quote(css.selector)})`, css.count, 38);
-      if (css.count === 1) add("locator", `${base}.locator(${quote(css.selector + ":visible")})`, css.count, 40);
+      // `:visible` narrows the CSS matches, so report the visible count, not
+      // the unfiltered one (a hidden element has no visible matches).
+      let visibleCount = 0;
+      try { visibleCount = U.deepQueryAll(css.selector, root).filter((node) => U.isVisible(node)).length; } catch (_) {}
+      if (visibleCount > 0) add("locator", `${base}.locator(${quote(css.selector + ":visible")})`, visibleCount, 40);
     }
     const xp = DI.xpath.best(el);
     if (xp) add("locator", `${base}.locator(\`${xp.xpath}\`)`, xp.count, 48);
