@@ -184,7 +184,7 @@ test('toolbar popup renders the last picked locators', async () => {
   await expect(popup.locator('#pop-saved-rows')).toContainText('//input');
 
   const history = [
-    { at: 20, url: 'https://old.example/', css: '#old-save', cssCount: 1, element: { tag: 'button', id: 'old-save' } },
+    { at: 20, url: 'https://Old.Example/Path', css: '#old-save', cssCount: 1, element: { tag: 'button', id: 'old-save' } },
     { at: 10, url: 'https://older.example/', xpath: '//div[@id="old"]', xpathCount: 2, element: { tag: 'div', id: 'old' } }
   ];
   await popup.evaluate((entries) => chrome.storage.local.set({ 'di:panel:history': entries }), history);
@@ -194,6 +194,8 @@ test('toolbar popup renders the last picked locators', async () => {
   expect(await popup.locator('#pop-history-rows .loc-row').count()).toBe(2);
   await expect(popup.locator('#pop-history-rows')).toContainText('#old-save');
   await expect(popup.locator('#pop-history-rows')).toContainText('//div[@id="old"]');
+  await expect(popup.locator('#pop-history-rows')).toContainText('https://Old.Example/Path');
+  expect(await popup.locator('#pop-history-rows .loc-url').count()).toBe(2);
   await popup.locator('#pop-history-clear').click();
   await expect.poll(() => popup.evaluate(() =>
     document.getElementById('pop-history-card').hidden
