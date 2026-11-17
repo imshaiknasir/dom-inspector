@@ -80,7 +80,8 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
 
 ### Keyboard
 
-- `Esc` stops an active picker, or clears highlights while the tester is focused.
+- `Esc` clears the focused row or saved-locator filter, stops an active picker, or
+  clears highlights while the tester is focused.
 - `Enter` in the tester runs Test & highlight; in the saved-name field it
   commits the name.
 - `Enter` in the “Text to type” field runs the Type action.

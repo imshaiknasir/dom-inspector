@@ -69,12 +69,12 @@ not shipped). Last updated 17 Nov 2026.
 | Per-row Edit into tester | done | loads the raw test value |
 | Per-row Save (star) | done | deduped by type+raw value |
 | Copy one section / copy all visible | done | respects filter and unique-only |
-| Filter locators; unique-only mode | done | instant row re-render |
+| Filter locators; unique-only mode | done | instant row re-render; `Esc` clears the focused filter |
 | Collapse/expand sections; persisted | done | settings in `chrome.storage.local` |
 | Export all locators to JSON | done | includes element, counts, raw values, saved list |
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator reorder | done | up/down controls; order drives POM method order |
-| Saved locator filter | done | name/type/value/URL filter; empty-state feedback |
+| Saved locator filter | done | name/type/value/URL filter; empty-state feedback; `Esc` clears it |
 | Re-check saved locators | done | re-tests all saved values, updates counts and shows per-row errors |
 | Saved locator import / export | done | JSON/CSV import with dedupe + JSON/CSV export |
 | Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries |
