@@ -278,6 +278,36 @@ test('repair bridge fixes single, batch and in-frame selectors', async () => {
   expect(frame.fixed).toBe('#inner');
 });
 
+test('context-menu copy targets the right-clicked iframe and returns a frameLocator', async () => {
+  const frames = await extensionPage.evaluate(async (url) => {
+    const tabs = await chrome.tabs.query({});
+    const tab = tabs.find((candidate) => candidate.url && candidate.url.startsWith(url));
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tab.id, allFrames: true },
+      func: () => location.href
+    });
+    return results.map((entry) => ({ frameId: entry.frameId, url: entry.result }));
+  }, baseURL);
+  const inner = frames.find((entry) => entry.frameId !== 0);
+  expect(inner).toBeTruthy();
+
+  const frame = fixturePage.frames().find((candidate) => candidate !== fixturePage.mainFrame() && candidate.url() !== 'about:blank');
+  expect(frame).toBeTruthy();
+  await frame.locator('#inner').dispatchEvent('contextmenu', { bubbles: true, composed: true, button: 2 });
+
+  const copied = await extensionPage.evaluate(async ({ url, frameId }) => {
+    const tabs = await chrome.tabs.query({});
+    const tab = tabs.find((candidate) => candidate.url && candidate.url.startsWith(url));
+    return chrome.tabs.sendMessage(tab.id, { type: 'DI_COPY_BEST' }, { frameId });
+  }, { url: baseURL, frameId: inner.frameId });
+  expect(copied.ok).toBe(true);
+  expect(copied.value).toContain('frameLocator');
+  expect(copied.value).toContain("getByTestId('inner-btn')");
+
+  const verified = await sendToFixture({ type: 'DI_TEST', locatorType: 'auto', value: copied.value }, { frameId: 0 });
+  expect(verified).toMatchObject({ ok: true, count: 1 });
+});
+
 test('picker generates verified CSS, XPath, Playwright and Selenium locators', async () => {
   await fixturePage.bringToFront();
   await startPicking();
