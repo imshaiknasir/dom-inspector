@@ -51,7 +51,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   Click / Hover / Type actions run against the page, searching open shadow roots
   and same-origin frames. They accept CSS, XPath, Playwright `getBy*`
   (including string/regex arguments), `locator()` chains, `.first()`,
-  `.last()`, `.nth()` and `.filter({hasText})`. Role/label/test-id matching follows the generator's
+  `.last()`, `.nth()`, `.filter({hasText})` with string/regex text, and the
+  `css=`, `xpath=` and `text=` engines. `:visible` is honoured by filtering
+  hidden matches. Role/label/test-id matching follows the generator's
   accessible-name semantics. Action testing is best-effort and reported
   honestly when a field is not typable or nothing matches.
 - **Axes reference** — press **Axes ref**, pick a reference element, then pick
@@ -63,8 +65,10 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   verified unique replacement from the repair engine. Copy or export the report
   as JSON/CSV.
 - **Driver command template** — build a runnable command from the best CSS or
-  XPath using `{selector}` (legacy `xpathvalue` / `cssvalue` also work), with
-  Selenium Java/Python, Cypress, Playwright and TestNG presets.
+  XPath using `{selector}` (legacy `xpathvalue` / `cssvalue` select their own
+  value), with Selenium Java/Python, Cypress, Playwright and TestNG presets.
+  Substituted values are escaped for the surrounding single, double or
+  backtick quote context.
 - **Saved locators** — a small locator/POM list stored locally. Rename entries,
   filter, reorder, re-check every saved locator's live count, re-test, edit,
   copy, delete, import JSON/CSV, export JSON/CSV, clear the list, or download a
@@ -187,8 +191,8 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 220 unit checks (217 passing, 3 tracked as `todo`
-parity probes for the remaining Playwright engine work) and 40/40 extension
+popup copy. Current status: 231 unit checks (227 passing, 4 tracked as `todo`
+parity probes for the remaining Playwright engine work) and 44/44 extension
 e2e checks pass, including real-extension coverage for the popup, axes
 reference, right-click bridge, repair and batch healing.
 

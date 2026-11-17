@@ -57,7 +57,7 @@ not shipped). Last updated 17 Nov 2026.
 | Cypress `cy.get` / `cy.xpath` | done | `formats.js` |
 | JS path and jQuery | done | `document.querySelector`, `$()` |
 | Selenium frame-switch / shadow-root snippets | done | `formats.js` |
-| Driver command templates + presets | done | panel template with `{selector}` and legacy placeholders |
+| Driver command templates + presets | done | panel template with `{selector}` and legacy `cssvalue`/`xpathvalue`, quote-aware escaping |
 
 ## Panel / UX
 
@@ -82,7 +82,7 @@ not shipped). Last updated 17 Nov 2026.
 | Saved locator delete / clear | done | confirm before clearing all |
 | Editable locator tester with live count | done | debounced, no highlight while typing |
 | Test & highlight + clear | done | scrolls first match into view |
-| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/modifiers/regex args; Playwright-aligned role, landmark, accessible-name and text rules |
+| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/engines/modifiers/regex args and `:visible`; Playwright-aligned role, landmark, accessible-name and text rules |
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |
@@ -109,9 +109,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 220 checks: 217 pass, 3 tracked `todo` parity probes |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 231 checks: 227 pass, 4 tracked `todo` parity probes |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 40/40 checks, including popup history, axes, tester Fix, collapsible cards, saved filter/re-check/reorder/repair, cross-page saved guards, CSV formula safety, POM export, JSON/CSV import, settings recovery and batch healing |
+| Extension e2e suites | done | 44/44 checks, including popup history, axes, tester Fix, collapsible cards, saved filter/re-check/reorder/repair, cross-page saved guards, CSV formula safety, POM export, JSON/CSV import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
