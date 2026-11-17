@@ -71,6 +71,7 @@ test('panel actions: Playwright, XPath, shadow and iframe locators resolve', asy
     xpath: DIPanel.pageAction('click', 'xpath', "//button[@id='save']", '', false),
     shadow: DIPanel.pageAction('click', 'css', '#shadowbtn', '', false),
     iframe: DIPanel.pageAction('click', 'css', '#inner', '', false),
+    frameLocator: DIPanel.pageAction('click', 'playwright', "page.frameLocator('#frame').getByTestId('inner-btn')", '', false),
     auto: DIPanel.pageAction('click', 'auto', '//button[@id="save"]', '', false)
   }));
   assert.equal(out.playwright.matched, 1);
@@ -79,6 +80,8 @@ test('panel actions: Playwright, XPath, shadow and iframe locators resolve', asy
   assert.equal(out.shadow.tag, 'button');
   assert.equal(out.iframe.matched, 1);
   assert.equal(out.iframe.tag, 'button');
+  assert.equal(out.frameLocator.matched, 1);
+  assert.equal(out.frameLocator.text, 'Inside');
   assert.equal(out.auto.matched, 1);
 });
 
