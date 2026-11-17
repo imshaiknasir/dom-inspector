@@ -185,6 +185,9 @@ test('picker generates verified CSS, XPath, Playwright and Selenium locators', a
   const restored = await extensionPage.evaluate(() => chrome.runtime.sendMessage({ type: 'DI_GET_LAST' }));
   expect(restored).toMatchObject({ ok: true });
   expect(restored.payload.css.best.selector).toBe(payload.css.best.selector);
+
+  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
+  await expect(extensionPage.locator('#di-xpath code').first()).toContainText("//*[@id='save']");
 });
 
 test('picker reports shadow DOM and refuses shadow XPath', async () => {
