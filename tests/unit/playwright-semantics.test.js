@@ -240,13 +240,16 @@ test('panel actions: role matching excludes hidden and aria-hidden nodes', { tod
   }
 });
 
-test('playwright: accessible names prefer title and read icon children', { todo: 'accessibleName prefers placeholder and ignores descendant labels' }, async () => {
+test('playwright: accessible names prefer title and read icon children', async () => {
   const iconsPage = await browser.newPage();
   try {
     await iconsPage.setContent(`<!doctype html><html><body>
       <input id="both" placeholder="Placeholder" title="Title">
       <a id="icon-link" href="#"><svg aria-label="Icon link"></svg></a>
       <button id="icon-button"><svg aria-label="Icon button"></svg></button>
+      <fieldset id="ship"><legend>Shipping</legend><input></fieldset>
+      <table id="people"><caption>People</caption><tr><td>Cell</td></tr></table>
+      <figure id="figure"><img alt="Logo"><figcaption>Figure one</figcaption></figure>
     </body></html>`);
     await injectGenerators(iconsPage);
     const out = await iconsPage.evaluate(() => ({
@@ -255,7 +258,10 @@ test('playwright: accessible names prefer title and read icon children', { todo:
       buttonName: DI.playwright.accessibleName(document.getElementById('icon-button')),
       titleCount: DI.playwright.countExpr("page.getByRole('textbox', { name: 'Title', exact: true })"),
       linkCount: DI.playwright.countExpr("page.getByRole('link', { name: 'Icon link' })"),
-      buttonCount: DI.playwright.countExpr("page.getByRole('button', { name: 'Icon button' })")
+      buttonCount: DI.playwright.countExpr("page.getByRole('button', { name: 'Icon button' })"),
+      groupCount: DI.playwright.countExpr("page.getByRole('group', { name: 'Shipping' })"),
+      tableCount: DI.playwright.countExpr("page.getByRole('table', { name: 'People' })"),
+      figureCount: DI.playwright.countExpr("page.getByRole('figure', { name: 'Figure one' })")
     }));
     assert.deepEqual(out, {
       titleName: 'Title',
@@ -263,7 +269,10 @@ test('playwright: accessible names prefer title and read icon children', { todo:
       buttonName: 'Icon button',
       titleCount: await iconsPage.getByRole('textbox', { name: 'Title', exact: true }).count(),
       linkCount: await iconsPage.getByRole('link', { name: 'Icon link' }).count(),
-      buttonCount: await iconsPage.getByRole('button', { name: 'Icon button' }).count()
+      buttonCount: await iconsPage.getByRole('button', { name: 'Icon button' }).count(),
+      groupCount: await iconsPage.getByRole('group', { name: 'Shipping' }).count(),
+      tableCount: await iconsPage.getByRole('table', { name: 'People' }).count(),
+      figureCount: await iconsPage.getByRole('figure', { name: 'Figure one' }).count()
     });
   } finally {
     await iconsPage.close();

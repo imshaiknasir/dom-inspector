@@ -191,7 +191,7 @@ test('repair: valid XPath that selects non-elements is reported without locators
   assert.equal(out.many.locators, null);
 });
 
-test('repair: near-miss Playwright text, label and placeholder arguments', { todo: 'repair tokens treat quoted arguments only as text' }, async () => {
+test('repair: near-miss Playwright text, label and placeholder arguments', async () => {
   const out = await page.evaluate(() => ({
     role: DI.repair.fix("page.getByRole('button', { name: 'Sav changes' })"),
     label: DI.repair.fix("page.getByLabel('Email adress')"),
