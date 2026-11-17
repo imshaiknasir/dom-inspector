@@ -89,20 +89,24 @@
       out.push({ type: "selenium-frame", code: frameCss.map((sel) => `driver.switchTo().frame(driver.findElement(By.cssSelector(${q(sel)})))`).join("\n") });
     }
 
-    const hosts = DI.css.shadowChain(el);
+    // shadowChain is innermost-first; both snippet families have to enter the
+    // roots from the document, so walk it outermost-first.
+    const hosts = DI.css.shadowChain(el).slice().reverse();
     if (hosts.length && css) {
-      out.push({
-        type: "cypress-shadow",
-        code: hosts.map((h) => `cy.get(${q(h)}).shadow()`).join("") + `.find(${q(css)})`
-      });
+      let code = `cy.get(${q(hosts[0])}).shadow()`;
+      for (let i = 1; i < hosts.length; i += 1) {
+        code += `.find(${q(hosts[i])}).shadow()`;
+      }
+      code += `.find(${q(css)})`;
+      out.push({ type: "cypress-shadow", code });
     }
     if (hosts.length && css) {
-      let code = "";
-      hosts.forEach((hostCss, index) => {
-        code += `${index === 0 ? "SearchContext" : "root" + index} root${index + 1} = driver.findElement(By.cssSelector(${q(hostCss)})).getShadowRoot();\n`;
+      const lines = hosts.map((hostCss, index) => {
+        const source = index === 0 ? "driver" : `root${index}`;
+        return `SearchContext root${index + 1} = ${source}.findElement(By.cssSelector(${q(hostCss)})).getShadowRoot();`;
       });
-      code += `root${hosts.length}.findElement(By.cssSelector(${q(css)}))`;
-      out.push({ type: "selenium-shadow", code });
+      lines.push(`root${hosts.length}.findElement(By.cssSelector(${q(css)}))`);
+      out.push({ type: "selenium-shadow", code: lines.join("\n") });
     }
     return out;
   };
