@@ -1086,6 +1086,8 @@
       const button = $(id);
       if (button) button.disabled = state.saved.length === 0 || state.savedBusy;
     }
+    const importButton = $("di-saved-import");
+    if (importButton) importButton.disabled = state.savedBusy;
     const filterInput = $("di-saved-filter");
     filterInput.hidden = state.saved.length === 0;
     if (filterInput.value !== state.savedFilter) filterInput.value = state.savedFilter;
@@ -1104,6 +1106,7 @@
       name.value = entry.name || "";
       name.title = "Saved locator name";
       name.setAttribute("aria-label", "Saved locator name");
+      name.disabled = state.savedBusy;
       name.addEventListener("change", () => {
         entry.name = name.value.trim() || "Untitled locator";
         name.value = entry.name;
@@ -1131,27 +1134,33 @@
       const actions = el("div", "loc-actions");
       const target = savedTestTarget(entry);
       if (target) {
-        actions.appendChild(iconButton("test", "Test & highlight", () => testSavedEntry(entry)));
-        actions.appendChild(iconButton("edit", "Edit in tester", () => fillTester({
+        const test = iconButton("test", "Test & highlight", () => testSavedEntry(entry));
+        test.disabled = state.savedBusy;
+        actions.appendChild(test);
+        const edit = iconButton("edit", "Edit in tester", () => fillTester({
           key: entry.key, scope: entry.scope, type: entry.type,
           testType: target.type, testValue: target.value,
           value: entry.value, raw: target.value, count: entry.count
-        })));
+        }));
+        edit.disabled = state.savedBusy;
+        actions.appendChild(edit);
       }
       actions.appendChild(iconButton("copy", "Copy locator", () => copyText(entry.value, "Copied saved locator")));
       const up = iconButton("up", "Move up", () => moveSaved(entry, -1));
-      up.disabled = visibleIndex === 0;
+      up.disabled = state.savedBusy || visibleIndex === 0;
       actions.appendChild(up);
       const down = iconButton("down", "Move down", () => moveSaved(entry, 1));
-      down.disabled = visibleIndex === entries.length - 1;
+      down.disabled = state.savedBusy || visibleIndex === entries.length - 1;
       actions.appendChild(down);
-      actions.appendChild(iconButton("trash", "Delete saved locator", () => {
+      const trash = iconButton("trash", "Delete saved locator", () => {
         state.saved = state.saved.filter((item) => item.id !== entry.id);
         persistSaved();
         renderSaved();
         refreshSaveButtons();
         toast("Deleted saved locator");
-      }));
+      });
+      trash.disabled = state.savedBusy;
+      actions.appendChild(trash);
       row.appendChild(actions);
       list.appendChild(row);
     }
@@ -1191,6 +1200,7 @@
     state.savedBusy = true;
     const button = $("di-saved-check");
     button.disabled = true;
+    renderSaved();
     let unique = 0;
     let many = 0;
     let broken = 0;
@@ -1860,8 +1870,15 @@
     const rows = state.healRows;
     empty.hidden = rows.length > 0;
     meta.textContent = healSummary();
-    $("di-heal-check").disabled = state.healBusy;
-    $("di-heal-fix").disabled = state.healBusy;
+    const busy = state.healBusy;
+    $("di-heal-check").disabled = busy;
+    $("di-heal-fix").disabled = busy;
+    for (const id of ["di-heal-copy", "di-heal-json", "di-heal-csv"]) {
+      const button = $(id);
+      if (button) button.disabled = busy || rows.length === 0;
+    }
+    const clear = $("di-heal-clear");
+    if (clear) clear.disabled = !rows.length && !busy;
 
     for (const row of rows) {
       const node = el("div", "heal-row status-" + row.status);
