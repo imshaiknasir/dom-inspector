@@ -51,8 +51,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   Click / Hover / Type actions run against the page, searching open shadow roots
   and same-origin frames. They accept CSS, XPath, Playwright `getBy*`,
   `locator()` chains, `.first()`, `.last()`, `.nth()` and
-  `.filter({hasText})`. Action testing is best-effort and reported honestly
-  when a field is not typable or nothing matches.
+  `.filter({hasText})`. Role/label/test-id matching follows the generator's
+  accessible-name semantics. Action testing is best-effort and reported
+  honestly when a field is not typable or nothing matches.
 - **Axes reference** — press **Axes ref**, pick a reference element, then pick
   the target. The panel lists axes XPath from the reference (descendant,
   ancestor, siblings, following/preceding, common ancestor), with counts and a
@@ -176,7 +177,7 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 178 passing unit checks (1 documented todo), 29/29 extension e2e checks
+popup copy. Current status: 180/180 unit checks and 29/29 extension e2e checks
 pass, including real-extension coverage for the popup, axes reference,
 right-click bridge, repair and batch healing.
 

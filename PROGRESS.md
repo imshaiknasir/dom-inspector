@@ -81,7 +81,7 @@ not shipped). Last updated 17 Nov 2026.
 | Saved locator delete / clear | done | confirm before clearing all |
 | Editable locator tester with live count | done | debounced, no highlight while typing |
 | Test & highlight + clear | done | scrolls first match into view |
-| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/first/last/nth/filter |
+| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/modifiers; generator-aligned role/label/test-id matching |
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |
@@ -108,7 +108,7 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 178 pass, 1 documented todo |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 180/180 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
 | Extension e2e suites | done | 29/29 checks, including popup, axes, tester Fix, saved re-check, POM export/import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
