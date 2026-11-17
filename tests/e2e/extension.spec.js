@@ -1336,6 +1336,27 @@ test('panel caps a single saved import at 500 entries', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
 });
 
+test('panel drops malformed saved entries on load', async () => {
+  // Expected failure until sanitizeSaved rejects whitespace-only values; see
+  // ../../BLOCKERS.md.
+  test.fail(true, 'sanitizeSaved keeps whitespace-only values');
+  const rows = [
+    null,
+    {},
+    { id: 'no-value', type: 'css' },
+    { id: 'empty-value', type: 'css', value: '   ' },
+    { id: 'valid-one', key: 'css::#save', type: 'css', value: '#save', name: 'Valid' },
+    { id: 'valid-dup', key: 'css::#save', type: 'css', value: '#save', name: 'Duplicate key' }
+  ];
+  await extensionPage.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), rows);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() => ({
+    rows: document.querySelectorAll('#di-saved .saved-row').length,
+    text: document.getElementById('di-saved').textContent
+  })), { timeout: 3000 }).toEqual({ rows: 1, text: expect.stringContaining('Valid') });
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel normalises duplicate saved locator ids', async () => {
   const entries = [
     { id: 'same-id', key: 'css::#save', name: 'First', type: 'css', value: '#save', savedAt: 3 },
