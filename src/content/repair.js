@@ -166,7 +166,11 @@
       else if (type === "tag") total += tag === token ? 4 : 0;
       else if (type.startsWith("attr:")) {
         const attr = type.slice(5);
-        total += U.attr(el, attr) === token ? 26 : U.attr(el, attr).includes(token) ? 10 : 0;
+        const raw = U.rawAttr(el, attr);
+        const wanted = U.unescapeString(token);
+        total += raw === wanted ? 26
+          : raw.trim() === wanted.trim() ? 20
+            : raw.includes(wanted) ? 10 : 0;
       } else if (type === "role") total += DI.playwright && DI.playwright.implicitRole(el) === token ? 8 : 0;
       else if (type === "label") {
         // getByLabel resolves the labelled control, not the label element.
@@ -177,7 +181,10 @@
       else if (type === "placeholder") total += nameScore([U.attr(el, "placeholder")], token);
       else if (type === "alt") total += nameScore([U.attr(el, "alt")], token);
       else if (type === "title") total += nameScore([U.attr(el, "title")], token);
-      else if (type === "testid") total += U.attr(el, "data-testid") === token ? 28 : U.attr(el, "data-testid").includes(token) ? 12 : 0;
+      else if (type === "testid") {
+        const raw = U.rawAttr(el, "data-testid");
+        total += raw === token ? 28 : raw.trim() === token.trim() ? 22 : raw.includes(token) ? 12 : 0;
+      }
       else if (type === "text") total += nameScore([text, accessibleName()], token);
     }
     return total;
