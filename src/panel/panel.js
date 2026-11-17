@@ -206,7 +206,7 @@
 
   const persistSaved = () => writeStore(STORE_SAVED, state.saved);
 
-  const recordHistory = (payload) => {
+  const recordHistory = (payload, topUrl) => {
     const element = payload.element || {};
     const css = payload.css && payload.css.best;
     const xpath = payload.xpath && payload.xpath.best;
@@ -215,7 +215,7 @@
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       at: Date.now(),
-      url: payload.url || "",
+      url: topUrl || payload.url || "",
       element: {
         tag: element.tag || "",
         id: element.id || "",
@@ -2483,7 +2483,7 @@
     state.previousPayload = pageChanged ? null : (!restored && previous ? previous : null);
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
-    if (!restored) recordHistory(payload);
+    if (!restored) recordHistory(payload, senderTopUrl);
     if (pageChanged) {
       state.reference = null;
       state.repairInjected = false;
