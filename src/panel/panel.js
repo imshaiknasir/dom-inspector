@@ -1104,6 +1104,7 @@
       const code = el("code", "loc-value", entry.value);
       code.title = entry.value;
       main.appendChild(code);
+      if (entry.error) main.appendChild(el("div", "heal-note bad", entry.error));
 
       const rowMeta = el("div", "loc-meta");
       rowMeta.appendChild(el("span", "pill", entry.label || entry.type));
@@ -1143,6 +1144,40 @@
       }));
       row.appendChild(actions);
       list.appendChild(row);
+    }
+  };
+
+  const checkSaved = async () => {
+    if (!state.saved.length) return toast("No saved locators to check", "bad");
+    const button = $("di-saved-check");
+    button.disabled = true;
+    let unique = 0;
+    let broken = 0;
+    try {
+      for (const entry of state.saved) {
+        const type = entry.testType || entry.type || detectType(entry.value);
+        const value = entry.testValue || entry.value;
+        if (!value) continue;
+        try {
+          const response = await sendToTab({ type: "DI_TEST", locatorType: type, value, highlight: false });
+          if (!response) throw new Error("No response from the page");
+          entry.count = typeof response.count === "number" ? response.count : 0;
+          entry.error = response.ok ? "" : (response.error || "No match");
+        } catch (error) {
+          entry.count = 0;
+          entry.error = friendlyError(error);
+        }
+        if (entry.count === 1) unique += 1;
+        else broken += 1;
+        renderSaved();
+      }
+      persistSaved();
+      const message = `Checked ${state.saved.length} saved locator${state.saved.length === 1 ? "" : "s"} · ${unique} unique · ${broken} broken`;
+      toast(message, broken ? "bad" : "ok");
+      setStatus(message, broken ? "warn" : "ok");
+    } finally {
+      button.disabled = false;
+      renderSaved();
     }
   };
 
@@ -2340,6 +2375,7 @@
       });
     }
 
+    $("di-saved-check").addEventListener("click", checkSaved);
     $("di-saved-filter").addEventListener("input", (event) => {
       state.savedFilter = event.target.value;
       renderSaved();
