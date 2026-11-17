@@ -53,7 +53,7 @@ const loadBackground = () => {
     }
   };
   vm.runInNewContext(SOURCE, { chrome, console });
-  return { calls, listeners };
+  return { calls, listeners, chrome };
 };
 
 test('background: install registers menus and side-panel behavior', async () => {
@@ -173,4 +173,18 @@ test('background: copy-best targets the right-clicked frame', async () => {
     message: { type: 'DI_COPY_BEST' },
     options: { frameId: 4 }
   }]);
+});
+
+test('background: start-pick swallows restricted-tab failures', async () => {
+  const { listeners, chrome } = loadBackground();
+  chrome.tabs.query = async () => { throw new Error('restricted page'); };
+  await assert.doesNotReject(listeners.command[0]('start-pick'));
+});
+
+test('background: start-pick still sends when the side panel rejects', async () => {
+  const { calls, listeners, chrome } = loadBackground();
+  chrome.sidePanel.open = async () => { throw new Error('panel unavailable'); };
+  await assert.doesNotReject(listeners.command[0]('start-pick'));
+  await tick();
+  same(calls.sent, [{ tabId: 5, message: { type: 'DI_START' } }]);
 });

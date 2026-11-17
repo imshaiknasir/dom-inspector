@@ -3,7 +3,6 @@
   const DI = (globalThis.DI = globalThis.DI || {});
   const U = DI.util;
 
-  const cssValue = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
   const detectType = (value) => {
     const v = String(value || "").trim();
