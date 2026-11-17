@@ -66,6 +66,12 @@
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
         .flatMap((name) => U.deepQueryAll(`[${name}="${testId[1].replace(/"/g, '\\"')}"]`));
     }
+    const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
+    if (visibility) {
+      const base = (visibility[1] || "*").trim() || "*";
+      const wantVisible = visibility[2] === "visible";
+      return U.deepQueryAll(base).filter((el) => U.isVisible(el) === wantVisible);
+    }
     const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";

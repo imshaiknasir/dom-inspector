@@ -163,6 +163,12 @@
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
         .reduce((sum, name) => sum + countAttr(name, m[1], root), 0);
     }
+    const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
+    if (visibility) {
+      const base = (visibility[1] || "*").trim() || "*";
+      const wantVisible = visibility[2] === "visible";
+      return U.deepQueryAll(base, root).filter((el) => U.isVisible(el) === wantVisible).length;
+    }
     const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
@@ -291,25 +297,60 @@
 
   /* Minimal language formatters for the generated JavaScript locator. */
   const toPython = (code) => {
-    const map = { getByRole: "get_by_role", getByText: "get_by_text", getByLabel: "get_by_label", getByPlaceholder: "get_by_placeholder", getByAltText: "get_by_alt_text", getByTitle: "get_by_title", getByTestId: "get_by_test_id" };
-    return code.replace(/page/g, "page")
-      .replace(/([a-zA-Z]+)\(/g, (m, name) => (map[name] ? `${map[name]}(` : m))
-      .replace(/name: '/g, "name='").replace(/' \}/g, "'}")
-      .replace(/exact: true/g, "exact=True").replace(/exact: false/g, "exact=False")
-      .replace(/`(.*?)`/g, '"$1"').replace(/'/g, '"');
+    const loc = code.match(/page\.locator\(\s*[`'"]([\s\S]*?)[`'"]\s*\)$/);
+    if (loc) {
+      const inner = loc[1].replace(/"/g, '\\"');
+      return `page.locator("${inner}")`;
+    }
+    const role = code.match(/page\.getByRole\(\s*['"]([^'"]+)['"]\s*(?:,\s*\{([^}]*)\})?\s*\)$/);
+    if (role) {
+      const name = (role[2] || "").match(/name:\s*['"]([^'"]+)['"]/);
+      const exact = /exact:\s*true/.test(role[2] || "");
+      const parts = [`page.get_by_role("${role[1]}"`];
+      if (name) parts.push(`name="${name[1]}"`);
+      if (exact) parts.push("exact=True");
+      return parts.join(", ") + ")";
+    }
+    const simple = code.match(/page\.(getBy[A-Za-z]+)\(\s*['"]([^'"]+)['"]\s*\)$/);
+    if (simple) {
+      const method = simple[1].replace(/([A-Z])/g, "_$1").toLowerCase();
+      return `page.${method}("${simple[2].replace(/"/g, '\\"')}")`;
+    }
+    return code.replace(/page\./g, "page.").replace(/([a-z])([A-Z])/g, "$1_$2");
   };
-  const toJava = (code) => code
-    .replace(/page/g, "page")
-    .replace(/getByRole\('([^']+)', \{ name: '([^']+)' \}\)/g, "getByRole(AriaRole.$1, new Page.GetByRoleOptions().setName(\"$2\"))")
-    .replace(/getByRole\('([^']+)'\)/g, "getByRole(AriaRole.$1)")
-    .replace(/getBy(Text|Label|Placeholder|AltText|Title|TestId)\('([^']+)'\)/g, "getBy$1(\"$2\")")
-    .replace(/locator\('([^']+)'\)/g, "locator(\"$1\")");
-  const toCSharp = (code) => code
-    .replace(/getByRole\('([^']+)', \{ name: '([^']+)' \}\)/g, "GetByRole(AriaRole.$1, new Page.GetByRoleOptions { Name = \"$2\" })")
-    .replace(/getByRole\('([^']+)'\)/g, "GetByRole(AriaRole.$1)")
-    .replace(/getBy(Text|Label|Placeholder|AltText|Title|TestId)\('([^']+)'\)/g, "GetBy$1(\"$2\")")
-    .replace(/locator\('([^']+)'\)/g, "Locator(\"$1\")")
-    .replace(/^page/, "Page");
+  const toJava = (code) => {
+    const role = code.match(/getByRole\(\s*'([^']+)'\s*(?:,\s*\{([^}]*)\})?\s*\)/);
+    if (role) {
+      const name = (role[2] || "").match(/name:\s*'([^']+)'/);
+      const exact = /exact:\s*true/.test(role[2] || "");
+      const opts = [];
+      if (name) opts.push(`setName("${name[1]}")`);
+      if (exact) opts.push("setExact(true)");
+      return opts.length
+        ? `page.getByRole(AriaRole.${role[1]}, new Page.GetByRoleOptions().${opts.join(".")})`
+        : `page.getByRole(AriaRole.${role[1]})`;
+    }
+    return code
+      .replace(/getBy(Text|Label|Placeholder|AltText|Title|TestId)\('([^']+)'\)/g, 'getBy$1("$2")')
+      .replace(/locator\('([^']+)'\)/g, 'locator("$1")');
+  };
+  const toCSharp = (code) => {
+    const role = code.match(/getByRole\(\s*'([^']+)'\s*(?:,\s*\{([^}]*)\})?\s*\)/);
+    if (role) {
+      const name = (role[2] || "").match(/name:\s*'([^']+)'/);
+      const exact = /exact:\s*true/.test(role[2] || "");
+      const opts = [];
+      if (name) opts.push(`Name = "${name[1]}"`);
+      if (exact) opts.push("Exact = true");
+      return opts.length
+        ? `Page.GetByRole(AriaRole.${role[1]}, new Page.GetByRoleOptions { ${opts.join(", ")} })`
+        : `Page.GetByRole(AriaRole.${role[1]})`;
+    }
+    return code
+      .replace(/getBy(Text|Label|Placeholder|AltText|Title|TestId)\('([^']+)'\)/g, 'GetBy$1("$2")')
+      .replace(/locator\('([^']+)'\)/g, 'Locator("$1")')
+      .replace(/^page/, "Page");
+  };
 
   DI.playwright = { implicitRole, accessibleName, countExpr, generate, best, framePrefix, toPython, toJava, toCSharp };
 })();

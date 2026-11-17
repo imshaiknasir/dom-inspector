@@ -24,8 +24,13 @@
     add("name", name, name ? DI.util.countIn(el, `[name="${name.replace(/"/g, '\\"')}"]`) : 0);
     add("className", cls, cls ? DI.util.countIn(el, `.${cls.trim().split(/\s+/).map(U.cssEscape).join(".")}`) : 0);
     add("tagName", tag, DI.util.countIn(el, tag));
-    add("linkText", linkText, linkText ? DI.util.countIn(el, "a") : 0);
-    add("partialLinkText", linkText ? linkText.slice(0, 24) : "", linkText ? DI.util.countIn(el, "a") : 0);
+    const anchors = linkText ? U.deepQueryAll("a", el.getRootNode ? el.getRootNode() : document)
+      .filter((a) => U.normalizeText(a.textContent) === linkText) : [];
+    const partial = linkText ? linkText.slice(0, 24) : "";
+    const partialAnchors = partial ? U.deepQueryAll("a", el.getRootNode ? el.getRootNode() : document)
+      .filter((a) => U.normalizeText(a.textContent).includes(partial)) : [];
+    add("linkText", linkText, anchors.length);
+    add("partialLinkText", partial, partialAnchors.length);
     add("cssSelector", css, css ? DI.util.countIn(el, css) : 0);
     add("xpath", xp, xp ? DI.xpath.count(xp, el.getRootNode ? el.getRootNode() : document) : 0);
 
