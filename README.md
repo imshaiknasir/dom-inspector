@@ -186,7 +186,7 @@ The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
 popup copy. Current status: 218 unit checks (215 passing, 3 tracked as `todo`
-parity probes for the remaining Playwright engine work) and 38/38 extension
+parity probes for the remaining Playwright engine work) and 39/39 extension
 e2e checks pass, including real-extension coverage for the popup, axes
 reference, right-click bridge, repair and batch healing.
 
