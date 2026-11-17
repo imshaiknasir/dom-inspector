@@ -6,9 +6,10 @@
   const api = typeof chrome !== "undefined" ? chrome : null;
   const LAST_KEY = "di:lastPick";
   const SAVED_KEY = "di:panel:saved";
+  const HISTORY_KEY = "di:panel:history";
   const FOCUS_KEY = "di:panel:focus";
 
-  const state = { payload: null, saved: [], busy: false };
+  const state = { payload: null, saved: [], history: [], busy: false };
 
   const setStatus = (text, tone) => {
     const node = $("pop-status");
@@ -127,6 +128,19 @@
     return null;
   };
 
+  const getHistory = async () => {
+    if (!api || !api.storage || !api.storage.local) return [];
+    try {
+      const data = await api.storage.local.get(HISTORY_KEY);
+      const history = data && data[HISTORY_KEY];
+      return Array.isArray(history)
+        ? history.filter((entry) => entry && entry.at && (entry.css || entry.xpath || entry.playwright))
+        : [];
+    } catch (_) {
+      return [];
+    }
+  };
+
   const getSaved = async () => {
     if (!api || !api.storage || !api.storage.local) return [];
     try {
@@ -179,6 +193,52 @@
     }
   };
 
+  const lastKey = () => {
+    const payload = state.payload;
+    if (!payload) return "";
+    const css = payload.css && payload.css.best ? payload.css.best.selector : "";
+    const xpath = payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "";
+    return (payload.url || "") + "\n" + css + "\n" + xpath;
+  };
+
+  const renderHistory = () => {
+    const card = $("pop-history-card");
+    const rowsBox = $("pop-history-rows");
+    const current = lastKey();
+    const entries = state.history
+      .slice()
+      .sort((a, b) => (b.at || 0) - (a.at || 0))
+      .filter((entry) => {
+        const key = (entry.url || "") + "\n" + (entry.css || "") + "\n" + (entry.xpath || "");
+        return key !== current;
+      })
+      .slice(0, 4);
+    card.hidden = entries.length === 0;
+    rowsBox.textContent = "";
+    $("pop-history-meta").textContent = String(state.history.length);
+    for (const entry of entries) {
+      const row = el("div", "loc-row");
+      const main = el("div", "loc-main");
+      const element = entry.element || {};
+      const bits = [element.tag || "element"];
+      if (element.id) bits.push("#" + element.id);
+      if (element.accessibleName) bits.push("· " + element.accessibleName);
+      main.appendChild(el("span", "loc-label", bits.join(" ")));
+      const value = entry.css || entry.xpath || entry.playwright;
+      const type = entry.css ? "CSS" : entry.xpath ? "XPath" : "Playwright";
+      const code = el("code", "loc-value", value);
+      code.title = value;
+      main.appendChild(code);
+      const count = entry.css ? entry.cssCount : entry.xpath ? entry.xpathCount : entry.playwrightCount;
+      const meta = [type, typeof count === "number" ? `${count} match${count === 1 ? "" : "es"}` : "", entry.url || ""]
+        .filter(Boolean).join(" · ");
+      main.appendChild(el("span", "loc-label", meta));
+      row.appendChild(main);
+      row.appendChild(copyButton("Copy", value));
+      rowsBox.appendChild(row);
+    }
+  };
+
   const renderSaved = () => {
     const card = $("pop-saved-card");
     const rowsBox = $("pop-saved-rows");
@@ -204,15 +264,17 @@
 
   const render = () => {
     renderLast();
+    renderHistory();
     renderSaved();
     const empty = $("pop-empty");
-    empty.hidden = Boolean(state.payload || state.saved.length);
+    empty.hidden = Boolean(state.payload || state.saved.length || state.history.length);
   };
 
   const load = async () => {
     setStatus("Loading recent locators…");
     state.payload = await getLastPayload();
     state.saved = await getSaved();
+    state.history = await getHistory();
     render();
     if (state.payload) {
       const element = state.payload.element || {};
@@ -272,6 +334,17 @@
   $("pop-open").addEventListener("click", openOnly);
   $("pop-heal").addEventListener("click", openHealing);
   $("pop-refresh").addEventListener("click", load);
+  $("pop-history-clear").addEventListener("click", async () => {
+    try {
+      if (api && api.storage && api.storage.local) await api.storage.local.remove(HISTORY_KEY);
+      state.history = [];
+      render();
+      setStatus("Pick history cleared");
+    } catch (error) {
+      setStatus(friendly(error), "bad");
+    }
+  });
+
   $("pop-last-copy").addEventListener("click", () => {
     const rows = lastLocators();
     if (!rows.length) return setStatus("No locators to copy", "bad");

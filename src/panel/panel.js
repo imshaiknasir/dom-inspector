@@ -10,6 +10,7 @@
 
   const STORE_SETTINGS = "di:panel:settings";
   const STORE_SAVED = "di:panel:saved";
+  const STORE_HISTORY = "di:panel:history";
   const LAST_PICK_KEY = "di:lastPick";
 
   const DEFAULT_SETTINGS = {
@@ -55,6 +56,7 @@
     tabId: null,
     settings: Object.assign({}, DEFAULT_SETTINGS),
     saved: [],
+    history: [],
     healRows: [],
     healBusy: false,
     healSeq: 0,
@@ -141,6 +143,36 @@
   };
 
   const persistSaved = () => writeStore(STORE_SAVED, state.saved);
+
+  const recordHistory = (payload) => {
+    const element = payload.element || {};
+    const css = payload.css && payload.css.best;
+    const xpath = payload.xpath && payload.xpath.best;
+    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
+    if (!css && !xpath && !playwright) return;
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      at: Date.now(),
+      url: payload.url || "",
+      element: {
+        tag: element.tag || "",
+        id: element.id || "",
+        role: element.role || "",
+        accessibleName: element.accessibleName || "",
+        text: (element.text || "").slice(0, 80)
+      },
+      css: css ? css.selector : null,
+      cssCount: css ? css.count : null,
+      xpath: xpath ? xpath.xpath : null,
+      xpathCount: xpath ? xpath.count : null,
+      playwright: playwright ? playwright.selector : null,
+      playwrightCount: playwright ? playwright.count : null
+    };
+    state.history = [entry].concat(state.history.filter((item) =>
+      !(item.url === entry.url && item.css === entry.css && item.xpath === entry.xpath)
+    )).slice(0, 12);
+    writeStore(STORE_HISTORY, state.history);
+  };
 
   /* ---------------------------------------------------------------- */
   /* Messaging                                                        */
@@ -1976,6 +2008,10 @@
     renderAll();
     await resolveTabId(true);
 
+    const storedHistory = await readStore(STORE_HISTORY);
+    if (Array.isArray(storedHistory)) {
+      state.history = storedHistory.filter((entry) => entry && entry.at && (entry.css || entry.xpath || entry.playwright));
+    }
     const restored = await restoreLast();
     const alive = await pingTab();
     applyFocusRequest();
