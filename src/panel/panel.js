@@ -1362,6 +1362,10 @@
         return toast("Saved locator belongs to another page: " + entry.url, "bad");
       }
       const repair = await repairSelector(target.value);
+      if (!samePage(pageUrl, await currentPageUrl())) {
+        setStatus("Fix stopped: the page changed.", "warn");
+        return toast("Fix stopped: the page changed.", "warn");
+      }
       if (!repair || !repair.ok || !repair.fixed) {
         const message = (repair && repair.error) || "No matching element found";
         const live = state.saved.find((item) => item.id === entry.id);
@@ -1396,6 +1400,10 @@
           break;
         }
         if (result && result.error && !verifyError) verifyError = result.error;
+      }
+      if (!samePage(pageUrl, await currentPageUrl())) {
+        setStatus("Fix stopped: the page changed.", "warn");
+        return toast("Fix stopped: the page changed.", "warn");
       }
       const live = state.saved.find((item) => item.id === entry.id);
       if (!live) {
