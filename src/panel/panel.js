@@ -222,7 +222,8 @@
     const element = payload.element || {};
     const css = payload.css && payload.css.best;
     const xpath = payload.xpath && payload.xpath.best;
-    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
+    const playwrights = listOf(payload.playwright);
+    const playwright = playwrights.find((item) => item.count === 1) || playwrights[0];
     if (!css && !xpath && !playwright) return;
     const entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -396,6 +397,8 @@
     return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
   };
 
+  const listOf = (value) => (Array.isArray(value) ? value : []);
+
   const el = (tag, className, text) => {
     const node = document.createElement(tag);
     if (className) node.className = className;
@@ -491,7 +494,7 @@
     };
     const css = payload.css || {};
     if (css.best) push(css.best, true);
-    for (const item of css.candidates || []) push(item, false);
+    for (const item of listOf(css.candidates)) push(item, false);
     return rows;
   };
 
@@ -508,7 +511,7 @@
     };
     const xp = payload.xpath || {};
     if (xp.best) push(xp.best.xpath, xp.best.count, xp.best.strategy, { isBest: true });
-    for (const item of xp.candidates || []) push(item.xpath, item.count, item.strategy);
+    for (const item of listOf(xp.candidates)) push(item.xpath, item.count, item.strategy);
     if (xp.indexed) push(xp.indexed.xpath, xp.indexed.count, "indexed · position " + xp.indexed.position);
     if (xp.absolute) push(xp.absolute, null, "absolute", { autoCount: true });
     return rows;
@@ -517,7 +520,7 @@
   const addAxesRows = (payload) => {
     const rows = [];
     const seen = new Set();
-    for (const item of payload.axes || []) {
+    for (const item of listOf(payload.axes)) {
       if (!item || !item.xpath || seen.has(item.xpath)) continue;
       seen.add(item.xpath);
       rows.push({
@@ -532,7 +535,7 @@
   const addPlaywrightRows = (payload) => {
     const rows = [];
     const seen = new Set();
-    for (const item of payload.playwright || []) {
+    for (const item of listOf(payload.playwright)) {
       if (!item || !item.selector || seen.has(item.selector)) continue;
       seen.add(item.selector);
       rows.push({
@@ -584,7 +587,7 @@
 
   const addSeleniumRows = (payload) => {
     const rows = [];
-    for (const item of payload.selenium || []) {
+    for (const item of listOf(payload.selenium)) {
       if (!item || !item.value) continue;
       const info = seleniumInfo(item);
       if (!info.code) continue;
@@ -612,7 +615,7 @@
 
   const addFormatRows = (payload) => {
     const rows = [];
-    for (const item of payload.formats || []) {
+    for (const item of listOf(payload.formats)) {
       if (!item || !item.code) continue;
       rows.push({
         scope: "Formats", type: item.type, value: item.code,
@@ -989,9 +992,9 @@
     if (payload.frame && payload.frame.xpath && payload.frame.xpath.xpath) {
       lines.push(`Frame XPath: ${payload.frame.xpath.xpath}`);
     }
-    const axes = (payload.axes || [])[0];
+    const axes = listOf(payload.axes)[0];
     if (axes) lines.push(`Axes XPath: ${axes.xpath} (${axes.count})`);
-    const pw = (payload.playwright || [])[0];
+    const pw = listOf(payload.playwright)[0];
     if (pw) {
       lines.push(`Playwright: ${convertPlaywright(pw.selector, state.settings.lang, state.settings.await)} (${pw.count})`);
     }
