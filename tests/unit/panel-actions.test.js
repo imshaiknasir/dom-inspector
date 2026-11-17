@@ -166,3 +166,32 @@ test('panel actions: Playwright name, role and test-id semantics match the gener
   assert.equal(out.legacy.matched, 0);
   assert.equal(out.modern.matched, 1);
 });
+
+test('panel actions: refuse hidden and disabled targets', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <button id="hidden" style="display:none">Hidden</button>
+      <button id="disabled" disabled>Disabled</button>
+      <button id="aria-disabled" aria-disabled="true">Aria</button>
+      <input id="disabled-input" disabled>
+    </body></html>`);
+    await local.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
+    const out = await local.evaluate(() => ({
+      hidden: DIPanel.pageAction('click', 'css', '#hidden', '', true),
+      disabled: DIPanel.pageAction('click', 'css', '#disabled', '', true),
+      aria: DIPanel.pageAction('click', 'css', '#aria-disabled', '', true),
+      hover: DIPanel.pageAction('hover', 'css', '#disabled', '', true),
+      type: DIPanel.pageAction('type', 'css', '#disabled-input', 'text', true)
+    }));
+    assert.deepEqual(
+      { hidden: [out.hidden.performed, out.hidden.error], disabled: [out.disabled.performed, out.disabled.error] },
+      { hidden: [false, 'Element is not visible'], disabled: [false, 'Element is disabled'] }
+    );
+    assert.deepEqual([out.aria.performed, out.aria.error], [false, 'Element is disabled']);
+    assert.deepEqual([out.hover.performed, out.hover.error], [false, 'Element is disabled']);
+    assert.deepEqual([out.type.performed, out.type.error], [false, 'Element is not editable']);
+  } finally {
+    await local.close();
+  }
+});
