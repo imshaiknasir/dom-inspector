@@ -819,14 +819,24 @@
       "URL: " + (payload.url || ""),
       "Role: " + (element.role || "—"),
       "Accessible name: " + (element.accessibleName || "—"),
+      "Classes: " + (element.classes || "—"),
       "Text: " + (element.text || "—"),
-      "Visible: " + (element.visible ? "yes" : "no")
+      "Visible: " + (element.visible == null ? "—" : element.visible ? "yes" : "no")
     ];
+    if (payload.reference) {
+      const ref = payload.reference;
+      lines.push("Reference: " + (ref.tag || "element") + (ref.id ? "#" + ref.id : ""));
+    }
     const css = payload.css || {};
     const xpath = payload.xpath || {};
     if (css.best) lines.push(`CSS: ${css.best.selector} (${css.best.count})`);
     if (xpath.best) lines.push(`XPath: ${xpath.best.xpath} (${xpath.best.count})`);
     if (xpath.absolute) lines.push(`Absolute XPath: ${xpath.absolute}`);
+    if (payload.frame && payload.frame.xpath && payload.frame.xpath.xpath) {
+      lines.push(`Frame XPath: ${payload.frame.xpath.xpath}`);
+    }
+    const axes = (payload.axes || [])[0];
+    if (axes) lines.push(`Axes XPath: ${axes.xpath} (${axes.count})`);
     const pw = (payload.playwright || [])[0];
     if (pw) lines.push(`Playwright: ${pw.selector} (${pw.count})`);
     return lines.join("\n");
