@@ -115,3 +115,36 @@ test('panel actions: first/last/filter modifiers narrow the match set', async ()
   assert.equal(out.last.matched, 1);
   assert.equal(out.filtered.matched, 0);
 });
+
+test('panel actions: Playwright name, role and test-id semantics match the generator', { todo: 'BLOCKERS.md — panel-actions accessible-name/role/test-id matching diverges from generator semantics' }, async () => {
+  const out = await page.evaluate(() => {
+    const submit = document.createElement('input');
+    submit.type = 'submit';
+    submit.value = 'Send';
+    const label = document.createElement('span');
+    label.id = 'lbl-dyn';
+    label.textContent = 'Labelled target';
+    const labelled = document.createElement('button');
+    labelled.setAttribute('aria-labelledby', 'lbl-dyn');
+    const region = document.createElement('section');
+    const legacy = document.createElement('span');
+    legacy.setAttribute('data-test-id', 'legacy');
+    const modern = document.createElement('span');
+    modern.setAttribute('data-testid', 'modern');
+    document.body.append(submit, label, labelled, region, legacy, modern);
+    const result = {
+      submit: DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Send' })", '', false),
+      labelled: DIPanel.pageAction('click', 'playwright', "page.getByLabel('Labelled target')", '', false),
+      region: DIPanel.pageAction('click', 'playwright', "page.getByRole('region')", '', false),
+      legacy: DIPanel.pageAction('click', 'playwright', "page.getByTestId('legacy')", '', false),
+      modern: DIPanel.pageAction('click', 'playwright', "page.getByTestId('modern')", '', false)
+    };
+    for (const node of [submit, label, labelled, region, legacy, modern]) node.remove();
+    return result;
+  });
+  assert.equal(out.submit.matched, 1);
+  assert.equal(out.labelled.matched, 1);
+  assert.equal(out.region.matched, 0);
+  assert.equal(out.legacy.matched, 0);
+  assert.equal(out.modern.matched, 1);
+});
