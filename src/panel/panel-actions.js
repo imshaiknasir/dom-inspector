@@ -397,7 +397,10 @@
           } else if (method === "Title") {
             matches = all.filter((node) => firstMatch(attr(node, "title")));
           } else if (method === "TestId") {
-            matches = all.filter((node) => firstMatch(attr(node, "data-testid")));
+            matches = all.filter((node) => {
+              const actual = attr(node, "data-testid");
+              return firstPattern ? regexTest(firstPattern, actual) : actual === firstText;
+            });
           }
         } else if (locator) {
           const selectors = [];
@@ -447,7 +450,7 @@
         }
 
         if (filterText !== null) {
-          matches = matches.filter((node) => textEquals(node.textContent, filterText, false));
+          matches = matches.filter((node) => textEquals(visibleText(node), filterText, false));
         }
         if (first) matches = matches.slice(0, 1);
         if (last) matches = matches.slice(-1);
@@ -471,7 +474,7 @@
       const target = matches[0];
       result.matched = matches.length;
       result.tag = tagOf(target);
-      result.text = norm(target.textContent).slice(0, 120);
+      result.text = norm(visibleText(target)).slice(0, 120);
       const inputType = (attr(target, "type") || "text").toLowerCase();
       result.typable = tagOf(target) === "textarea" || tagOf(target) === "select" ||
         (tagOf(target) === "input" && !["checkbox", "radio", "file", "submit", "button", "reset"].includes(inputType)) ||
