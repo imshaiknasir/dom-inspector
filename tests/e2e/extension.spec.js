@@ -1230,6 +1230,28 @@ test('panel expands a collapsed tester when editing a saved locator', async () =
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
 });
 
+test('panel caps a single saved import at 500 entries', async () => {
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(0);
+
+  const entries = Array.from({ length: 510 }, (_, index) => ({
+    key: `css::#bulk-${index}`, type: 'css', value: `#bulk-${index}`, name: `Bulk ${index}`
+  }));
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'bulk.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ saved: entries }))
+  });
+  await expect(extensionPage.locator('#di-toast')).toContainText('Imported 500 saved locators');
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(500);
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel reorders saved locators with up/down controls', async () => {
   const entries = [
     { id: 'order-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
