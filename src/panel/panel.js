@@ -1141,7 +1141,13 @@
     refreshSaveButtons();
   };
 
+  const syncResetButton = () => {
+    const button = $("di-reset");
+    if (button) button.disabled = state.savedBusy || state.healBusy;
+  };
+
   const renderSaved = () => {
+    syncResetButton();
     const list = $("di-saved");
     const meta = $("di-saved-meta");
     const empty = $("di-saved-empty");
@@ -2132,6 +2138,7 @@
   };
 
   const renderHeal = () => {
+    syncResetButton();
     const list = $("di-heal-results");
     const empty = $("di-heal-empty");
     const meta = $("di-heal-meta");
