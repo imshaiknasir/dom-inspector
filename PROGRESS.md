@@ -72,7 +72,7 @@ not shipped). Last updated 17 Nov 2026.
 | Collapse/expand sections; persisted | done | settings in `chrome.storage.local` |
 | Export all locators to JSON | done | includes element, counts, raw values, saved list |
 | Saved locator names editable | done | lightweight POM/list |
-| Saved locator import / export | done | JSON import (deduped) + JSON/CSV export |
+| Saved locator import / export | done | JSON/CSV import with dedupe + JSON/CSV export |
 | Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries |
 | Saved locator delete / clear | done | confirm before clearing all |
 | Editable locator tester with live count | done | debounced, no highlight while typing |
@@ -81,7 +81,7 @@ not shipped). Last updated 17 Nov 2026.
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |
-| Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV export; no grid/spreadsheet import |
+| Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV import/export; no multi-column grid or XLS |
 | Batch selector healing | done | paste lines, check counts, flag broken/non-unique, fix via repair engine with unique-candidate verification, JSON/CSV report |
 | Fix-selector repair loop | done | `content/repair.js`; panel batch fix verifies every suggestion and tries unique CSS/XPath/Playwright candidates |
 | Single-locator Fix in tester | done | **Fix** calls `DI_FIX`, replaces the input and re-validates/highlights |
@@ -138,6 +138,7 @@ not shipped). Last updated 17 Nov 2026.
 - `15d29a1` saved-locator JSON import
 - `3328d0a` narrow-healing-header layout fix
 - `e154f6a` non-unique counts in healing summaries
+- `3de0e1c` saved-locator CSV import
 - `e47ee2b` popup keyboard shortcuts
 
 ## Next candidates
