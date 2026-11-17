@@ -98,7 +98,7 @@ not shipped). Last updated 17 Nov 2026.
 | Highlight all matches, scroll first | done | `validate.highlight` |
 | Multi-frame aggregate counts | partial | count comes from a responding frame |
 | Versioned message contract | partial | explicit `DI_*` messages; worker also caches last pick |
-| Local-only storage | done | `di:panel:*`; no sync/remote |
+| Local-only storage | done | `di:panel:*`; open surfaces sync saved locators/history via storage events; no remote |
 
 ## Tests, docs and quality
 

@@ -68,8 +68,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   best selector through the worker.
 - **Persistence** — language, await, unique-only, continuous picking, collapsed
   sections, driver template and saved locators survive panel reloads. The last
-  pick is restored from the service worker/session storage, and the panel keeps
-  a small history of recent picks for the popup.
+  pick is restored from the service worker/session storage, the panel keeps a
+  small history of recent picks for the popup, and open panel/popup surfaces
+  stay in sync through storage events.
 - **Themes** — light and dark follow the browser colour scheme.
 
 ### Keyboard
