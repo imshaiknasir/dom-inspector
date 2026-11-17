@@ -2649,14 +2649,14 @@
   const restoreLast = async () => {
     const response = await runtimeSend({ type: "DI_GET_LAST" });
     if (response && response.payload) {
-      handlePayload(response.payload, true);
+      if (!state.payload) handlePayload(response.payload, true);
       return true;
     }
     if (sessionStore) {
       try {
         const data = await sessionStore.get(LAST_PICK_KEY);
         if (data && data[LAST_PICK_KEY]) {
-          handlePayload(data[LAST_PICK_KEY], true);
+          if (!state.payload) handlePayload(data[LAST_PICK_KEY], true);
           return true;
         }
       } catch (_) { /* ignore */ }
