@@ -61,6 +61,7 @@ const sendToFixture = (message, options) => extensionPage.evaluate(async ({ url,
 }, { url: baseURL, message, options });
 
 const startPicking = async () => {
+  await fixturePage.bringToFront();
   const start = await sendToFixture({ type: 'DI_START' });
   expect(start.ok).toBe(true);
 };
