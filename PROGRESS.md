@@ -11,7 +11,7 @@ not shipped). Last updated 17 Nov 2026.
 | DevTools Elements sidebar pane | done | `createSidebarPane` → `panel/panel.html` |
 | Chrome side panel | done | same panel; toolbar icon opens it |
 | Toolbar action popup (pick, panel, healing, recent, copy) | done | `src/popup/*`; `action.default_popup` in manifest |
-| Recent pick history in popup | done | panel stores the latest distinct picks; popup pages through up to 12 and clears them |
+| Recent pick history in popup | done | panel stores distinct recent picks; popup shows four with **Show all**, keeps the full count and can clear them |
 | Popup keyboard shortcuts | done | `P` pick, `O` open, `H` healing, `R` refresh, `T` test best, `C` copy last |
 | Shared panel for both surfaces | done | `src/panel/*`; detects `chrome.devtools` |
 | Element information card | done | tag, id, classes, role, accessible name, text, visibility, URL, frame/shadow context |
