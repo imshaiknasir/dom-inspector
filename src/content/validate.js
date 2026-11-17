@@ -22,9 +22,9 @@
     return true;
   };
 
-  const labelTargets = (value, exact) => {
+  const labelTargets = (value, exact, doc = document) => {
     const out = new Set();
-    for (const el of U.deepEveryElement(document, [])) {
+    for (const el of U.deepEveryElement(doc, [])) {
       if (U.tagOf(el) === "label") {
         const text = U.normalizeText(el.textContent);
         if (exact ? text === value : text.includes(value)) {
@@ -34,7 +34,7 @@
           if (id) {
             target = (root.getElementById && root.getElementById(id)) ||
               U.deepQueryAll("#" + U.cssEscape(id), root)[0] ||
-              document.getElementById(id);
+              (doc.getElementById ? doc.getElementById(id) : null);
           } else {
             target = el.querySelector("input, select, textarea");
           }
@@ -47,7 +47,24 @@
     return [...out];
   };
 
-  const resolvePlaywright = (expr) => {
+  const resolvePlaywright = (expr, doc = document) => {
+    const framePattern = /\.frameLocator\(\s*(['"])(.*?)\1\s*\)/g;
+    const frameSelectors = [];
+    let fm;
+    while ((fm = framePattern.exec(expr)) !== null) frameSelectors.push(fm[2]);
+    if (frameSelectors.length) {
+      let currentDoc = doc;
+      for (const sel of frameSelectors) {
+        const frame = U.deepQueryAll(sel, currentDoc)[0];
+        if (!frame) return [];
+        let nextDoc = null;
+        try { nextDoc = frame.contentDocument || frame.contentWindow.document; } catch (_) { return []; }
+        if (!nextDoc) return [];
+        currentDoc = nextDoc;
+      }
+      const rest = expr.replace(framePattern, "").replace(/^page/, "page");
+      return resolvePlaywright(rest, currentDoc);
+    }
     const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
     if (role) {
       const regex = expr.match(/name:\s*\/(.+?)\/([gimsuy]*)/);
@@ -57,7 +74,7 @@
       if (regex) {
         try { re = new RegExp(regex[1].replace(/\\\//g, "/"), regex[2]); } catch (_) { re = null; }
       }
-      return U.deepEveryElement(document, []).filter((el) => {
+      return U.deepEveryElement(doc, []).filter((el) => {
         if (DI.playwright.implicitRole(el) !== role[1]) return false;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) return re.test(actual);
@@ -66,40 +83,40 @@
       });
     }
     const label = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
-    if (label) return labelTargets(label[1], /exact:\s*true/.test(expr));
+    if (label) return labelTargets(label[1], /exact:\s*true/.test(expr), doc);
     const text = expr.match(/getByText\(\s*['"]([^'"]+)['"]/);
-    if (text) return U.deepEveryElement(document, []).filter((el) => textMatches(el, text[1], /exact:\s*true/.test(expr)));
+    if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, text[1], /exact:\s*true/.test(expr)));
     const placeholder = expr.match(/getByPlaceholder\(\s*['"]([^'"]+)['"]/);
-    if (placeholder) return U.deepQueryAll(`[placeholder="${placeholder[1].replace(/"/g, '\\"')}"]`);
+    if (placeholder) return U.deepQueryAll(`[placeholder="${placeholder[1].replace(/"/g, '\\"')}"]`, doc);
     const alt = expr.match(/getByAltText\(\s*['"]([^'"]+)['"]/);
-    if (alt) return U.deepQueryAll(`[alt="${alt[1].replace(/"/g, '\\"')}"]`);
+    if (alt) return U.deepQueryAll(`[alt="${alt[1].replace(/"/g, '\\"')}"]`, doc);
     const title = expr.match(/getByTitle\(\s*['"]([^'"]+)['"]/);
-    if (title) return U.deepQueryAll(`[title="${title[1].replace(/"/g, '\\"')}"]`);
+    if (title) return U.deepQueryAll(`[title="${title[1].replace(/"/g, '\\"')}"]`, doc);
     const testId = expr.match(/getByTestId\(\s*['"]([^'"]+)['"]/);
     if (testId) {
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
-        .flatMap((name) => U.deepQueryAll(`[${name}="${testId[1].replace(/"/g, '\\"')}"]`));
+        .flatMap((name) => U.deepQueryAll(`[${name}="${testId[1].replace(/"/g, '\\"')}"]`, doc));
     }
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
       const base = (visibility[1] || "*").trim() || "*";
       const wantVisible = visibility[2] === "visible";
-      return U.deepQueryAll(base).filter((el) => U.isVisible(el) === wantVisible);
+      return U.deepQueryAll(base, doc).filter((el) => U.isVisible(el) === wantVisible);
     }
     const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
       const value = engine[2];
       const exact = expr.includes(":text-is(");
-      return U.deepEveryElement(document, []).filter((el) => {
+      return U.deepEveryElement(doc, []).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
         return textMatches(el, value, exact);
       });
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
-    if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1]);
+    if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1], doc);
     const xp = expr.match(/locator\(\s*`([^`]+)`\s*\)/) || expr.match(/locator\(\s*['"](\/\/[^'"]+)['"]\s*\)/);
-    if (xp) return DI.xpath.snapshot(xp[1]);
+    if (xp) return DI.xpath.snapshot(xp[1], doc);
     return [];
   };
 

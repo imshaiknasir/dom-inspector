@@ -12,6 +12,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "di-pick" && tab && tab.id != null) {
+    if (tab.windowId != null) chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
     chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
   }
 });

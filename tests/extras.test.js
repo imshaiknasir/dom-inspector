@@ -59,3 +59,12 @@ test('playwright: regex role locators count and validate', async () => {
   assert.equal(out.validated.ok, true);
   assert.equal(out.validated.count, 1);
 });
+
+test('validate: Playwright frameLocator resolves inside a same-origin frame', async () => {
+  const frame = page.frames().find((f) => f !== page.mainFrame());
+  assert.ok(frame);
+  await frame.waitForSelector('#inner');
+  const out = await page.evaluate(() => DI.validate.test('playwright', "page.frameLocator('#frame').getByTestId('inner-btn')"));
+  assert.equal(out.ok, true);
+  assert.equal(out.count, 1);
+});
