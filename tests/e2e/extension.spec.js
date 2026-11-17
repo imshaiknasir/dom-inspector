@@ -223,6 +223,8 @@ test('toolbar popup renders the last picked locators', async () => {
   await expect(popup.locator('#pop-status')).toContainText('Pick an element');
   await popup.locator('body').press('c');
   await expect(popup.locator('#pop-status')).toContainText('No locators to copy');
+  await popup.locator('body').press('t');
+  await expect(popup.locator('#pop-status')).toContainText('Pick an element first');
   await popup.close();
 });
 

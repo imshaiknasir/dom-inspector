@@ -22,10 +22,10 @@ test('popup: every element id used by popup.js exists in popup.html', () => {
 
 test('popup: markup has the expected actions and no duplicate ids', () => {
   const html = fs.readFileSync(POPUP_HTML, 'utf8');
-  for (const id of ['pop-pick', 'pop-open', 'pop-heal', 'pop-refresh', 'pop-last-rows']) {
+  for (const id of ['pop-pick', 'pop-open', 'pop-heal', 'pop-refresh', 'pop-last-test', 'pop-last-rows']) {
     assert.match(html, new RegExp(`id="${id}"`), 'missing ' + id);
   }
-  for (const key of ['P', 'O', 'H', 'R', 'C']) {
+  for (const key of ['P', 'O', 'H', 'R', 'T', 'C']) {
     assert.match(html, new RegExp(`aria-keyshortcuts="${key}"`), 'missing shortcut ' + key);
   }
   const all = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1]);

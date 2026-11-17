@@ -88,12 +88,13 @@ test('repair: a near-miss id is resolved to the real element', async () => {
   assert.ok(out.score > 0);
 });
 
-test('repair: unbalanced attribute selector is balanced and repaired', async () => {
-  const out = await page.evaluate(() => DI.repair.fix('button[data-testid="save-btn"'));
+test('repair: a valid selector with a trailing semicolon is normalized', async () => {
+  const out = await page.evaluate(() => DI.repair.fix('button[data-testid="save-btn"];'));
   assert.equal(out.ok, true);
   assert.equal(out.repaired, true);
   assert.equal(out.fixed, 'button[data-testid="save-btn"]');
   assert.equal(out.count, 1);
+  assert.equal(out.element.id, 'save');
 });
 
 test('repair: a broken tag selector falls back to a matching element', async () => {
