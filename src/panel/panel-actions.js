@@ -120,7 +120,7 @@
       };
       const queryCss = (scope, selector) => {
         const wantsVisible = /:visible\b/.test(selector);
-        const css = selector.replace(/:visible\b/g, "").trim() || "*";
+        const css = selector.replace(/^css=/, "").replace(/:visible\b/g, "").trim() || "*";
         let nodes = [];
         try { nodes = [...scope.querySelectorAll(css)]; } catch (_) { nodes = []; }
         return wantsVisible ? nodes.filter(isVisible) : nodes;
@@ -452,8 +452,11 @@
           }
           if (selectors.length) {
             let nodes = [];
-            const selector = selectors[0];
-            if (selector.startsWith("//") || selector.startsWith("(/")) {
+            const rawSelector = selectors[0];
+            const engine = rawSelector.match(/^(css|xpath|text)=([\s\S]*)$/);
+            const selector = engine ? engine[2] : rawSelector;
+            if ((engine && engine[1] === "xpath") ||
+                (!engine && (selector.startsWith("//") || selector.startsWith("(/")))) {
               const seen = new Set();
               for (const root of roots) {
                 const doc = root.ownerDocument || root;
@@ -468,6 +471,8 @@
                   }
                 } catch (_) { /* ignore */ }
               }
+            } else if (engine && engine[1] === "text") {
+              nodes = allElements().filter((node) => textMatches(node, selector, false));
             } else {
               for (const root of roots) nodes.push(...queryCss(root, selector));
             }
