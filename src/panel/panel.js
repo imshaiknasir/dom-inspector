@@ -1079,6 +1079,10 @@
     empty.hidden = state.saved.length > 0;
 
     if (!state.saved.length && state.savedFilter) state.savedFilter = "";
+    for (const id of ["di-saved-check", "di-saved-pom", "di-saved-json", "di-saved-csv", "di-saved-clear"]) {
+      const button = $(id);
+      if (button) button.disabled = state.saved.length === 0;
+    }
     const filterInput = $("di-saved-filter");
     filterInput.hidden = state.saved.length === 0;
     if (filterInput.value !== state.savedFilter) filterInput.value = state.savedFilter;
@@ -1155,6 +1159,7 @@
 
   const checkSaved = async () => {
     if (!state.saved.length) return toast("No saved locators to check", "bad");
+    setStatus("Checking saved locators…");
     const button = $("di-saved-check");
     button.disabled = true;
     let unique = 0;
