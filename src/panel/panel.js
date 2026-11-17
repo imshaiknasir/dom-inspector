@@ -2489,6 +2489,7 @@
     state.payloadSeq += 1;
     if (senderTabId != null) state.payloadTabId = senderTabId;
     if (senderTopUrl) state.payloadTopUrl = senderTopUrl;
+    else if (!restored) state.payloadTopUrl = "";
     state.previousPayload = pageChanged ? null : (!restored && previous ? previous : null);
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
