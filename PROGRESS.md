@@ -107,7 +107,7 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 165/165 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 166 pass, 3 documented todo |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
 | Extension e2e suites | done | 26/26 checks, including popup, axes, tester Fix, POM export/import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
