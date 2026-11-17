@@ -291,3 +291,13 @@ test('repair: a valid non-element XPath does not crash', async () => {
   assert.equal(out.ok, true);
   assert.equal(out.locators, null);
 });
+
+test('validate: auto detects locator() as Playwright', async () => {
+  const out = await page.evaluate(() => ({
+    type: DI.validate.detectType("locator('#save')"),
+    result: DI.validate.test('auto', "locator('#save')")
+  }));
+  assert.equal(out.type, 'playwright');
+  assert.equal(out.result.ok, true);
+  assert.equal(out.result.count, 1);
+});

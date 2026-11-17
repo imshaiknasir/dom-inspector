@@ -8,7 +8,7 @@
   const detectType = (value) => {
     const v = String(value || "").trim();
     if (!v) return "css";
-    if (v.startsWith("page.") || v.startsWith("getBy")) return "playwright";
+    if (v.startsWith("page.") || v.startsWith("getBy") || v.startsWith("locator(") || v.includes(".locator(")) return "playwright";
     if (v.startsWith("//") || v.startsWith("(/") || v.startsWith("./") || v.startsWith("(")) return "xpath";
     return "css";
   };
