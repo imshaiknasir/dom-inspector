@@ -556,6 +556,7 @@ test('panel filters rows and exports picked locators as JSON', async () => {
   expect(download.suggestedFilename()).toMatch(/^dom-inspector-.*\.json$/);
   const report = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
   expect(report.extension).toBe('DOM Inspector');
+  expect(report.page).toMatchObject({ url: baseURL, topUrl: baseURL });
   expect(report.element).toMatchObject({ tag: 'button', id: 'save' });
   expect(report.locators.some((row) => row.value === '#save')).toBe(true);
   expect(report.locators.some((row) => row.type === 'xpath' && row.value === "//*[@id='save']")).toBe(true);
