@@ -363,6 +363,33 @@ test('reference mode adds axes locators to the next pick', async () => {
   await sendToFixture({ type: 'DI_STOP' });
 });
 
+test('panel tester validates, highlights and clears a locator', async () => {
+  await fixturePage.bringToFront();
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'css';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('di-test').click();
+  });
+
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toMatch(/valid/i);
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toContain('1 match');
+
+  expect(await fixturePage.evaluate(() => document.getElementById('save').style.outline)).toContain('2px solid');
+
+  await extensionPage.evaluate(() => document.getElementById('di-clear').click());
+  await expect.poll(() => fixturePage.evaluate(() =>
+    document.getElementById('save').style.outline
+  ), { timeout: 5000 }).toBe('');
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
