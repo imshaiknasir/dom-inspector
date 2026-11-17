@@ -258,3 +258,12 @@ test('validate: bare XPath id() is detected', async () => {
   });
   assert.deepEqual(out, { type: 'xpath', ok: true, count: 1 });
 });
+
+test('validate: await-prefixed Playwright snippets are detected', async () => {
+  const out = await page.evaluate(() => {
+    const expr = "await page.getByTestId('save-btn')";
+    const result = DI.validate.test('auto', expr);
+    return { type: DI.validate.detectType(expr), ok: result.ok, count: result.count, resultType: result.type };
+  });
+  assert.deepEqual(out, { type: 'playwright', ok: true, count: 1, resultType: 'playwright' });
+});
