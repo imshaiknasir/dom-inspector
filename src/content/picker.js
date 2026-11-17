@@ -8,6 +8,7 @@
   let pickMode = "element";
   let reference = null;
   let lastPicked = null;
+  let contextTarget = null;
   let overlay = null;
   let lastTarget = null;
 
@@ -53,6 +54,13 @@
     if (!el || el === overlay) return;
     pick(el);
   };
+
+  const onContext = (event) => {
+    const el = targetFromEvent(event);
+    if (el && el.nodeType === 1) contextTarget = el;
+  };
+
+  document.addEventListener("contextmenu", onContext, true);
 
   const onKey = (event) => {
     if (event.key === "Escape" && active) stop();
@@ -195,6 +203,40 @@
       reference = null;
       lastPicked = null;
       sendResponse({ ok: true });
+      return true;
+    }
+    if (message.type === "DI_COPY_BEST") {
+      const el = contextTarget && contextTarget.isConnected ? contextTarget : null;
+      if (!el) {
+        sendResponse({ ok: false, error: "No context element recorded" });
+        return true;
+      }
+      const css = safe(() => DI.css.best(el), null);
+      const xp = safe(() => DI.xpath.best(el), null);
+      const value = (css && css.selector) || (xp && xp.xpath) || U.cssPath && U.cssPath(el) || "";
+      if (!value) {
+        sendResponse({ ok: false, error: "No locator generated" });
+        return true;
+      }
+      const done = () => sendResponse({ ok: true, value });
+      try {
+        navigator.clipboard.writeText(value).then(done, () => {
+          const area = document.createElement("textarea");
+          area.value = value;
+          document.body.appendChild(area);
+          area.select();
+          const copied = document.execCommand("copy");
+          area.remove();
+          sendResponse(copied ? { ok: true, value } : { ok: false, error: "Clipboard unavailable" });
+        });
+      } catch (_) {
+        sendResponse({ ok: false, error: "Clipboard unavailable" });
+      }
+      return true;
+    }
+    if (message.type === "DI_FIX") {
+      const result = DI.repair ? DI.repair.fix(message.value) : { ok: false, error: "repair unavailable" };
+      sendResponse(result);
       return true;
     }
     if (message.type === "DI_PING") {

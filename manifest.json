@@ -45,6 +45,7 @@
         "src/content/playwright.js",
         "src/content/formats.js",
         "src/content/validate.js",
+        "src/content/repair.js",
         "src/content/picker.js"
       ],
       "css": [
