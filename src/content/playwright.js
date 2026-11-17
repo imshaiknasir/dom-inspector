@@ -329,8 +329,9 @@
 
     const css = DI.css.best(el);
     if (css && U.isInShadow(el)) {
-      const hosts = U.shadowHosts(el).slice().reverse().map((host) => DI.css.best(host)).filter(Boolean);
-      if (hosts.length) {
+      const rawHosts = U.shadowHosts(el).slice().reverse();
+      const hosts = rawHosts.map((host) => DI.css.best(host)).filter(Boolean);
+      if (hosts.length && hosts.length === rawHosts.length && hosts.every((h) => h.count === 1)) {
         const chain = base + hosts.map((h) => `.locator(${quote(h.selector)})`).join("") + `.locator(${quote(css.selector)})`;
         add("locator+shadow", chain, 1, 37);
       }

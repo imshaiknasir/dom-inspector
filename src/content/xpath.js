@@ -226,7 +226,9 @@
     let ancestor = reference.parentElement;
     while (ancestor && ancestor !== document.documentElement) {
       if (ancestor.contains(target)) {
-        add(`//${tagOf(ancestor)}[contains(.,${xpathLiteral(normalizeText(target.textContent).slice(0, 30))})]/descendant::${targetSeg}`, "common-ancestor");
+        if (targetText.length >= 2) {
+          add(`//${tagOf(ancestor)}[contains(.,${xpathLiteral(targetText.slice(0, 30))})]/descendant::${targetSeg}`, "common-ancestor");
+        }
         break;
       }
       ancestor = ancestor.parentElement;
