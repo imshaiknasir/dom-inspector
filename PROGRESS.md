@@ -104,7 +104,7 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 150/150 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 161/161 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
 | Extension e2e suites | done | 25/25 checks, including popup, axes, tester Fix, POM export/import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
@@ -139,6 +139,7 @@ not shipped). Last updated 17 Nov 2026.
 - `3328d0a` narrow-healing-header layout fix
 - `e154f6a` non-unique counts in healing summaries
 - `3de0e1c` saved-locator CSV import
+- `f7ce0aa` cross-surface saved/history sync
 - `e47ee2b` popup keyboard shortcuts
 
 ## Next candidates
