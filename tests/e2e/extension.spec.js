@@ -751,6 +751,47 @@ test('panel imports saved locators from JSON and skips duplicates', async () => 
   )).toBe(2);
 });
 
+test('panel reorders saved locators with up/down controls', async () => {
+  const entries = [
+    { id: 'order-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
+    { id: 'order-b', key: 'css::#link', name: 'Second link', scope: 'CSS', type: 'css', value: '#link', savedAt: 1 }
+  ];
+  await extensionPage.evaluate((value) => chrome.storage.local.set({ 'di:panel:saved': value }), entries);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+
+  const initial = await extensionPage.evaluate(() => {
+    const rows = [...document.querySelectorAll('#di-saved .saved-row')];
+    return {
+      rows: rows.length,
+      upDisabled: rows.map((row) => row.querySelector('button[title="Move up"]').disabled),
+      downDisabled: rows.map((row) => row.querySelector('button[title="Move down"]').disabled)
+    };
+  });
+  expect(initial.upDisabled).toEqual([true, false]);
+  expect(initial.downDisabled).toEqual([false, true]);
+
+  await extensionPage.evaluate(() => {
+    const first = document.querySelector('#di-saved .saved-row');
+    first.querySelector('button[title="Move down"]').click();
+  });
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return (data['di:panel:saved'] || []).map((entry) => entry.id);
+  }), { timeout: 5000 }).toEqual(['order-b', 'order-a']);
+
+  await extensionPage.evaluate(() => {
+    const rows = [...document.querySelectorAll('#di-saved .saved-row')];
+    rows[1].querySelector('button[title="Move up"]').click();
+  });
+  await expect.poll(async () => extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return (data['di:panel:saved'] || []).map((entry) => entry.id);
+  }), { timeout: 5000 }).toEqual(['order-a', 'order-b']);
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
