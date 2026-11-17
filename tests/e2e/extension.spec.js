@@ -1141,6 +1141,32 @@ test('panel saved CSV export neutralises formula cells', async () => {
   expect(csvText).not.toContain('"+cmd');
 });
 
+test('panel expands a collapsed tester when editing a saved locator', async () => {
+  const entry = {
+    id: 'edit-saved', key: 'css::#save', name: 'Edit target', scope: 'CSS', type: 'css',
+    value: '#save', testType: 'css', testValue: '#save', count: 1
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  const toggle = extensionPage.locator('#di-tester-card .section-toggle');
+  if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+  await extensionPage.evaluate(() => {
+    document.querySelector('#di-saved .saved-row button[title="Edit in tester"]').click();
+  });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(extensionPage.locator('#di-tester-body')).toBeVisible();
+  await expect(extensionPage.locator('#di-input')).toHaveValue('#save');
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel reorders saved locators with up/down controls', async () => {
   const entries = [
     { id: 'order-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
