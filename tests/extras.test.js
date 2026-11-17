@@ -284,3 +284,9 @@ test('css: data-test-id is a preferred attribute', async () => {
   });
   assert.ok(out.some((s) => s.includes('[data-test-id="confirm"]')));
 });
+
+test('repair: a valid non-element XPath does not crash', async () => {
+  const out = await page.evaluate(() => DI.repair.fix("//button[@id='save']/text()"));
+  assert.equal(out.ok, true);
+  assert.equal(out.locators, null);
+});

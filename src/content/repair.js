@@ -134,7 +134,7 @@
     for (const value of attempts) {
       const result = DI.validate.test("auto", value);
       if (result.ok) {
-        const el = result.elements[0];
+        const el = result.elements.find((node) => node && node.nodeType === 1) || null;
         return {
           ok: true,
           repaired: value !== original,
