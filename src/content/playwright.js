@@ -222,6 +222,8 @@
       if (name && name.length <= 80) {
         add("getByRole", `${base}.getByRole(${quote(role)}, { name: ${quote(name)}, exact: true })`, countRole(role, name, true, root), 2);
         add("getByRole", `${base}.getByRole(${quote(role)}, { name: ${quote(name)} })`, countRole(role, name, false, root), 4);
+        const pattern = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        add("getByRole-regex", `${base}.getByRole(${quote(role)}, { name: /${pattern}/i })`, countRole(role, name, false, root), 5);
       }
       add("getByRole", `${base}.getByRole(${quote(role)})`, countRole(role, "", false, root), 30);
     }
