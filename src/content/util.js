@@ -127,9 +127,12 @@
     return frames.reverse();
   };
 
+  /* Mirrors Playwright's visibility rule: a non-empty box that is not
+     display:none or visibility:hidden/collapse (opacity is not considered). */
   const isVisible = (el) => {
     const style = el.ownerDocument.defaultView.getComputedStyle(el);
-    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+    if (style.display === "none") return false;
+    if (style.visibility === "hidden" || style.visibility === "collapse") return false;
     return el.getClientRects().length > 0;
   };
 
