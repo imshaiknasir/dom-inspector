@@ -185,17 +185,28 @@ test('toolbar popup renders the last picked locators', async () => {
 
   const history = [
     { at: 20, url: 'https://Old.Example/Path', css: '#old-save', cssCount: 1, element: { tag: 'button', id: 'old-save' } },
-    { at: 10, url: 'https://older.example/', xpath: '//div[@id="old"]', xpathCount: 2, element: { tag: 'div', id: 'old' } }
+    { at: 10, url: 'https://older.example/', xpath: '//div[@id="old"]', xpathCount: 2, element: { tag: 'div', id: 'old' } },
+    {
+      at: 30, url: 'https://example.test/', css: '#save', xpath: "//*[@id='save']",
+      playwright: "page.getByTestId('save-btn')", cssCount: 1, element: { tag: 'button', id: 'dedupe-exact' }
+    },
+    {
+      at: 29, url: 'https://example.test/', css: '#save', xpath: "//*[@id='save']",
+      playwright: "page.getByRole('button')", cssCount: 1, element: { tag: 'button', id: 'dedupe-near' }
+    }
   ];
   await popup.evaluate((entries) => chrome.storage.local.set({ 'di:panel:history': entries }), history);
   await popup.locator('#pop-refresh').click();
   await expect(popup.locator('#pop-history-card')).toBeVisible();
-  await expect(popup.locator('#pop-history-meta')).toHaveText('2');
-  expect(await popup.locator('#pop-history-rows .loc-row').count()).toBe(2);
+  await expect(popup.locator('#pop-history-meta')).toHaveText('4');
+  expect(await popup.locator('#pop-history-rows .loc-row').count()).toBe(3);
+  const historyTexts = await popup.evaluate(() =>
+    [...document.querySelectorAll('#pop-history-rows .loc-row')].map((row) => row.textContent)
+  );
+  expect(historyTexts.filter((text) => text.includes('https://example.test/')).length).toBe(1);
   await expect(popup.locator('#pop-history-rows')).toContainText('#old-save');
   await expect(popup.locator('#pop-history-rows')).toContainText('//div[@id="old"]');
   await expect(popup.locator('#pop-history-rows')).toContainText('https://Old.Example/Path');
-  expect(await popup.locator('#pop-history-rows .loc-url').count()).toBe(2);
   await popup.locator('#pop-history-clear').click();
   await expect.poll(() => popup.evaluate(() =>
     document.getElementById('pop-history-card').hidden
