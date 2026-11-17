@@ -164,6 +164,32 @@ test('extension loads without runtime errors', async () => {
   expect(errors).toEqual([]);
 });
 
+test('panel sections collapse individually and in bulk', async () => {
+  const toggle = extensionPage.locator('#di-tester-card .section-toggle');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(extensionPage.locator('#di-tester-body')).toBeHidden();
+
+  await extensionPage.locator('#di-expand').click();
+  await expect(extensionPage.locator('#di-expand')).toHaveText('Expand all');
+  await expect(extensionPage.locator('#di-tester-card')).toHaveClass(/collapsed/);
+  await expect(extensionPage.locator('#di-saved-card')).toHaveClass(/collapsed/);
+
+  await extensionPage.locator('#di-expand').click();
+  await expect(extensionPage.locator('#di-expand')).toHaveText('Collapse all');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(extensionPage.locator('#di-tester-body')).toBeVisible();
+
+  await toggle.click();
+  await extensionPage.waitForTimeout(300);
+  await extensionPage.reload();
+  await expect(extensionPage.locator('#di-tester-card .section-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(extensionPage.locator('#di-tester-body')).toBeHidden();
+  await extensionPage.locator('#di-expand').click();
+  await expect(extensionPage.locator('#di-tester-body')).toBeVisible();
+});
+
 test('toolbar popup renders the last picked locators', async () => {
   const popup = await context.newPage();
   collectErrors(popup, 'popup', errors);
