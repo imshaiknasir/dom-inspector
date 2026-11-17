@@ -376,3 +376,19 @@ test('playwright: unlabelled iframe gets a CSS-based frameLocator', async () => 
   assert.ok(out.css.includes('nth-of-type') || out.css.includes('iframe'));
   await page.evaluate(() => document.querySelectorAll('iframe[srcdoc]')[1]?.remove());
 });
+
+test('repair: brackets inside quoted values do not count as structure', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.createElement('button');
+    el.id = 'bracket-title';
+    el.setAttribute('title', 'a[b');
+    document.body.appendChild(el);
+    const original = 'button[title="a[b"]';
+    const result = DI.repair.fix(original);
+    el.remove();
+    return { result, normalized: DI.repair.normalize(original) };
+  });
+  assert.equal(out.result.ok, true);
+  assert.equal(out.result.fixed, 'button[title="a[b"]');
+  assert.equal(out.normalized, 'button[title="a[b"]');
+});

@@ -21,6 +21,7 @@
     value = value.replace(/^[>+~]+/, "").trim();
     value = value.replace(/[;,]+$/g, "").trim();
     value = value.replace(/[>+\s]+$/g, "").trim();
+    if (balanced(value)) return value;
     // Balance in the order a human would close: quotes, parentheses, brackets.
     for (const quote of ["'", '"']) {
       const count = value.split(quote).length - 1;
@@ -35,9 +36,24 @@
   };
 
   const balanced = (value) => {
-    const count = (ch) => value.split(ch).length - 1;
-    return count("'") % 2 === 0 && count('"') % 2 === 0 &&
-      count("[") === count("]") && count("(") === count(")");
+    let quote = null;
+    let brackets = 0;
+    let parens = 0;
+    for (let i = 0; i < value.length; i += 1) {
+      const ch = value[i];
+      if (ch === "\\") { i += 1; continue; }
+      if (quote) {
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === "'" || ch === '"') { quote = ch; continue; }
+      if (ch === "[") brackets += 1;
+      else if (ch === "]") brackets -= 1;
+      else if (ch === "(") parens += 1;
+      else if (ch === ")") parens -= 1;
+      if (brackets < 0 || parens < 0) return false;
+    }
+    return quote === null && brackets === 0 && parens === 0;
   };
 
   const tokens = (value) => {
