@@ -15,7 +15,7 @@
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
     if (!own) return false;
-    const wanted = exact ? value : String(value).toLowerCase();
+    const wanted = exact ? value : U.normalizeText(value).toLowerCase();
     const has = exact ? own === wanted : own.toLowerCase().includes(wanted);
     if (!has) return false;
     for (const child of el.children) {
@@ -28,11 +28,13 @@
   };
 
   const labelTargets = (value, exact, doc = document) => {
+    const wanted = U.normalizeText(value);
+    const needle = exact ? wanted : wanted.toLowerCase();
     const out = new Set();
     for (const el of U.deepEveryElement(doc, [])) {
       if (U.tagOf(el) === "label") {
         const text = U.normalizeText(el.textContent);
-        if (exact ? text === value : text.toLowerCase().includes(String(value).toLowerCase())) {
+        if (exact ? text === wanted : text.toLowerCase().includes(needle)) {
           const id = el.getAttribute("for");
           const root = el.getRootNode ? el.getRootNode() : document;
           let target = null;
@@ -47,7 +49,7 @@
         }
       }
       const aria = U.attr(el, "aria-label");
-      if (aria && (exact ? aria === value : aria.toLowerCase().includes(String(value).toLowerCase()))) out.add(el);
+      if (aria && (exact ? aria === wanted : aria.toLowerCase().includes(needle))) out.add(el);
       const ids = U.attr(el, "aria-labelledby");
       if (ids) {
         const root = el.getRootNode ? el.getRootNode() : doc;
@@ -55,7 +57,7 @@
           const node = root.getElementById ? root.getElementById(id) : null;
           return node ? U.normalizeText(node.textContent) : "";
         }).join(" ").trim();
-        if (by && (exact ? by === value : by.toLowerCase().includes(String(value).toLowerCase()))) out.add(el);
+        if (by && (exact ? by === wanted : by.toLowerCase().includes(needle))) out.add(el);
       }
     }
     return [...out];
@@ -100,7 +102,7 @@
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) return re.test(actual);
         if (!name) return true;
-        const wanted = U.unescapeString(name[1]);
+        const wanted = U.normalizeText(U.unescapeString(name[1]));
         return exact ? actual === wanted : actual.toLowerCase().includes(wanted.toLowerCase());
       });
     }

@@ -106,7 +106,7 @@
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
     if (!own) return false;
-    const wanted = exact ? value : String(value).toLowerCase();
+    const wanted = exact ? value : U.normalizeText(value).toLowerCase();
     const has = exact ? own === wanted : own.toLowerCase().includes(wanted);
     if (!has) return false;
     for (const child of el.children) {
@@ -124,25 +124,28 @@
     if (implicitRole(el) !== role) return false;
     if (!name) return true;
     const actual = U.normalizeText(accessibleName(el));
-    return exact ? actual === name : actual.toLowerCase().includes(String(name).toLowerCase());
+    const wanted = exact ? U.normalizeText(name) : U.normalizeText(name).toLowerCase();
+    return exact ? actual === wanted : actual.toLowerCase().includes(wanted);
   }).length;
 
   const countLabel = (value, exact, root) => {
+    const wanted = U.normalizeText(value);
+    const needle = exact ? wanted : wanted.toLowerCase();
     const seen = new Set();
     const add = (el) => { if (el) seen.add(el); };
     for (const el of allElements(root)) {
       if (U.tagOf(el) === "label") {
         const text = U.normalizeText(el.textContent);
-        if (exact ? text === value : text.toLowerCase().includes(String(value).toLowerCase())) {
+        if (exact ? text === wanted : text.toLowerCase().includes(needle)) {
           const id = el.getAttribute("for");
           if (id) add((el.getRootNode ? el.getRootNode() : document).getElementById(id));
           else add(el.querySelector("input, select, textarea"));
         }
       }
       const aria = U.attr(el, "aria-label");
-      if (aria && (exact ? aria === value : aria.toLowerCase().includes(String(value).toLowerCase()))) add(el);
+      if (aria && (exact ? aria === wanted : aria.toLowerCase().includes(needle))) add(el);
       const by = labelledByText(el);
-      if (by && (exact ? by === value : by.toLowerCase().includes(String(value).toLowerCase()))) add(el);
+      if (by && (exact ? by === wanted : by.toLowerCase().includes(needle))) add(el);
     }
     return seen.size;
   };
