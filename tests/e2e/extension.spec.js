@@ -514,6 +514,19 @@ test('panel hides the diff when the top page changes', async () => {
     return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
   }, 10000);
 
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'css';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() => {
+    const badge = document.getElementById('di-live-badge');
+    return badge.hidden ? '' : badge.textContent;
+  }), { timeout: 8000 }).toContain('css');
+
   await fixturePage.goto(baseURL + 'other-page');
   await fixturePage.waitForLoadState('domcontentloaded');
   await startPicking();
@@ -525,6 +538,9 @@ test('panel hides the diff when the top page changes', async () => {
 
   await expect.poll(() => extensionPage.evaluate(() =>
     document.getElementById('di-diff').hidden
+  ), { timeout: 5000 }).toBe(true);
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-live-badge').hidden
   ), { timeout: 5000 }).toBe(true);
 
   await fixturePage.goto(baseURL);
