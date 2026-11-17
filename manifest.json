@@ -57,8 +57,8 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Shift+I",
-        "mac": "Command+Shift+I"
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
       },
       "description": "Open DOM Inspector"
     }
