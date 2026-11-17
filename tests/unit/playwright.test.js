@@ -321,3 +321,31 @@ test('playwright: regex arguments count for text, label and test id', async () =
   assert.equal(out.testId, 1);
   assert.equal(out.caseSensitive, 0);
 });
+
+test('playwright: quoted text, commas and parentheses count exactly', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <button id="apos">it's fine</button>
+      <button id="comma">One, two</button>
+      <button id="paren">Save (now)</button>
+      <button id="quoted">He said "hi"</button>
+    </body></html>`);
+    await injectGenerators(local);
+    const cases = [
+      [`page.getByText("it's fine")`, local.getByText("it's fine")],
+      [`page.getByText('One, two')`, local.getByText('One, two')],
+      ['page.getByText(/one, two/i)', local.getByText(/one, two/i)],
+      [`page.getByText('Save (now)')`, local.getByText('Save (now)')],
+      [`page.getByRole('button', { name: "it's fine" })`, local.getByRole('button', { name: "it's fine" })],
+      [`page.getByRole('button', { name: 'He said "hi"' })`, local.getByRole('button', { name: 'He said "hi"' })],
+      [`page.locator('button').filter({ hasText: 'One, two' })`, local.locator('button').filter({ hasText: 'One, two' })]
+    ];
+    for (const [expr, real] of cases) {
+      const count = await local.evaluate((value) => DI.playwright.countExpr(value), expr);
+      assert.equal(count, await real.count(), expr);
+    }
+  } finally {
+    await local.close();
+  }
+});
