@@ -82,7 +82,12 @@
     const fromLabel = labelFor(el);
     if (fromLabel) return fromLabel;
     if (U.attr(el, "alt")) return U.attr(el, "alt");
-    if (["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th"].includes(U.tagOf(el))) {
+    const tag = U.tagOf(el);
+    if (tag === "input") {
+      const type = (U.attr(el, "type") || "text").toLowerCase();
+      if (["button", "submit", "reset"].includes(type) && U.attr(el, "value")) return U.attr(el, "value");
+    }
+    if (["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th"].includes(tag)) {
       return U.normalizeText(el.textContent);
     }
     return U.attr(el, "placeholder") || U.attr(el, "title") || "";

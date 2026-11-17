@@ -135,3 +135,19 @@ test('repair: fixMany repairs a batch in order', async () => {
   assert.equal(out[1].locators.css, '#save');
   assert.equal(out[2].ok, false);
 });
+
+test('playwright: input submit value is its accessible name', async () => {
+  const out = await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.type = 'submit';
+    input.value = 'Confirm order';
+    input.id = 'confirm-order';
+    document.body.appendChild(input);
+    const generated = DI.playwright.generate(input).map((c) => c.selector);
+    const count = DI.playwright.countExpr("page.getByRole('button', { name: 'Confirm order' })");
+    input.remove();
+    return { generated, count };
+  });
+  assert.ok(out.generated.some((s) => s.includes("getByRole('button'") && s.includes('Confirm order')));
+  assert.equal(out.count, 1);
+});
