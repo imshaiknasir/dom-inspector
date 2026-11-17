@@ -110,7 +110,11 @@
     };
     const push = (xpath, strategy, score) => {
       if (!xpath || out.some((c) => c.xpath === xpath)) return;
-      out.push({ xpath, count: count(xpath, rootOf(el)), strategy, score, stability: stabilityFor(strategy) });
+      const nodes = snapshot(xpath, rootOf(el));
+      let matched = nodes.length;
+      const selectsTarget = nodes.includes(el);
+      if (matched === 1 && !selectsTarget) matched = 0;
+      out.push({ xpath, count: matched, selectsTarget, strategy, score, stability: stabilityFor(strategy) });
     };
     const rootOf = (node) => (node.getRootNode ? node.getRootNode() : document);
     if (inShadow(el)) return out;

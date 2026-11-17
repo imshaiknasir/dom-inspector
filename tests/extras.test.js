@@ -208,3 +208,15 @@ test('css: duplicate ids never produce a selector for the wrong node', async () 
   assert.equal(out.best.count, 1);
   assert.equal(out.hit, true);
 });
+
+test('xpath: candidates report whether they select the target node', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.getElementById('save');
+    const best = DI.xpath.best(el);
+    const nodes = DI.xpath.snapshot(best.xpath);
+    return { best, hits: nodes.includes(el), count: nodes.length };
+  });
+  assert.equal(out.best.selectsTarget, true);
+  assert.equal(out.hits, true);
+  assert.equal(out.count, 1);
+});
