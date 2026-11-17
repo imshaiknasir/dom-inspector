@@ -45,3 +45,12 @@ test('popup: only local scripts/styles are referenced', () => {
     assert.ok(fs.existsSync(path.join(path.dirname(POPUP_HTML), src)), 'missing ' + src);
   }
 });
+
+test('popup: every advertised keyboard shortcut is handled', () => {
+  const html = fs.readFileSync(POPUP_HTML, 'utf8');
+  const js = fs.readFileSync(POPUP_JS, 'utf8');
+  const keys = [...new Set([...html.matchAll(/aria-keyshortcuts="([^"]+)"/g)].map((match) => match[1].toLowerCase()))];
+  assert.ok(keys.length >= 5);
+  const missing = keys.filter((key) => !js.includes(`key === "${key}"`) && !js.includes(`key === '${key}'`));
+  assert.deepEqual(missing, []);
+});
