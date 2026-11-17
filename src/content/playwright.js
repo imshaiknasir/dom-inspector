@@ -16,6 +16,21 @@
 
   const hasAccessibleLabel = (el) => !!(U.attr(el, "aria-label") || U.attr(el, "aria-labelledby") || U.attr(el, "title"));
 
+  const roleLevel = (el) => {
+    const explicit = U.attr(el, "aria-level");
+    if (/^\d+$/.test(explicit)) return Number(explicit);
+    const match = /^h([1-6])$/.exec(U.tagOf(el));
+    return match ? Number(match[1]) : null;
+  };
+
+  const roleOptions = (expr) => {
+    const level = expr.match(/level:\s*(\d+)/);
+    return {
+      level: level ? Number(level[1]) : null,
+      includeHidden: /includeHidden:\s*true/.test(expr)
+    };
+  };
+
   const ROLE_MAP = {
     a: (el) => (el.hasAttribute("href") ? "link" : null),
     area: (el) => (el.hasAttribute("href") ? "link" : null),
@@ -210,9 +225,10 @@
 
   const allElements = (root) => U.deepContentElements(root, []);
 
-  const countRole = (role, name, exact, root) => allElements(root).filter((el) => {
+  const countRole = (role, name, exact, root, options = {}) => allElements(root).filter((el) => {
     if (implicitRole(el) !== role) return false;
-    if (!roleEligible(el)) return false;
+    if (!options.includeHidden && !roleEligible(el)) return false;
+    if (options.level && role === "heading" && roleLevel(el) !== options.level) return false;
     if (!name) return true;
     const actual = U.normalizeText(accessibleName(el));
     const wanted = exact ? U.normalizeText(name) : U.normalizeText(name).toLowerCase();
@@ -391,15 +407,18 @@
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(expr);
+      const options = roleOptions(expr);
       if (!role) return 0;
       if (regex) {
         const re = buildRegex(regex[1], regex[2]);
         if (!re) return 0;
         return allElements(root).filter((el) =>
-          implicitRole(el) === role[1] && roleEligible(el) &&
+          implicitRole(el) === role[1] &&
+          (options.includeHidden || roleEligible(el)) &&
+          (!options.level || role[1] !== "heading" || roleLevel(el) === options.level) &&
           testRegex(re, U.normalizeText(accessibleName(el)))).length;
       }
-      return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root);
+      return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root, options);
     }
     if (/getByLabel\(/.test(expr)) {
       const regex = expr.match(/getByLabel\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
@@ -420,14 +439,29 @@
       return m ? countText(m.value, /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByPlaceholder\(/.test(expr)) {
+      const regex = expr.match(/getByPlaceholder\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+      if (regex) {
+        const re = buildRegex(regex[1], regex[2]);
+        return re ? allElements(root).filter((el) => testRegex(re, U.attr(el, "placeholder"))).length : 0;
+      }
       const m = callArg(expr, "getByPlaceholder");
       return m ? countAttr("placeholder", m.value, root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByAltText\(/.test(expr)) {
+      const regex = expr.match(/getByAltText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+      if (regex) {
+        const re = buildRegex(regex[1], regex[2]);
+        return re ? allElements(root).filter((el) => testRegex(re, U.attr(el, "alt"))).length : 0;
+      }
       const m = callArg(expr, "getByAltText");
       return m ? countAttr("alt", m.value, root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByTitle\(/.test(expr)) {
+      const regex = expr.match(/getByTitle\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+      if (regex) {
+        const re = buildRegex(regex[1], regex[2]);
+        return re ? allElements(root).filter((el) => testRegex(re, U.attr(el, "title"))).length : 0;
+      }
       const m = callArg(expr, "getByTitle");
       return m ? countAttr("title", m.value, root, /exact:\s*true/.test(expr)) : 0;
     }
@@ -578,6 +612,15 @@
         add("getByRole-regex", `${base}.getByRole(${quote(role)}, { name: /${pattern}/i })`, countRole(role, name, false, root), 5);
       }
       add("getByRole", `${base}.getByRole(${quote(role)})`, countRole(role, "", false, root), 30);
+      if (role === "heading") {
+        const level = roleLevel(el);
+        if (level) {
+          const options = [`level: ${level}`];
+          if (name && name.length <= 80) options.unshift(`name: ${quote(name)}`);
+          add("getByRole-level", `${base}.getByRole('heading', { ${options.join(", ")} })`,
+            countRole("heading", name && name.length <= 80 ? name : "", false, root, { level }), 3);
+        }
+      }
     }
 
     const label = U.attr(el, "aria-label") || labelledByText(el) || labelFor(el);
@@ -711,7 +754,7 @@
   DI.playwright = {
     implicitRole, accessibleName, labelledByText, countExpr, countHasText,
     parseTextFilter, matchesHasText, matchesTextRegexSmallest, buildRegex,
-    isAriaHidden, roleEligible, shadowLocator, parseLocatorCall, callArg,
+    isAriaHidden, roleEligible, roleLevel, roleOptions, shadowLocator, parseLocatorCall, callArg,
     generate, best, framePrefix, toPython, toJava, toCSharp
   };
 })();

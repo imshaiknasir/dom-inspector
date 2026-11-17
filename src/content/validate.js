@@ -177,10 +177,12 @@
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(expr);
+      const options = DI.playwright.roleOptions(expr);
       const re = regex ? DI.playwright.buildRegex(regex[1], regex[2]) : null;
       return U.deepContentElements(doc, []).filter((el) => {
         if (DI.playwright.implicitRole(el) !== roleCall.value) return false;
-        if (!DI.playwright.roleEligible(el)) return false;
+        if (!options.includeHidden && !DI.playwright.roleEligible(el)) return false;
+        if (options.level && roleCall.value === "heading" && DI.playwright.roleLevel(el) !== options.level) return false;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) { re.lastIndex = 0; return re.test(actual); }
         if (!name) return true;
@@ -214,10 +216,24 @@
       });
     };
     const isExact = /exact:\s*true/.test(expr);
+    const byAttrRegex = (name, regexMatch) => {
+      const re = DI.playwright.buildRegex(regexMatch[1], regexMatch[2]);
+      if (!re) return [];
+      return U.deepContentElements(doc, []).filter((el) => {
+        re.lastIndex = 0;
+        return re.test(U.attr(el, name));
+      });
+    };
+    const placeholderRegex = expr.match(/getByPlaceholder\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+    if (placeholderRegex) return byAttrRegex("placeholder", placeholderRegex);
     const placeholder = DI.playwright.callArg(expr, "getByPlaceholder");
     if (placeholder) return byAttr("placeholder", placeholder.value, isExact);
+    const altRegex = expr.match(/getByAltText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+    if (altRegex) return byAttrRegex("alt", altRegex);
     const alt = DI.playwright.callArg(expr, "getByAltText");
     if (alt) return byAttr("alt", alt.value, isExact);
+    const titleRegex = expr.match(/getByTitle\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
+    if (titleRegex) return byAttrRegex("title", titleRegex);
     const title = DI.playwright.callArg(expr, "getByTitle");
     if (title) return byAttr("title", title.value, isExact);
     const testIdRegex = expr.match(/getByTestId\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
