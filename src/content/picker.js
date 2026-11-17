@@ -5,6 +5,8 @@
 
   let active = false;
   let continuous = false;
+  let pickMode = "element";
+  let reference = null;
   let overlay = null;
   let lastTarget = null;
 
@@ -102,11 +104,30 @@
       },
       playwright: playwright.slice(0, 16),
       selenium,
-      formats
+      formats,
+      axes: reference && reference.isConnected
+        ? safe(() => DI.xpath.axes(reference, el), [])
+        : [],
+      reference: reference && reference.isConnected
+        ? { tag: U.tagOf(reference), id: U.attr(reference, "id"), text: U.normalizeText(reference.textContent).slice(0, 80) }
+        : null
     };
   };
 
   const pick = (el) => {
+    if (pickMode === "reference") {
+      reference = el;
+      paint(el);
+      try {
+        chrome.runtime.sendMessage({
+          type: "DI_REFERENCE",
+          payload: { tag: U.tagOf(el), id: U.attr(el, "id"), text: U.normalizeText(el.textContent).slice(0, 120) }
+        });
+      } catch (_) {}
+      pickMode = "element";
+      if (!continuous) stop();
+      return;
+    }
     const payload = describe(el);
     try {
       chrome.runtime.sendMessage({ type: "DI_ELEMENT", payload });
@@ -146,6 +167,7 @@
     if (!message || !message.type) return undefined;
     if (message.type === "DI_START") {
       continuous = !!message.continuous;
+      pickMode = message.mode === "reference" ? "reference" : "element";
       start();
       sendResponse({ ok: true, frame: location.href });
       return true;
@@ -163,6 +185,11 @@
     }
     if (message.type === "DI_CLEAR") {
       DI.validate.clearHighlight();
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (message.type === "DI_CLEAR_REFERENCE") {
+      reference = null;
       sendResponse({ ok: true });
       return true;
     }
