@@ -117,7 +117,8 @@
       const id = U.attr(frame, "id");
       if (id) return `//iframe[@id=${U.xpathLiteral(id)}]`;
       const name = U.attr(frame, "name");
-      return name ? `//iframe[@name=${U.xpathLiteral(name)}]` : "//iframe";
+      if (name) return `//iframe[@name=${U.xpathLiteral(name)}]`;
+      return DI.xpath.absoluteXPath(frame) || "//iframe";
     });
     const css = DI.css.best(el);
     const xp = DI.xpath.best(el);
