@@ -214,6 +214,7 @@ test('toolbar popup renders the last picked locators', async () => {
   await expect(popup.locator('#pop-status')).toContainText('Last pick: button#save');
   await expect(popup.locator('#pop-last-element')).toContainText('#save');
   await expect(popup.locator('#pop-last-element')).toContainText('Save changes');
+  await expect(popup.locator('#pop-last-url')).toHaveText('https://example.test/');
   const rows = await popup.locator('#pop-last-rows').innerText();
   expect(rows).toContain('#save');
   expect(rows).toContain("//*[@id='save']");
