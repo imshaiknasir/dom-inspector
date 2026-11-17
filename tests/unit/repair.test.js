@@ -204,3 +204,16 @@ test('repair: near-miss Playwright text, label and placeholder arguments', async
   assert.equal(out.placeholder.ok, true);
   assert.equal(out.placeholder.fixed, '#email');
 });
+
+test('repair: a valid frame Playwright locator is preserved', async () => {
+  const expr = "page.frameLocator('#frame').getByTestId('inner-btn')";
+  const out = await page.evaluate((value) => DI.repair.fix(value), expr);
+  assert.equal(out.ok, true);
+  assert.equal(out.repaired, false);
+  assert.equal(out.fixed, expr);
+  assert.equal(out.type, 'playwright');
+  assert.equal(out.count, 1);
+  assert.equal(out.element.id, 'inner');
+  assert.deepEqual(out.locators.frameCss, ['#frame']);
+  assert.match(out.locators.playwright, /frameLocator\('#frame'\).*getByTestId\('inner-btn'\)/);
+});
