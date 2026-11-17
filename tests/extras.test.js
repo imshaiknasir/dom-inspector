@@ -474,3 +474,27 @@ test('playwright: role/text names match case-insensitively by default', async ()
   assert.equal(out.text, 1);
   assert.equal(out.label, 1);
 });
+
+test('playwright: placeholder matching is case-insensitive substring by default', async () => {
+  const out = await page.evaluate(() => {
+    const a = document.createElement('input');
+    a.id = 'ph-a';
+    a.setAttribute('placeholder', 'Email');
+    const b = document.createElement('input');
+    b.id = 'ph-b';
+    b.setAttribute('placeholder', 'Email address');
+    document.body.append(a, b);
+    const loose = "page.getByPlaceholder('email')";
+    const exact = "page.getByPlaceholder('email', { exact: true })";
+    const result = {
+      loose: DI.playwright.countExpr(loose),
+      exact: DI.playwright.countExpr(exact),
+      validated: DI.validate.test('playwright', loose).count
+    };
+    a.remove(); b.remove();
+    return result;
+  });
+  assert.equal(out.loose, 2);
+  assert.equal(out.exact, 1);
+  assert.equal(out.validated, 2);
+});

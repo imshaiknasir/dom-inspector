@@ -149,8 +149,14 @@
 
   const countText = (value, exact, root) => allElements(root).filter((el) => textMatches(el, value, exact)).length;
 
-  const countAttr = (name, value, root) => allElements(root)
-    .filter((el) => U.attr(el, name) === String(value == null ? "" : value).trim()).length;
+  const countAttr = (name, value, root, exact = false) => {
+    const wanted = String(value == null ? "" : value).trim();
+    const needle = exact ? wanted : wanted.toLowerCase();
+    return allElements(root).filter((el) => {
+      const actual = U.attr(el, name);
+      return exact ? actual === needle : actual.toLowerCase().includes(needle);
+    }).length;
+  };
 
   const countExpr = (expr, root = document) => {
     const modifier = expr.match(/\.(first|last|nth)\((\d*)\)$/);
@@ -184,20 +190,20 @@
     }
     if (/getByPlaceholder\(/.test(expr)) {
       const m = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countAttr("placeholder", U.unescapeString(m[1]), root) : 0;
+      return m ? countAttr("placeholder", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByAltText\(/.test(expr)) {
       const m = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countAttr("alt", U.unescapeString(m[1]), root) : 0;
+      return m ? countAttr("alt", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByTitle\(/.test(expr)) {
       const m = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countAttr("title", U.unescapeString(m[1]), root) : 0;
+      return m ? countAttr("title", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByTestId\(/.test(expr)) {
       const m = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
       if (!m) return 0;
-      return countAttr("data-testid", U.unescapeString(m[1]), root);
+      return countAttr("data-testid", U.unescapeString(m[1]), root, true);
     }
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
@@ -310,8 +316,8 @@
     }
     const placeholder = U.attr(el, "placeholder");
     if (placeholder && placeholder.length <= 80) {
-      add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)}, { exact: true })`, countAttr("placeholder", placeholder, root), 7);
-      add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)})`, countAttr("placeholder", placeholder, root), 8);
+      add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)}, { exact: true })`, countAttr("placeholder", placeholder, root, true), 7);
+      add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)})`, countAttr("placeholder", placeholder, root, false), 8);
     }
     const text = U.normalizeText(el.textContent);
     if (text && text.length <= 80) {
@@ -325,13 +331,13 @@
     }
     const alt = U.attr(el, "alt");
     if (alt) {
-      add("getByAltText", `${base}.getByAltText(${quote(alt)}, { exact: true })`, countAttr("alt", alt, root), 11);
-      add("getByAltText", `${base}.getByAltText(${quote(alt)})`, countAttr("alt", alt, root), 12);
+      add("getByAltText", `${base}.getByAltText(${quote(alt)}, { exact: true })`, countAttr("alt", alt, root, true), 11);
+      add("getByAltText", `${base}.getByAltText(${quote(alt)})`, countAttr("alt", alt, root, false), 12);
     }
     const title = U.attr(el, "title");
     if (title) {
-      add("getByTitle", `${base}.getByTitle(${quote(title)}, { exact: true })`, countAttr("title", title, root), 13);
-      add("getByTitle", `${base}.getByTitle(${quote(title)})`, countAttr("title", title, root), 14);
+      add("getByTitle", `${base}.getByTitle(${quote(title)}, { exact: true })`, countAttr("title", title, root, true), 13);
+      add("getByTitle", `${base}.getByTitle(${quote(title)})`, countAttr("title", title, root, false), 14);
     }
 
     const css = DI.css.best(el);
