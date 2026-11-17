@@ -46,11 +46,24 @@
     return `${tag}:nth-of-type(${sameTag.indexOf(el) + 1})`;
   };
 
+  const stabilityFor = (strategy) => {
+    if (strategy === "id") return 95;
+    if (strategy === "id+tag") return 90;
+    if (strategy.startsWith("attr:data-test")) return 100;
+    if (strategy.startsWith("attr:")) return 80;
+    if (strategy === "parent-id") return 75;
+    if (strategy === "class") return 62;
+    if (strategy === "tag+class" || strategy === "classes") return 58;
+    if (strategy === "path") return 38;
+    if (strategy === "absolute") return 18;
+    return 50;
+  };
+
   const pushCandidate = (list, seen, selector, strategy, score, el) => {
     if (!selector || seen.has(selector)) return;
     seen.add(selector);
     const count = countIn(el, selector);
-    list.push({ selector, count, strategy, score });
+    list.push({ selector, count, strategy, score, stability: stabilityFor(strategy) });
   };
 
   const ancestorPath = (el, maxDepth = 7) => {

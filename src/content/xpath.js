@@ -90,9 +90,22 @@
 
   const candidates = (el) => {
     const out = [];
+    const stabilityFor = (strategy) => {
+      if (strategy === "id") return 95;
+      if (strategy === "id+tag") return 90;
+      if (strategy.startsWith("attr:data-test")) return 100;
+      if (strategy.startsWith("attr:")) return 80;
+      if (strategy.startsWith("contains:")) return 60;
+      if (strategy === "class") return 55;
+      if (strategy === "text" || strategy === "own-text") return 58;
+      if (strategy === "contains-text" || strategy === "starts-with-text") return 42;
+      if (strategy === "positional") return 35;
+      if (strategy === "absolute") return 15;
+      return 50;
+    };
     const push = (xpath, strategy, score) => {
       if (!xpath || out.some((c) => c.xpath === xpath)) return;
-      out.push({ xpath, count: count(xpath, rootOf(el)), strategy, score });
+      out.push({ xpath, count: count(xpath, rootOf(el)), strategy, score, stability: stabilityFor(strategy) });
     };
     const rootOf = (node) => (node.getRootNode ? node.getRootNode() : document);
     if (inShadow(el)) return out;

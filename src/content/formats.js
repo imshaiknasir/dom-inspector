@@ -59,6 +59,12 @@
 
     const hosts = DI.css.shadowChain(el);
     if (hosts.length && css) {
+      out.push({
+        type: "cypress-shadow",
+        code: hosts.map((h) => `cy.get(${q(h)}).shadow()`).join("") + `.find(${q(css)})`
+      });
+    }
+    if (hosts.length && css) {
       let code = "";
       hosts.forEach((hostCss, index) => {
         code += `${index === 0 ? "SearchContext" : "root" + index} root${index + 1} = driver.findElement(By.cssSelector(${q(hostCss)})).getShadowRoot();\n`;

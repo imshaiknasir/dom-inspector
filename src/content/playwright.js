@@ -204,9 +204,20 @@
     const prefix = framePrefix();
     const base = prefix.length ? `page.${prefix.join(".")}` : "page";
     const root = el.getRootNode ? el.getRootNode() : document;
+    const stabilityFor = (type) => {
+      if (type === "getByTestId") return 100;
+      if (type === "getByRole" || type === "getByRole-regex") return 92;
+      if (type === "getByLabel") return 90;
+      if (type === "getByPlaceholder" || type === "getByAltText" || type === "getByTitle") return 78;
+      if (type === "getByText") return 62;
+      if (type === "locator+nth") return 20;
+      if (type === "locator") return 50;
+      return 55;
+    };
     const add = (method, code, count, score, type) => {
       if (!code || count <= 0) return;
-      out.push({ type: type || method, selector: code, count, score });
+      const kind = type || method;
+      out.push({ type: kind, selector: code, count, score, stability: stabilityFor(kind) });
     };
     const testId = U.attr(el, "data-testid");
     if (testId) add("getByTestId", `${base}.getByTestId(${quote(testId)})`, countAttr("data-testid", testId, root), 1);
