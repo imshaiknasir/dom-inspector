@@ -349,3 +349,15 @@ test('playwright: quoted text, commas and parentheses count exactly', async () =
     await local.close();
   }
 });
+
+test('playwright: modifiers and hasText filters narrow counts', async () => {
+  const out = await page.evaluate(() => ({
+    first: DI.playwright.countExpr("page.locator('.rowbtn').first()"),
+    last: DI.playwright.countExpr("page.locator('.rowbtn').last()"),
+    second: DI.playwright.countExpr("page.locator('.rowbtn').nth(1)"),
+    outOfRange: DI.playwright.countExpr("page.locator('.rowbtn').nth(9)"),
+    filtered: DI.playwright.countExpr("page.locator('.rowbtn').filter({ hasText: 'Edit' })"),
+    roleFiltered: DI.playwright.countExpr("page.getByRole('button').filter({ hasText: 'Edit' })")
+  }));
+  assert.deepEqual(out, { first: 1, last: 1, second: 1, outOfRange: 0, filtered: 2, roleFiltered: 2 });
+});
