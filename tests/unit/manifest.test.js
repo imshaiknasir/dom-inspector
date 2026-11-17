@@ -16,7 +16,7 @@ test('manifest: is MV3 with the expected extension surfaces', () => {
   assert.ok(manifest.side_panel && manifest.side_panel.default_path);
   assert.ok(manifest.devtools_page);
   assert.ok(manifest.action);
-  assert.equal(manifest.action.default_popup, undefined);
+  assert.equal(manifest.action.default_popup, 'src/popup/popup.html');
 });
 
 test('manifest: declares no copied branding', () => {
