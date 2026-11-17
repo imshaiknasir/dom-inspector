@@ -212,6 +212,21 @@
         return mode === "exact" ? text === value : text.includes(value);
       }).length;
     }
+    const chained = [...expr.matchAll(/\.locator\(\s*['"`]([^'"`]+)['"`]\s*\)/g)].map((m) => m[1]);
+    if (chained.length > 1) {
+      let nodes = U.deepQueryAll(chained[0], root);
+      for (let i = 1; i < chained.length; i += 1) {
+        const next = [];
+        for (const node of nodes) {
+          try {
+            const scope = node.shadowRoot || node;
+            next.push(...scope.querySelectorAll(chained[i]));
+          } catch (_) { /* ignore invalid step */ }
+        }
+        nodes = next;
+      }
+      return nodes.length;
+    }
     const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
     if (filtered) {
       return U.deepQueryAll(filtered[1], root).filter((el) => U.normalizeText(el.textContent).includes(filtered[2])).length;
@@ -313,6 +328,13 @@
     }
 
     const css = DI.css.best(el);
+    if (css && U.isInShadow(el)) {
+      const hosts = U.shadowHosts(el).slice().reverse().map((host) => DI.css.best(host)).filter(Boolean);
+      if (hosts.length) {
+        const chain = base + hosts.map((h) => `.locator(${quote(h.selector)})`).join("") + `.locator(${quote(css.selector)})`;
+        add("locator+shadow", chain, 1, 37);
+      }
+    }
     if (css) {
       add("locator", `${base}.locator(${quote(css.selector)})`, css.count, 38);
       if (css.count === 1) add("locator", `${base}.locator(${quote(css.selector + ":visible")})`, css.count, 40);

@@ -231,3 +231,15 @@ test('repair: closes quotes before brackets', async () => {
   assert.equal(out.paren, "//div[contains(text(),'x')]");
   assert.equal(out.css, "div[data-x='y']");
 });
+
+test('playwright: shadow elements get a host-scoped locator chain', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.querySelector('#host').shadowRoot.getElementById('shadowbtn');
+    const selectors = DI.playwright.generate(el).map((c) => c.selector);
+    const chain = selectors.find((s) => s.includes("locator('#host')") && s.includes("locator('#shadowbtn')"));
+    return { chain, count: chain ? DI.playwright.countExpr(chain) : 0, validated: chain ? DI.validate.test('playwright', chain) : null };
+  });
+  assert.ok(out.chain);
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});

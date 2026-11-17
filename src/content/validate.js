@@ -129,6 +129,21 @@
         return textMatches(el, value, exact);
       });
     }
+    const chained = [...expr.matchAll(/\.locator\(\s*['"`]([^'"`]+)['"`]\s*\)/g)].map((m) => m[1]);
+    if (chained.length > 1) {
+      let nodes = U.deepQueryAll(chained[0], doc);
+      for (let i = 1; i < chained.length; i += 1) {
+        const next = [];
+        for (const node of nodes) {
+          try {
+            const scope = node.shadowRoot || node;
+            next.push(...scope.querySelectorAll(chained[i]));
+          } catch (_) { /* ignore */ }
+        }
+        nodes = next;
+      }
+      return nodes;
+    }
     const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
     if (filtered) {
       return U.deepQueryAll(filtered[1], doc).filter((el) => U.normalizeText(el.textContent).includes(filtered[2]));
