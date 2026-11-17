@@ -68,11 +68,8 @@ const injectGenerators = async (frame) => {
 /** Open a fixture and install the DI generators in the page's main world. */
 const openFixture = async (browser, name) => {
   const page = await browser.newPage();
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(fixtureUrl(name));
   await injectGenerators(page);
-  page.diErrors = errors;
   return page;
 };
 
