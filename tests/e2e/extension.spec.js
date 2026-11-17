@@ -1593,6 +1593,38 @@ test('panel filters saved locators and hides the filter when empty', async () =>
   expect(tools).toEqual({ check: true, pom: true, json: true, csv: true, clear: true, importEnabled: true });
 });
 
+test('panel shows saved Playwright rows in the selected language', async () => {
+  const entry = {
+    id: 'lang-saved', key: 'playwright::save-btn', name: 'Language saved', type: 'playwright',
+    value: "page.getByTestId('save-btn')", testType: 'playwright',
+    testValue: "page.getByTestId('save-btn')", count: 1
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  await extensionPage.evaluate(() => {
+    const lang = document.getElementById('di-lang');
+    lang.value = 'python';
+    lang.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(extensionPage.locator('#di-saved')).toContainText('get_by_test_id("save-btn")');
+
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-saved-filter');
+    filter.value = 'get_by_test_id';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(1);
+  await extensionPage.locator('#di-saved-filter').press('Escape');
+  await extensionPage.evaluate(() => document.getElementById('di-reset').click());
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel re-checks saved locators and records counts and errors', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
