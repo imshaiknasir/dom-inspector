@@ -2210,6 +2210,15 @@
       for (const group of GROUPS) renderGroup(group);
       refreshSaveButtons();
     });
+    $("di-filter").addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !event.target.value) return;
+      event.preventDefault();
+      event.target.value = "";
+      state.filter = "";
+      state.countNodes = new Map();
+      for (const group of GROUPS) renderGroup(group);
+      refreshSaveButtons();
+    });
 
     $("di-unique").addEventListener("change", (event) => {
       state.settings.unique = event.target.checked;
@@ -2389,6 +2398,13 @@
     $("di-saved-check").addEventListener("click", checkSaved);
     $("di-saved-filter").addEventListener("input", (event) => {
       state.savedFilter = event.target.value;
+      renderSaved();
+    });
+    $("di-saved-filter").addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !event.target.value) return;
+      event.preventDefault();
+      event.target.value = "";
+      state.savedFilter = "";
       renderSaved();
     });
     $("di-saved-import").addEventListener("click", () => $("di-saved-import-file").click());
