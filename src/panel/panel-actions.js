@@ -71,6 +71,7 @@
         for (const child of node.childNodes) {
           if (child.nodeType === 3) { out += " " + child.nodeValue; continue; }
           if (child.nodeType !== 1 || ignoredText.includes(tagOf(child))) continue;
+          if (child.hidden || attr(child, "aria-hidden") === "true" || !isVisible(child)) continue;
           const tag = tagOf(child);
           if (tag === "img") { out += " " + attr(child, "alt"); continue; }
           if (tag === "input") {
