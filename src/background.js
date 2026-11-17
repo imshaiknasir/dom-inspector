@@ -40,6 +40,16 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
+if (chrome.commands && chrome.commands.onCommand) {
+  chrome.commands.onCommand.addListener(async (command) => {
+    if (command !== "start-pick") return;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || tab.id == null) return;
+    if (tab.windowId != null) chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
+    chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message && message.type === "DI_ELEMENT") {
     chrome.storage.session.set({ [LAST_KEY]: message.payload }).catch(() => {});

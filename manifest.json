@@ -61,6 +61,13 @@
         "mac": "Alt+Shift+D"
       },
       "description": "Open DOM Inspector"
+    },
+    "start-pick": {
+      "suggested_key": {
+        "default": "Alt+Shift+P",
+        "mac": "Alt+Shift+P"
+      },
+      "description": "Pick an element with DOM Inspector"
     }
   },
   "icons": {
