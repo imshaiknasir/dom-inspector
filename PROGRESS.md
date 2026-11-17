@@ -108,9 +108,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 180/180 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest/panel) | done | 184/184 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 29/29 checks, including popup, axes, tester Fix, saved re-check, POM export/import, settings recovery and batch healing |
+| Extension e2e suites | done | 30/30 checks, including popup, axes, tester Fix, saved filter/re-check/reorder, POM export, JSON/CSV import, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
@@ -146,11 +146,15 @@ not shipped). Last updated 17 Nov 2026.
 - `f7ce0aa` cross-surface saved/history sync
 - saved-locator reordering for stable POM output
 - `e47ee2b` popup keyboard shortcuts
+- `1382440` saved-locator POM export
+- `19df8da` saved-locator filter
+- `0ff7acd` saved-locator re-check
+- `15d29a1` / `3de0e1c` saved-locator JSON/CSV import
+- `4507095` action-runner locator chains and modifiers
 
 ## Next candidates
 
 1. Multi-column POM grid and XLS import/export (reorder, JSON/CSV already done).
 2. Per-attribute generation filter and per-row visibility controls.
 3. Aggregate Playwright counts across frames and a choose-frame action flow.
-4. Per-attribute generation filter (needs richer payload attributes).
-5. Aggregate Playwright counts across frames.
+4. Multi-frame aggregate testing for Playwright actions and locator counts.

@@ -162,7 +162,7 @@ involved; the e2e spec launches its own Chromium with `--load-extension`.
 npm install
 npm run install:browsers   # once, for the e2e suite
 npm test                   # unit suites, then extension e2e
-npm run test:unit          # tests/unit/*.test.js
+npm run test:unit          # tests/*.test.js + tests/unit/*.test.js
 npm run test:e2e           # tests/e2e/*.spec.js
 ```
 
@@ -177,7 +177,7 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 180/180 unit checks and 29/29 extension e2e checks
+popup copy. Current status: 184/184 unit checks and 30/30 extension e2e checks
 pass, including real-extension coverage for the popup, axes reference,
 right-click bridge, repair and batch healing.
 
