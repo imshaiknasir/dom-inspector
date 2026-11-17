@@ -147,5 +147,7 @@
     };
   };
 
-  DI.repair = { normalize, tokens, fix };
+  const fixMany = (values) => (Array.isArray(values) ? values : []).slice(0, 200).map(fix);
+
+  DI.repair = { normalize, tokens, fix, fixMany };
 })();

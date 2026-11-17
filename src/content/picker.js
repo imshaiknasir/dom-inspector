@@ -243,8 +243,15 @@
       return true;
     }
     if (message.type === "DI_FIX") {
-      const result = DI.repair ? DI.repair.fix(message.value) : { ok: false, error: "repair unavailable" };
-      sendResponse(result);
+      if (!DI.repair) {
+        sendResponse({ ok: false, error: "repair unavailable" });
+        return true;
+      }
+      if (Array.isArray(message.values)) {
+        sendResponse({ ok: true, results: DI.repair.fixMany(message.values) });
+      } else {
+        sendResponse(DI.repair.fix(message.value));
+      }
       return true;
     }
     if (message.type === "DI_PING") {

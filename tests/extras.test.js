@@ -127,3 +127,11 @@ test('repair: reaches same-origin iframe elements when the top frame lacks them'
   assert.equal(out.ok, true);
   assert.equal(out.element.id, 'inner');
 });
+
+test('repair: fixMany repairs a batch in order', async () => {
+  const out = await page.evaluate(() => DI.repair.fixMany(["//button[@id='save'", '##save', '.nope-xyz']));
+  assert.equal(out.length, 3);
+  assert.equal(out[0].ok, true);
+  assert.equal(out[1].locators.css, '#save');
+  assert.equal(out[2].ok, false);
+});
