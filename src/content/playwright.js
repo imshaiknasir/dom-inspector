@@ -116,6 +116,7 @@
     select: (el) => (el.multiple || Number(el.getAttribute("size") || 0) > 1 ? "listbox" : "combobox"),
     table: () => "table",
     tbody: () => "rowgroup",
+    time: () => "time",
     td: () => "cell",
     textarea: () => "textbox",
     tfoot: () => "rowgroup",
