@@ -1278,6 +1278,7 @@
         persistSaved();
         renderSaved();
         refreshSaveButtons();
+        setStatus("Deleted saved locator.");
         toast("Deleted saved locator");
       });
       trash.disabled = state.savedBusy;
