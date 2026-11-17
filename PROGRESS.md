@@ -81,7 +81,7 @@ not shipped). Last updated 17 Nov 2026.
 | Saved locator delete / clear | done | confirm before clearing all |
 | Editable locator tester with live count | done | debounced, no highlight while typing |
 | Test & highlight + clear | done | scrolls first match into view |
-| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; one frame, open roots only |
+| Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; open roots + same-origin frames; CSS/XPath/getBy/locator chains/first/last/nth/filter |
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
 | Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |

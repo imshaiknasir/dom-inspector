@@ -49,7 +49,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   a debounced live count, and Test & highlight. **Fix** repairs a broken locator
   through the page repair engine, replaces the tester value and re-validates it.
   Click / Hover / Type actions run against the page, searching open shadow roots
-  and same-origin frames. Action testing is best-effort and reported honestly
+  and same-origin frames. They accept CSS, XPath, Playwright `getBy*`,
+  `locator()` chains, `.first()`, `.last()`, `.nth()` and
+  `.filter({hasText})`. Action testing is best-effort and reported honestly
   when a field is not typable or nothing matches.
 - **Axes reference** — press **Axes ref**, pick a reference element, then pick
   the target. The panel lists axes XPath from the reference (descendant,
