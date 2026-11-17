@@ -661,6 +661,7 @@ select { cursor: pointer; }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .toast.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.toast.warn { border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
 .toast.bad { border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
 
 @media (max-width: 560px) {
