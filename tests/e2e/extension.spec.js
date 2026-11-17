@@ -220,6 +220,8 @@ test('toolbar popup renders the last picked locators', async () => {
   expect(rows).toContain("getByTestId('save-btn')");
   expect(rows).toContain('/html/body[1]/button[1]');
   expect(await popup.locator('#pop-last-rows .loc-row').count()).toBe(4);
+  await popup.locator('#pop-last-copy').click();
+  await expect(popup.locator('#pop-status')).toContainText('Copied to clipboard');
 
   const saved = [
     { name: 'Main save', type: 'css', value: '#save', label: 'CSS', count: 1, savedAt: 2 },
