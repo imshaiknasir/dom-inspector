@@ -145,7 +145,8 @@
 
   const countText = (value, exact, root) => allElements(root).filter((el) => textMatches(el, value, exact)).length;
 
-  const countAttr = (name, value, root) => U.deepQueryAll(`[${name}="${String(value).replace(/"/g, '\\"')}"]`, root).length;
+  const cssValue = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const countAttr = (name, value, root) => U.deepQueryAll(`[${name}="${cssValue(value)}"]`, root).length;
 
   const countExpr = (expr, root = document) => {
     const modifier = expr.match(/\.(first|last|nth)\((\d*)\)$/);
@@ -167,33 +168,33 @@
         return allElements(root).filter((el) =>
           implicitRole(el) === role[1] && re.test(U.normalizeText(accessibleName(el)))).length;
       }
-      return countRole(role[1], name ? name[1] : "", exact, root);
+      return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root);
     }
     if (/getByLabel\(/.test(expr)) {
       const m = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
-      return m ? countLabel(m[1], /exact:\s*true/.test(expr), root) : 0;
+      return m ? countLabel(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByText\(/.test(expr)) {
       const m = expr.match(/getByText\(\s*['"]([^'"]+)['"]/);
-      return m ? countText(m[1], /exact:\s*true/.test(expr), root) : 0;
+      return m ? countText(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByPlaceholder\(/.test(expr)) {
       const m = expr.match(/getByPlaceholder\(\s*['"]([^'"]+)['"]/);
-      return m ? countAttr("placeholder", m[1], root) : 0;
+      return m ? countAttr("placeholder", U.unescapeString(m[1]), root) : 0;
     }
     if (/getByAltText\(/.test(expr)) {
       const m = expr.match(/getByAltText\(\s*['"]([^'"]+)['"]/);
-      return m ? countAttr("alt", m[1], root) : 0;
+      return m ? countAttr("alt", U.unescapeString(m[1]), root) : 0;
     }
     if (/getByTitle\(/.test(expr)) {
       const m = expr.match(/getByTitle\(\s*['"]([^'"]+)['"]/);
-      return m ? countAttr("title", m[1], root) : 0;
+      return m ? countAttr("title", U.unescapeString(m[1]), root) : 0;
     }
     if (/getByTestId\(/.test(expr)) {
       const m = expr.match(/getByTestId\(\s*['"]([^'"]+)['"]/);
       if (!m) return 0;
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
-        .reduce((sum, name) => sum + countAttr(name, m[1], root), 0);
+        .reduce((sum, name) => sum + countAttr(name, U.unescapeString(m[1]), root), 0);
     }
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
@@ -204,7 +205,7 @@
     const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
-      const value = engine[2];
+      const value = U.unescapeString(engine[2]);
       const mode = expr.includes(":text-is(") ? "exact" : "contains";
       return allElements(root).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
@@ -229,7 +230,7 @@
     }
     const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
     if (filtered) {
-      return U.deepQueryAll(filtered[1], root).filter((el) => U.normalizeText(el.textContent).includes(filtered[2])).length;
+      return U.deepQueryAll(filtered[1], root).filter((el) => U.normalizeText(el.textContent).includes(U.unescapeString(filtered[2]))).length;
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/") && !css[1].startsWith("(")) {

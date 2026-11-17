@@ -3,6 +3,8 @@
   const DI = (globalThis.DI = globalThis.DI || {});
   const U = DI.util;
 
+  const cssValue = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+
   const detectType = (value) => {
     const v = String(value || "").trim();
     if (!v) return "css";
@@ -99,19 +101,19 @@
       });
     }
     const label = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
-    if (label) return labelTargets(label[1], /exact:\s*true/.test(expr), doc);
+    if (label) return labelTargets(U.unescapeString(label[1]), /exact:\s*true/.test(expr), doc);
     const text = expr.match(/getByText\(\s*['"]([^'"]+)['"]/);
-    if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, text[1], /exact:\s*true/.test(expr)));
+    if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
     const placeholder = expr.match(/getByPlaceholder\(\s*['"]([^'"]+)['"]/);
-    if (placeholder) return U.deepQueryAll(`[placeholder="${placeholder[1].replace(/"/g, '\\"')}"]`, doc);
+    if (placeholder) return U.deepQueryAll(`[placeholder="${cssValue(U.unescapeString(placeholder[1]))}"]`, doc);
     const alt = expr.match(/getByAltText\(\s*['"]([^'"]+)['"]/);
-    if (alt) return U.deepQueryAll(`[alt="${alt[1].replace(/"/g, '\\"')}"]`, doc);
+    if (alt) return U.deepQueryAll(`[alt="${cssValue(U.unescapeString(alt[1]))}"]`, doc);
     const title = expr.match(/getByTitle\(\s*['"]([^'"]+)['"]/);
-    if (title) return U.deepQueryAll(`[title="${title[1].replace(/"/g, '\\"')}"]`, doc);
+    if (title) return U.deepQueryAll(`[title="${cssValue(U.unescapeString(title[1]))}"]`, doc);
     const testId = expr.match(/getByTestId\(\s*['"]([^'"]+)['"]/);
     if (testId) {
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
-        .flatMap((name) => U.deepQueryAll(`[${name}="${testId[1].replace(/"/g, '\\"')}"]`, doc));
+        .flatMap((name) => U.deepQueryAll(`[${name}="${cssValue(U.unescapeString(testId[1]))}"]`, doc));
     }
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
@@ -122,7 +124,7 @@
     const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']([^"']+)["']\)[^'"]*['"]\s*\)/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
-      const value = engine[2];
+      const value = U.unescapeString(engine[2]);
       const exact = expr.includes(":text-is(");
       return U.deepEveryElement(doc, []).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
@@ -146,7 +148,7 @@
     }
     const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
     if (filtered) {
-      return U.deepQueryAll(filtered[1], doc).filter((el) => U.normalizeText(el.textContent).includes(filtered[2]));
+      return U.deepQueryAll(filtered[1], doc).filter((el) => U.normalizeText(el.textContent).includes(U.unescapeString(filtered[2])));
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1], doc);

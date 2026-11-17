@@ -17,6 +17,20 @@
     ).join("") + ")";
   };
 
+  const unescapeString = (value) => String(value == null ? "" : value)
+    .replace(/\\(x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|[\\'"`bfnrtv0])/g, (match, code) => {
+      if (code === "n") return "\n";
+      if (code === "r") return "\r";
+      if (code === "t") return "\t";
+      if (code === "b") return "\b";
+      if (code === "f") return "\f";
+      if (code === "v") return "\v";
+      if (code === "0") return "\0";
+      if (code[0] === "x") return String.fromCharCode(parseInt(code.slice(1), 16));
+      if (code[0] === "u") return String.fromCharCode(parseInt(code.slice(1), 16));
+      return code;
+    });
+
   const normalizeText = (value) => String(value == null ? "" : value).replace(/\s+/g, " ").trim();
 
   const directText = (el) => {
@@ -123,6 +137,7 @@
 
   DI.util = {
     cssEscape,
+    unescapeString,
     xpathLiteral,
     normalizeText,
     directText,

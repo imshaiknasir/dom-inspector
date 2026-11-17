@@ -258,3 +258,20 @@ test('playwright: regex role names containing a slash are counted', async () => 
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: attribute values containing backslashes are escaped', async () => {
+  const out = await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.id = 'slash-input';
+    input.setAttribute('placeholder', 'a\\b');
+    document.body.appendChild(input);
+    const generated = DI.playwright.generate(input).map((c) => c.selector);
+    const count = DI.playwright.countExpr("page.getByPlaceholder('a\\\\b')");
+    const validated = DI.validate.test('playwright', "page.getByPlaceholder('a\\\\b')");
+    input.remove();
+    return { generated, count, validated };
+  });
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+  assert.ok(out.generated.some((s) => s.includes('getByPlaceholder')));
+});
