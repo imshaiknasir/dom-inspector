@@ -291,3 +291,20 @@ test('playwright: regex role names with escaped slashes count and validate', asy
   assert.equal(out.validated.ok, true);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: non-unique shadow CSS does not emit a locator chain', async () => {
+  const out = await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'multi-host';
+    document.body.appendChild(host);
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = '<button class="dup">One</button><button class="dup">Two</button>';
+    const el = root.querySelector('.dup');
+    const generated = DI.playwright.generate(el);
+    host.remove();
+    return generated;
+  });
+  assert.ok(!out.some((item) => item.type === 'locator+shadow'));
+  assert.ok(out.some((item) => item.selector.includes("locator('.dup')") && item.count === 2));
+  assert.ok(out.some((item) => item.count === 1));
+});

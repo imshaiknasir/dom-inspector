@@ -162,3 +162,20 @@ test('repair: fixMany preserves order and per-selector results', async () => {
   assert.deepEqual(out.notArray, []);
   assert.deepEqual(out.nullish, []);
 });
+
+test('repair: valid XPath that selects non-elements is reported without locators', async () => {
+  const out = await page.evaluate(() => ({
+    single: DI.repair.fix("//button[@id='save']/text()"),
+    many: DI.repair.fix('//button/text()')
+  }));
+  assert.equal(out.single.ok, true);
+  assert.equal(out.single.count, 1);
+  assert.equal(out.single.type, 'xpath');
+  assert.equal(out.single.fixed, "//button[@id='save']/text()");
+  assert.equal(out.single.element, null);
+  assert.equal(out.single.locators, null);
+  assert.equal(out.many.ok, true);
+  assert.ok(out.many.count > 1);
+  assert.equal(out.many.element, null);
+  assert.equal(out.many.locators, null);
+});
