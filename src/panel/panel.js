@@ -1727,6 +1727,48 @@
   /* Driver template                                                  */
   /* ---------------------------------------------------------------- */
 
+  const escapeForQuote = (value, quote) => {
+    const text = String(value);
+    if (quote === '"') return JSON.stringify(text).slice(1, -1);
+    const escaped = text
+      .replace(/\\/g, "\\\\")
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r")
+      .replace(/\t/g, "\\t");
+    if (quote === "'") return escaped.replace(/'/g, "\\'");
+    if (quote === "`") return escaped.replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+    return text;
+  };
+
+  const applyDriverTemplate = (template, value) => {
+    let out = "";
+    let quote = null;
+    let i = 0;
+    while (i < template.length) {
+      const rest = template.slice(i);
+      const placeholder = rest.match(/^(?:\{selector\}|xpathvalue|cssvalue)/i);
+      if (placeholder) {
+        out += escapeForQuote(value, quote);
+        i += placeholder[0].length;
+        continue;
+      }
+      const ch = template[i];
+      if (quote) {
+        if (ch === "\\") {
+          out += ch + (template[i + 1] || "");
+          i += 2;
+          continue;
+        }
+        if (ch === quote) quote = null;
+      } else if (ch === "'" || ch === '"' || ch === "`") {
+        quote = ch;
+      }
+      out += ch;
+      i += 1;
+    }
+    return out;
+  };
+
   const renderDriver = () => {
     const base = state.settings.driverBase === "xpath" ? "xpath" : "css";
     const payload = state.payload || {};
@@ -1734,7 +1776,7 @@
       ? (payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "")
       : (payload.css && payload.css.best ? payload.css.best.selector : "");
     const template = state.settings.driver || "";
-    const output = template && value ? template.replace(/\{selector\}|xpathvalue|cssvalue/gi, value) : "";
+    const output = template && value ? applyDriverTemplate(template, value) : "";
     $("di-driver-output").textContent = output || "Pick an element and enter a template.";
     $("di-driver-copy").disabled = !output;
     $("di-driver-base").value = base;
