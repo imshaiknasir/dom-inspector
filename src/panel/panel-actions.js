@@ -476,8 +476,8 @@
       result.tag = tagOf(target);
       result.text = norm(visibleText(target)).slice(0, 120);
       const inputType = (attr(target, "type") || "text").toLowerCase();
-      result.typable = tagOf(target) === "textarea" || tagOf(target) === "select" ||
-        (tagOf(target) === "input" && !["checkbox", "radio", "file", "submit", "button", "reset"].includes(inputType)) ||
+      result.typable = tagOf(target) === "textarea" ||
+        (tagOf(target) === "input" && !["checkbox", "radio", "file", "submit", "button", "reset", "hidden"].includes(inputType)) ||
         !!target.isContentEditable;
 
       if (!perform) return result;
