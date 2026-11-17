@@ -1382,6 +1382,28 @@ test('panel fixes a broken saved locator in place', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
 });
 
+test('panel refuses to fix a saved locator from another page', async () => {
+  const entry = {
+    id: 'fix-other-page', key: 'css::#sav', name: 'Other page save', scope: 'CSS', type: 'css',
+    value: '#sav', testType: 'css', testValue: '#sav', url: 'https://other.example/page', count: 0,
+    error: 'No elements matched'
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  await extensionPage.locator('#di-saved .saved-row button[title="Fix saved locator with the repair engine"]').click();
+  await expect(extensionPage.locator('#di-toast')).toContainText('belongs to another page');
+  const stored = await extensionPage.evaluate(async () => {
+    const data = await chrome.storage.local.get('di:panel:saved');
+    return data['di:panel:saved'][0];
+  });
+  expect(stored).toMatchObject({ value: '#sav', testValue: '#sav', url: 'https://other.example/page' });
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+});
+
 test('panel saves and removes a locator with the star action', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
   await extensionPage.reload();
