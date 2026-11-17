@@ -115,10 +115,7 @@
     const title = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (title) return byAttr("title", title[1]);
     const testId = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (testId) {
-      return ["data-testid", "data-test-id", "data-test", "data-cy"]
-        .flatMap((name) => byAttr(name, testId[1]));
-    }
+    if (testId) return byAttr("data-testid", testId[1]);
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
       const base = (visibility[1] || "*").trim() || "*";

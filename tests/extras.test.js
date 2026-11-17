@@ -443,3 +443,21 @@ test('playwright: placeholder newlines survive generation and counting', async (
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: getByTestId counts only data-testid', async () => {
+  const out = await page.evaluate(() => {
+    const a = document.createElement('button');
+    a.id = 'testid-a';
+    a.setAttribute('data-testid', 'shared-key');
+    const b = document.createElement('button');
+    b.id = 'testid-b';
+    b.setAttribute('data-cy', 'shared-key');
+    document.body.append(a, b);
+    const expr = "page.getByTestId('shared-key')";
+    const result = { count: DI.playwright.countExpr(expr), validated: DI.validate.test('playwright', expr) };
+    a.remove(); b.remove();
+    return result;
+  });
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});

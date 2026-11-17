@@ -193,8 +193,7 @@
     if (/getByTestId\(/.test(expr)) {
       const m = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
       if (!m) return 0;
-      return ["data-testid", "data-test-id", "data-test", "data-cy"]
-        .reduce((sum, name) => sum + countAttr(name, U.unescapeString(m[1]), root), 0);
+      return countAttr("data-testid", U.unescapeString(m[1]), root);
     }
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
