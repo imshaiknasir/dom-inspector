@@ -224,3 +224,22 @@ test('xpath: frameXPath chains nested frames', async () => {
     await local.close();
   }
 });
+
+test('xpath: attribute candidates preserve declared whitespace', async () => {
+  const out = await escaping.evaluate(() => {
+    const el = document.getElementById('paddedattr');
+    return DI.xpath.candidates(el)
+      .filter((candidate) => candidate.strategy === 'attr:data-testid')
+      .map((candidate) => ({
+        xpath: candidate.xpath,
+        count: candidate.count,
+        hits: DI.xpath.snapshot(candidate.xpath).includes(el)
+      }));
+  });
+  assert.ok(out.length > 0);
+  for (const row of out) {
+    assert.ok(row.xpath.includes(' padded value '), row.xpath);
+    assert.equal(row.count, 1, row.xpath);
+    assert.equal(row.hits, true, row.xpath);
+  }
+});
