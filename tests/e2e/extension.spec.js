@@ -1147,6 +1147,7 @@ test('panel disables POM export until a testable locator exists', async () => {
     document.querySelectorAll('#di-saved .saved-row').length
   ), { timeout: 10000 }).toBe(1);
   await expect(extensionPage.locator('#di-saved-pom')).toBeDisabled();
+  await expect(extensionPage.locator('#di-saved-import')).toBeEnabled();
 
   const testable = {
     id: 'testable', key: 'css::#save', name: 'Testable', type: 'css', value: '#save',
