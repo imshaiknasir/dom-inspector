@@ -389,6 +389,39 @@ test('panel filters locators by strategy', async () => {
   ), { timeout: 5000 }).toBeGreaterThan(0);
 });
 
+test('panel live tester badges valid and invalid locators as you type', async () => {
+  await fixturePage.bringToFront();
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() => {
+    const badge = document.getElementById('di-live-badge');
+    return badge.hidden ? '' : badge.textContent;
+  }), { timeout: 8000 }).toContain('css');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '#does-not-exist';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() => {
+    const badge = document.getElementById('di-live-badge');
+    return badge.hidden ? '' : badge.textContent;
+  }), { timeout: 8000 }).toBe('invalid');
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-live-badge').hidden
+  ), { timeout: 5000 }).toBe(true);
+});
+
 test('panel driver template substitutes the picked CSS and XPath values', async () => {
   await fixturePage.bringToFront();
   await startPicking();
