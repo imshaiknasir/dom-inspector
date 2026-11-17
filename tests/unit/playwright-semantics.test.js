@@ -303,7 +303,7 @@ test('panel actions: icon and caption accessible names resolve', { todo: 'panel-
   }
 });
 
-test('panel actions: role state options filter the match set', { todo: 'role options ignore checked/disabled/includeHidden' }, async () => {
+test('panel actions: role state options filter the match set', { todo: 'role options ignore checked/disabled/includeHidden/level' }, async () => {
   const statesPage = await browser.newPage();
   try {
     await statesPage.setContent(`<!doctype html><html><body>
@@ -312,6 +312,7 @@ test('panel actions: role state options filter the match set', { todo: 'role opt
       <input type="checkbox" id="c3" hidden aria-label="Hidden term">
       <button id="b1" disabled>Disabled</button>
       <button id="b2">Enabled</button>
+      <h1>Top</h1><h2>Second</h2>
     </body></html>`);
     await injectGenerators(statesPage);
     await statesPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
@@ -320,14 +321,16 @@ test('panel actions: role state options filter the match set', { todo: 'role opt
       "page.getByRole('checkbox', { checked: false })",
       "page.getByRole('button', { disabled: true })",
       "page.getByRole('button', { disabled: false })",
-      "page.getByRole('checkbox', { includeHidden: true })"
+      "page.getByRole('checkbox', { includeHidden: true })",
+      "page.getByRole('heading', { level: 2 })"
     ];
     const real = [
       await statesPage.getByRole('checkbox', { checked: true }).count(),
       await statesPage.getByRole('checkbox', { checked: false }).count(),
       await statesPage.getByRole('button', { disabled: true }).count(),
       await statesPage.getByRole('button', { disabled: false }).count(),
-      await statesPage.getByRole('checkbox', { includeHidden: true }).count()
+      await statesPage.getByRole('checkbox', { includeHidden: true }).count(),
+      await statesPage.getByRole('heading', { level: 2 }).count()
     ];
     for (let index = 0; index < exprs.length; index += 1) {
       const [count, validated, panel] = await statesPage.evaluate((expr) => [
