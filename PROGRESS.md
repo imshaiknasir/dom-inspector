@@ -100,9 +100,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 98/98 non-background checks pass; worker test tracked in `../BLOCKERS.md` |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 118/118 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 11/11 checks, including popup, right-click bridge, repair and batch healing |
+| Extension e2e suites | done | 14/14 checks, including popup, axes, tester, right-click bridge, repair and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
@@ -123,6 +123,7 @@ not shipped). Last updated 17 Nov 2026.
 - `8e797c0` panel axes reference flow + batch selector healing
 - `ab39b4f` toolbar popup with pick/open/recent/copy
 - `c16566b` testRigor and Cypress-shadow format labels
+- `4d718d9` tester result wording matches the validation contract
 
 ## Next candidates
 

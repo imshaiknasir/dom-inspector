@@ -162,10 +162,9 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 98/98 non-background unit checks, 12/12 panel/
-manifest checks and 11/11 extension e2e checks pass, including real-extension
-coverage for the popup, right-click bridge and batch healing. One newly added
-worker unit test is tracked in `../BLOCKERS.md`.
+popup copy. Current status: 118/118 unit checks and 14/14 extension e2e checks
+pass, including real-extension coverage for the popup, axes reference,
+right-click bridge, repair and batch healing.
 
 ## Known gaps
 
