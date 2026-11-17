@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>DOM Inspector</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="pop-head">
+      <span class="pop-logo" aria-hidden="true">DI</span>
+      <div class="pop-brand">
+        <h1>DOM Inspector</h1>
+        <p id="pop-status" role="status" aria-live="polite">Pick an element or open the panel.</p>
+      </div>
+    </header>
+
+    <main class="pop-main">
+      <div class="pop-actions">
+        <button id="pop-pick" class="btn primary" type="button">Pick element</button>
+        <button id="pop-open" class="btn" type="button">Open panel</button>
+      </div>
+      <div class="pop-actions secondary">
+        <button id="pop-heal" class="btn small" type="button" title="Open the panel at batch selector healing">Batch healing</button>
+        <button id="pop-refresh" class="btn small subtle" type="button" title="Reload recent locators">Refresh</button>
+      </div>
+
+      <section class="card" id="pop-last-card" hidden>
+        <div class="card-head">
+          <h2>Last picked</h2>
+          <button id="pop-last-copy" class="btn small subtle" type="button" title="Copy every locator shown">Copy all</button>
+        </div>
+        <p class="element" id="pop-last-element"></p>
+        <div id="pop-last-rows" class="rows"></div>
+        <p class="url" id="pop-last-url"></p>
+      </section>
+
+      <section class="card" id="pop-saved-card" hidden>
+        <div class="card-head">
+          <h2>Recent saved</h2>
+          <span class="meta" id="pop-saved-meta">0</span>
+        </div>
+        <div id="pop-saved-rows" class="rows"></div>
+      </section>
+
+      <p class="hint" id="pop-empty">Pick an element to see its best CSS, XPath and Playwright locators here.</p>
+    </main>
+
+    <footer class="pop-foot">
+      <span>Local only &middot; no ads or accounts</span>
+      <span>v1.0.0</span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
