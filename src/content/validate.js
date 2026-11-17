@@ -83,10 +83,10 @@
       const rest = expr.replace(framePattern, "").replace(/^page/, "page");
       return resolvePlaywright(rest, currentDoc);
     }
-    const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
+    const role = expr.match(/getByRole\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (role) {
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
-      const name = expr.match(/name:\s*['"]([^'"]+)['"]/);
+      const name = expr.match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(expr);
       let re = null;
       if (regex) {
@@ -97,20 +97,21 @@
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) return re.test(actual);
         if (!name) return true;
-        return exact ? actual === name[1] : actual.includes(name[1]);
+        const wanted = U.unescapeString(name[1]);
+        return exact ? actual === wanted : actual.includes(wanted);
       });
     }
-    const label = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
+    const label = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (label) return labelTargets(U.unescapeString(label[1]), /exact:\s*true/.test(expr), doc);
-    const text = expr.match(/getByText\(\s*['"]([^'"]+)['"]/);
+    const text = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
-    const placeholder = expr.match(/getByPlaceholder\(\s*['"]([^'"]+)['"]/);
+    const placeholder = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (placeholder) return U.deepQueryAll(`[placeholder="${cssValue(U.unescapeString(placeholder[1]))}"]`, doc);
-    const alt = expr.match(/getByAltText\(\s*['"]([^'"]+)['"]/);
+    const alt = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (alt) return U.deepQueryAll(`[alt="${cssValue(U.unescapeString(alt[1]))}"]`, doc);
-    const title = expr.match(/getByTitle\(\s*['"]([^'"]+)['"]/);
+    const title = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (title) return U.deepQueryAll(`[title="${cssValue(U.unescapeString(title[1]))}"]`, doc);
-    const testId = expr.match(/getByTestId\(\s*['"]([^'"]+)['"]/);
+    const testId = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (testId) {
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
         .flatMap((name) => U.deepQueryAll(`[${name}="${cssValue(U.unescapeString(testId[1]))}"]`, doc));

@@ -157,9 +157,9 @@
       return Number(modifier[2]) < total ? 1 : 0;
     }
     if (/getByRole\(/.test(expr)) {
-      const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
+      const role = expr.match(/getByRole\(\s*['"]((?:\\.|[^'"])+)['"]/);
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
-      const name = expr.match(/name:\s*['"]([^'"]+)['"]/);
+      const name = expr.match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(expr);
       if (!role) return 0;
       if (regex) {
@@ -171,27 +171,27 @@
       return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root);
     }
     if (/getByLabel\(/.test(expr)) {
-      const m = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
+      const m = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countLabel(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByText\(/.test(expr)) {
-      const m = expr.match(/getByText\(\s*['"]([^'"]+)['"]/);
+      const m = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countText(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByPlaceholder\(/.test(expr)) {
-      const m = expr.match(/getByPlaceholder\(\s*['"]([^'"]+)['"]/);
+      const m = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countAttr("placeholder", U.unescapeString(m[1]), root) : 0;
     }
     if (/getByAltText\(/.test(expr)) {
-      const m = expr.match(/getByAltText\(\s*['"]([^'"]+)['"]/);
+      const m = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countAttr("alt", U.unescapeString(m[1]), root) : 0;
     }
     if (/getByTitle\(/.test(expr)) {
-      const m = expr.match(/getByTitle\(\s*['"]([^'"]+)['"]/);
+      const m = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
       return m ? countAttr("title", U.unescapeString(m[1]), root) : 0;
     }
     if (/getByTestId\(/.test(expr)) {
-      const m = expr.match(/getByTestId\(\s*['"]([^'"]+)['"]/);
+      const m = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
       if (!m) return 0;
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
         .reduce((sum, name) => sum + countAttr(name, U.unescapeString(m[1]), root), 0);
@@ -373,9 +373,9 @@
       const inner = loc[1].replace(/"/g, '\\"');
       return `page.locator("${inner}")`;
     }
-    const role = code.match(/page\.getByRole\(\s*['"]([^'"]+)['"]\s*(?:,\s*\{([^}]*)\})?\s*\)$/);
+    const role = code.match(/page\.getByRole\(\s*['"]((?:\\.|[^'"])+)['"]\s*(?:,\s*\{([^}]*)\})?\s*\)$/);
     if (role) {
-      const name = (role[2] || "").match(/name:\s*['"]([^'"]+)['"]/);
+      const name = (role[2] || "").match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(role[2] || "");
       const parts = [`page.get_by_role("${role[1]}"`];
       if (name) parts.push(`name="${name[1]}"`);

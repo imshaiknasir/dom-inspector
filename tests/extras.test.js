@@ -318,3 +318,19 @@ test('playwright: :has-text escapes backslashes and quotes', async () => {
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: accessible names with quotes are counted and validated', async () => {
+  const out = await page.evaluate(() => {
+    const b = document.createElement('button');
+    b.id = 'quote-name';
+    b.textContent = 'Save "draft"';
+    document.body.appendChild(b);
+    const expr = "page.getByRole('button', { name: 'Save \\\"draft\\\"', exact: true })";
+    const count = DI.playwright.countExpr(expr);
+    const validated = DI.validate.test('playwright', expr);
+    b.remove();
+    return { count, validated };
+  });
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});
