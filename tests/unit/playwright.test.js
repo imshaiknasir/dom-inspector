@@ -308,3 +308,16 @@ test('playwright: non-unique shadow CSS does not emit a locator chain', async ()
   assert.ok(out.some((item) => item.selector.includes("locator('.dup')") && item.count === 2));
   assert.ok(out.some((item) => item.count === 1));
 });
+
+test('playwright: regex arguments count for text, label and test id', async () => {
+  const out = await page.evaluate(() => ({
+    text: DI.playwright.countExpr("page.getByText(/save changes/i)"),
+    label: DI.playwright.countExpr("page.getByLabel(/email/i)"),
+    testId: DI.playwright.countExpr("page.getByTestId(/save-/)"),
+    caseSensitive: DI.playwright.countExpr("page.getByText(/SAVE CHANGES/)")
+  }));
+  assert.equal(out.text, 1);
+  assert.equal(out.label, 1);
+  assert.equal(out.testId, 1);
+  assert.equal(out.caseSensitive, 0);
+});
