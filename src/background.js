@@ -8,12 +8,21 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Pick element with DOM Inspector",
     contexts: ["all"]
   }, () => void chrome.runtime.lastError);
+  chrome.contextMenus.create({
+    id: "di-copy-best",
+    title: "Copy best selector (DOM Inspector)",
+    contexts: ["all"]
+  }, () => void chrome.runtime.lastError);
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "di-pick" && tab && tab.id != null) {
+  if (!tab || tab.id == null) return;
+  if (info.menuItemId === "di-pick") {
     if (tab.windowId != null) chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
     chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+  }
+  if (info.menuItemId === "di-copy-best") {
+    chrome.tabs.sendMessage(tab.id, { type: "DI_COPY_BEST" }).catch(() => {});
   }
 });
 
