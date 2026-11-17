@@ -106,6 +106,25 @@
         }
         return list;
       };
+      const isVisible = (node) => {
+        if (!node || node.nodeType !== 1) return false;
+        const view = node.ownerDocument && node.ownerDocument.defaultView;
+        const style = view ? view.getComputedStyle(node) : null;
+        if (!style) return true;
+        if (style.display === "none") return false;
+        if (style.visibility === "hidden" || style.visibility === "collapse") return false;
+        for (const rect of node.getClientRects()) {
+          if (rect.width > 0 && rect.height > 0) return true;
+        }
+        return false;
+      };
+      const queryCss = (scope, selector) => {
+        const wantsVisible = /:visible\b/.test(selector);
+        const css = selector.replace(/:visible\b/g, "").trim() || "*";
+        let nodes = [];
+        try { nodes = [...scope.querySelectorAll(css)]; } catch (_) { nodes = []; }
+        return wantsVisible ? nodes.filter(isVisible) : nodes;
+      };
 
       // Playwright only treats header/footer as landmarks when they are not
       // nested inside sectioning content.
@@ -450,17 +469,13 @@
                 } catch (_) { /* ignore */ }
               }
             } else {
-              const css = selector.replace(/:visible\b/g, "");
-              for (const root of roots) {
-                try { nodes.push(...root.querySelectorAll(css)); } catch (_) { /* ignore */ }
-              }
+              for (const root of roots) nodes.push(...queryCss(root, selector));
             }
             for (let i = 1; i < selectors.length; i += 1) {
               const next = [];
-              const css = selectors[i].replace(/:visible\b/g, "");
               for (const node of nodes) {
                 const scope = node.shadowRoot || node;
-                try { next.push(...scope.querySelectorAll(css)); } catch (_) { /* ignore */ }
+                next.push(...queryCss(scope, selectors[i]));
               }
               nodes = next;
               if (!nodes.length) break;
