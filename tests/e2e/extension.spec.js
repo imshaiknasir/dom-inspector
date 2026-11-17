@@ -1619,6 +1619,32 @@ test('panel healing exports a JSON report and clears the rows', async () => {
   await expect(extensionPage.locator('#di-heal-empty')).toBeVisible();
 });
 
+test('panel Reset restores defaults and clears filters', async () => {
+  await extensionPage.evaluate(() => {
+    const lang = document.getElementById('di-lang');
+    lang.value = 'python';
+    lang.dispatchEvent(new Event('change', { bubbles: true }));
+    const continuous = document.getElementById('di-continuous');
+    continuous.checked = true;
+    continuous.dispatchEvent(new Event('change', { bubbles: true }));
+    const filter = document.getElementById('di-filter');
+    filter.value = '#save';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect(extensionPage.locator('#di-lang')).toHaveValue('python');
+
+  await extensionPage.evaluate(() => document.getElementById('di-reset').click());
+  await expect(extensionPage.locator('#di-toast')).toContainText('Panel settings reset');
+  const state = await extensionPage.evaluate(() => ({
+    lang: document.getElementById('di-lang').value,
+    continuous: document.getElementById('di-continuous').checked,
+    unique: document.getElementById('di-unique').checked,
+    await: document.getElementById('di-await').checked,
+    filter: document.getElementById('di-filter').value
+  }));
+  expect(state).toEqual({ lang: 'js', continuous: false, unique: false, await: false, filter: '' });
+});
+
 test('panel sanitizes corrupted persisted settings on reload', async () => {
   await extensionPage.evaluate(() => chrome.storage.local.set({
     'di:panel:settings': {
