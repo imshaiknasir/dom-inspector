@@ -1422,6 +1422,42 @@ test('panel re-checks saved locators and records counts and errors', async () =>
   expect(byId['check-e'].error).toBe('');
 });
 
+test('panel disables Reset while a saved re-check runs', async () => {
+  await fixturePage.bringToFront();
+  await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+  const entry = {
+    id: 'busy-check', key: 'css::#save', name: 'Busy check', type: 'css', value: '#save',
+    testType: 'css', testValue: '#save', count: null
+  };
+  await extensionPage.evaluate((rows) => chrome.storage.local.set({ 'di:panel:saved': rows }), [entry]);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(1);
+
+  await extensionPage.evaluate(() => {
+    window.__diSendMessage = chrome.tabs.sendMessage.bind(chrome.tabs);
+    chrome.tabs.sendMessage = (...args) => new Promise((resolve, reject) => {
+      setTimeout(() => window.__diSendMessage(...args).then(resolve, reject), 400);
+    });
+  });
+  try {
+    await extensionPage.evaluate(() => document.getElementById('di-saved-check').click());
+    await expect.poll(() => extensionPage.evaluate(() => document.getElementById('di-reset').disabled), { timeout: 3000 }).toBe(true);
+    await expect(extensionPage.locator('#di-saved-check')).toBeDisabled();
+    await expect.poll(() => extensionPage.evaluate(() => document.getElementById('di-reset').disabled), { timeout: 10000 }).toBe(false);
+  } finally {
+    await extensionPage.evaluate(() => {
+      if (window.__diSendMessage) chrome.tabs.sendMessage = window.__diSendMessage;
+      delete window.__diSendMessage;
+      chrome.storage.local.remove('di:panel:saved');
+    });
+  }
+});
+
 test('panel fixes a broken saved locator in place', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
