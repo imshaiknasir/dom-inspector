@@ -14,11 +14,22 @@
     "default_path": "src/panel/panel.html"
   },
   "devtools_page": "src/devtools/devtools.html",
-  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "clipboardWrite"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "activeTab",
+    "clipboardWrite",
+    "contextMenus",
+    "scripting",
+    "sidePanel",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "<all_urls>"
+      ],
       "all_frames": true,
       "match_about_blank": true,
       "run_at": "document_idle",
@@ -31,12 +42,17 @@
         "src/content/validate.js",
         "src/content/picker.js"
       ],
-      "css": ["src/content/overlay.css"]
+      "css": [
+        "src/content/overlay.css"
+      ]
     }
   ],
   "commands": {
     "_execute_action": {
-      "suggested_key": { "default": "Ctrl+Shift+I", "mac": "Command+Shift+I" },
+      "suggested_key": {
+        "default": "Ctrl+Shift+I",
+        "mac": "Command+Shift+I"
+      },
       "description": "Open DOM Inspector side panel"
     }
   }

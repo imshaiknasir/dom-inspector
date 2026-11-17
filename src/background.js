@@ -3,6 +3,17 @@ const LAST_KEY = "di:lastPick";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  chrome.contextMenus.create({
+    id: "di-pick",
+    title: "Pick element with DOM Inspector",
+    contexts: ["all"]
+  }, () => void chrome.runtime.lastError);
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "di-pick" && tab && tab.id != null) {
+    chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+  }
 });
 
 chrome.action.onClicked.addListener(async (tab) => {
