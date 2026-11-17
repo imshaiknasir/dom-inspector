@@ -145,8 +145,8 @@
 
   const countText = (value, exact, root) => allElements(root).filter((el) => textMatches(el, value, exact)).length;
 
-  const cssValue = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const countAttr = (name, value, root) => U.deepQueryAll(`[${name}="${cssValue(value)}"]`, root).length;
+  const countAttr = (name, value, root) => allElements(root)
+    .filter((el) => U.attr(el, name) === String(value == null ? "" : value).trim()).length;
 
   const countExpr = (expr, root = document) => {
     const modifier = expr.match(/\.(first|last|nth)\((\d*)\)$/);
@@ -257,7 +257,7 @@
     });
   };
 
-  const quote = (value) => `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ")}'`;
+  const quote = (value) => `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\r/g, "\\r").replace(/\n/g, "\\n")}'`;
   const cssString = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
   const generate = (el) => {

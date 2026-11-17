@@ -425,3 +425,21 @@ test('repair: closes braces before parentheses in Playwright options', async () 
   const fixed = await page.evaluate((value) => DI.repair.fix(value), "page.getByRole('button', { name: 'Save'");
   assert.equal(fixed.ok, true);
 });
+
+test('playwright: placeholder newlines survive generation and counting', async () => {
+  const out = await page.evaluate(() => {
+    const input = document.createElement('input');
+    input.id = 'newline-placeholder';
+    input.setAttribute('placeholder', 'line one\nline two');
+    document.body.appendChild(input);
+    const selector = DI.playwright.generate(input).map((c) => c.selector)
+      .find((s) => s.includes('getByPlaceholder'));
+    const count = selector ? DI.playwright.countExpr(selector) : 0;
+    const validated = selector ? DI.validate.test('playwright', selector) : null;
+    input.remove();
+    return { selector, count, validated };
+  });
+  assert.ok(out.selector);
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});

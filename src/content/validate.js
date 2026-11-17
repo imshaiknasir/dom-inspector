@@ -105,16 +105,20 @@
     if (label) return labelTargets(U.unescapeString(label[1]), /exact:\s*true/.test(expr), doc);
     const text = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
+    const byAttr = (name, raw) => {
+      const wanted = U.unescapeString(raw);
+      return U.deepEveryElement(doc, []).filter((el) => U.attr(el, name) === wanted);
+    };
     const placeholder = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (placeholder) return U.deepQueryAll(`[placeholder="${cssValue(U.unescapeString(placeholder[1]))}"]`, doc);
+    if (placeholder) return byAttr("placeholder", placeholder[1]);
     const alt = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (alt) return U.deepQueryAll(`[alt="${cssValue(U.unescapeString(alt[1]))}"]`, doc);
+    if (alt) return byAttr("alt", alt[1]);
     const title = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (title) return U.deepQueryAll(`[title="${cssValue(U.unescapeString(title[1]))}"]`, doc);
+    if (title) return byAttr("title", title[1]);
     const testId = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
     if (testId) {
       return ["data-testid", "data-test-id", "data-test", "data-cy"]
-        .flatMap((name) => U.deepQueryAll(`[${name}="${cssValue(U.unescapeString(testId[1]))}"]`, doc));
+        .flatMap((name) => byAttr(name, testId[1]));
     }
     const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
     if (visibility) {
