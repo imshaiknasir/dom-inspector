@@ -147,13 +147,16 @@
     return frames.reverse();
   };
 
-  /* Mirrors Playwright's visibility rule: a non-empty box that is not
-     display:none or visibility:hidden/collapse (opacity is not considered). */
+  /* Mirrors Playwright's CSS `:visible`: a non-empty box that is not
+     display:none or visibility:hidden/collapse (opacity is ignored). */
   const isVisible = (el) => {
     const style = el.ownerDocument.defaultView.getComputedStyle(el);
     if (style.display === "none") return false;
     if (style.visibility === "hidden" || style.visibility === "collapse") return false;
-    return el.getClientRects().length > 0;
+    for (const rect of el.getClientRects()) {
+      if (rect.width > 0 && rect.height > 0) return true;
+    }
+    return false;
   };
 
   const tagOf = (el) => (el.tagName || "").toLowerCase();

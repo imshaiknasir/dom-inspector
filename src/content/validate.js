@@ -172,17 +172,14 @@
       const rest = expr.replace(framePattern, "").replace(/^page/, "page");
       return resolvePlaywright(rest, currentDoc);
     }
-    const role = expr.match(/getByRole\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (role) {
+    const roleCall = DI.playwright.callArg(expr, "getByRole");
+    if (roleCall) {
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(expr);
-      let re = null;
-      if (regex) {
-        try { re = new RegExp(regex[1].replace(/\\\//g, "/"), regex[2]); } catch (_) { re = null; }
-      }
+      const re = regex ? DI.playwright.buildRegex(regex[1], regex[2]) : null;
       return U.deepContentElements(doc, []).filter((el) => {
-        if (DI.playwright.implicitRole(el) !== role[1]) return false;
+        if (DI.playwright.implicitRole(el) !== roleCall.value) return false;
         if (!DI.playwright.roleEligible(el)) return false;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) { re.lastIndex = 0; return re.test(actual); }
@@ -196,17 +193,18 @@
       const re = DI.playwright.buildRegex(labelRegex[1], labelRegex[2]);
       return re ? labelTargetsRegex(re, doc) : [];
     }
-    const label = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (label) return labelTargets(U.unescapeString(label[1]), /exact:\s*true/.test(expr), doc);
+    const labelCall = DI.playwright.callArg(expr, "getByLabel");
+    if (labelCall) return labelTargets(labelCall.value, /exact:\s*true/.test(expr), doc);
     const textRegex = expr.match(/getByText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
     if (textRegex) {
       const re = DI.playwright.buildRegex(textRegex[1], textRegex[2]);
       return re ? U.deepContentElements(doc, []).filter((el) => DI.playwright.matchesTextRegexSmallest(el, re)) : [];
     }
-    const text = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (text) return U.deepContentElements(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
-    const byAttr = (name, raw, exact = false, normalize = true) => {
-      const value = U.unescapeString(raw);
+    const textCall = DI.playwright.callArg(expr, "getByText");
+    if (textCall) {
+      return U.deepContentElements(doc, []).filter((el) => textMatches(el, textCall.value, /exact:\s*true/.test(expr)));
+    }
+    const byAttr = (name, value, exact = false, normalize = true) => {
       const wanted = normalize ? U.normalizeText(value) : String(value).trim();
       const needle = exact ? wanted : wanted.toLowerCase();
       return U.deepContentElements(doc, []).filter((el) => {
@@ -216,12 +214,12 @@
       });
     };
     const isExact = /exact:\s*true/.test(expr);
-    const placeholder = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (placeholder) return byAttr("placeholder", placeholder[1], isExact);
-    const alt = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (alt) return byAttr("alt", alt[1], isExact);
-    const title = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (title) return byAttr("title", title[1], isExact);
+    const placeholder = DI.playwright.callArg(expr, "getByPlaceholder");
+    if (placeholder) return byAttr("placeholder", placeholder.value, isExact);
+    const alt = DI.playwright.callArg(expr, "getByAltText");
+    if (alt) return byAttr("alt", alt.value, isExact);
+    const title = DI.playwright.callArg(expr, "getByTitle");
+    if (title) return byAttr("title", title.value, isExact);
     const testIdRegex = expr.match(/getByTestId\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
     if (testIdRegex) {
       const re = DI.playwright.buildRegex(testIdRegex[1], testIdRegex[2]);
@@ -231,24 +229,35 @@
         return re.test(U.attr(el, "data-testid"));
       });
     }
-    const testId = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (testId) return byAttr("data-testid", testId[1], true, false);
-    const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
-    if (visibility) {
-      const base = (visibility[1] || "*").trim() || "*";
-      const wantVisible = visibility[2] === "visible";
-      return U.deepQueryAll(base, doc).filter((el) => U.isVisible(el) === wantVisible);
+    const testId = DI.playwright.callArg(expr, "getByTestId");
+    if (testId) return byAttr("data-testid", testId.value, true, false);
+
+    const chainedLocators = [...expr.matchAll(/\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)/g)]
+      .map((match) => U.unescapeString(match[2]));
+    if (chainedLocators.length > 1) {
+      let nodes = U.deepQueryAll(chainedLocators[0], doc);
+      for (let i = 1; i < chainedLocators.length; i += 1) {
+        const next = [];
+        for (const node of nodes) {
+          try {
+            const scope = node.shadowRoot || node;
+            next.push(...scope.querySelectorAll(chainedLocators[i]));
+          } catch (_) { /* ignore */ }
+        }
+        nodes = next;
+      }
+      return nodes;
     }
-    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']((?:\\.|[^"'])+)["']\)[^'"]*['"]\s*\)/);
+    const call = DI.playwright.parseLocatorCall(expr);
+    if (!call) return [];
+    const arg = call.arg;
+    const engine = arg.match(/^(.*?):(has-text|text-is|text)\(\s*(['"])([\s\S]*)\3\s*\)\s*$/);
     if (engine) {
       const tag = (engine[1] || "").trim() || "*";
-      const value = U.unescapeString(engine[2]);
-      const mode = expr.includes(":has-text(") ? "has-text"
-        : expr.includes(":text-is(") ? "text-is" : "text";
+      const mode = engine[2];
+      const value = U.unescapeString(engine[4]);
       return U.deepContentElements(doc, []).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
-        // `:has-text` also matches ancestors; `:text`/`:text-is` keep the
-        // smallest matching element, mirroring Playwright.
         if (mode === "has-text") {
           const hay = U.normalizeText(el.textContent).toLowerCase();
           return hay.includes(U.normalizeText(value).toLowerCase());
@@ -256,26 +265,25 @@
         return textMatches(el, value, mode === "text-is");
       });
     }
-    const chained = [...expr.matchAll(/\.locator\(\s*['"`]([^'"`]+)['"`]\s*\)/g)].map((m) => m[1]);
-    if (chained.length > 1) {
-      let nodes = U.deepQueryAll(chained[0], doc);
-      for (let i = 1; i < chained.length; i += 1) {
-        const next = [];
-        for (const node of nodes) {
-          try {
-            const scope = node.shadowRoot || node;
-            next.push(...scope.querySelectorAll(chained[i]));
-          } catch (_) { /* ignore */ }
-        }
-        nodes = next;
-      }
-      return nodes;
+    const visibility = arg.match(/^(.*?):(visible|hidden)$/);
+    if (visibility) {
+      const base = (visibility[1] || "*").trim() || "*";
+      const wantVisible = visibility[2] === "visible";
+      return U.deepQueryAll(base, doc).filter((el) => U.isVisible(el) === wantVisible);
     }
-    const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
-    if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1], doc);
-    const xp = expr.match(/locator\(\s*`([^`]+)`\s*\)/) || expr.match(/locator\(\s*['"](\/\/[^'"]+)['"]\s*\)/);
-    if (xp) return DI.xpath.snapshot(xp[1], doc);
-    return [];
+    if (arg.startsWith("css=")) return U.deepQueryAll(arg.slice(4), doc);
+    if (arg.startsWith("xpath=")) return DI.xpath.snapshot(arg.slice(6), doc);
+    if (arg.startsWith("text=")) {
+      const raw = arg.slice(5);
+      const spec = DI.playwright.parseTextFilter(raw);
+      if (!spec) return [];
+      const quoted = /^(['"])[\s\S]*\1$/.test(raw.trim());
+      const all = U.deepContentElements(doc, []);
+      if (spec.regex) return all.filter((el) => DI.playwright.matchesTextRegexSmallest(el, spec.regex));
+      return all.filter((el) => textMatches(el, spec.text, quoted));
+    }
+    if (arg.startsWith("//") || arg.startsWith("(")) return DI.xpath.snapshot(arg, doc);
+    try { return U.deepQueryAll(arg, doc); } catch (_) { return []; }
   };
 
   const frameDocs = (doc = document, seen = new Set()) => {

@@ -122,7 +122,8 @@
     return U.attr(el, "placeholder") || U.attr(el, "title") || "";
   };
 
-  /* Playwright excludes aria-hidden subtrees and closed/hidden widgets. */
+  /* Playwright's role filters hide aria-hidden subtrees and nodes whose own
+     or inherited display/visibility removes them, without requiring a box. */
   const isAriaHidden = (el) => {
     let node = el;
     while (node) {
@@ -136,7 +137,21 @@
     return false;
   };
 
-  const roleEligible = (el) => U.isVisible(el) && !isAriaHidden(el);
+  const isDisplayHidden = (el) => {
+    let node = el;
+    while (node && node.nodeType === 1) {
+      const style = node.ownerDocument.defaultView.getComputedStyle(node);
+      if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return true;
+      if (node.parentElement) node = node.parentElement;
+      else {
+        const root = node.getRootNode ? node.getRootNode() : null;
+        node = root && root.host ? root.host : null;
+      }
+    }
+    return false;
+  };
+
+  const roleEligible = (el) => !isAriaHidden(el) && !isDisplayHidden(el);
 
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
@@ -217,6 +232,45 @@
     try { return new RegExp(body.replace(/\\\//g, "/"), flags); } catch (_) { return null; }
   };
 
+  /* Read a quoted string argument from `locator(`/`getBy*(` code, honouring
+     backslash escapes so the matching delimiter is found correctly. */
+  const readQuoted = (source, start) => {
+    const quote = source[start];
+    if (quote !== "'" && quote !== '"' && quote !== "`") return null;
+    let value = "";
+    for (let i = start + 1; i < source.length; i += 1) {
+      const ch = source[i];
+      if (ch === "\\") {
+        value += ch;
+        if (i + 1 < source.length) { i += 1; value += source[i]; }
+        continue;
+      }
+      if (ch === quote) return { raw: value, quote, end: i + 1 };
+      value += ch;
+    }
+    return null;
+  };
+
+  const parseLocatorCall = (expr) => {
+    const at = expr.lastIndexOf("locator(");
+    if (at < 0) return null;
+    let i = at + "locator(".length;
+    while (i < expr.length && /\s/.test(expr[i])) i += 1;
+    const quoted = readQuoted(expr, i);
+    if (!quoted) return null;
+    return { raw: quoted.raw, arg: U.unescapeString(quoted.raw), quote: quoted.quote, start: i };
+  };
+
+  /* First quoted string argument of a `getBy*(` call, decoded once. */
+  const callArg = (expr, method) => {
+    const at = expr.indexOf(method + "(");
+    if (at < 0) return null;
+    let i = at + method.length + 1;
+    while (i < expr.length && /\s/.test(expr[i])) i += 1;
+    const quoted = readQuoted(expr, i);
+    return quoted ? { raw: quoted.raw, value: U.unescapeString(quoted.raw) } : null;
+  };
+
   /** Parse a Playwright text argument: `/re/flags`, `'text'`, `"text"` or bare text. */
   const parseTextFilter = (raw) => {
     const value = String(raw == null ? "" : raw).trim();
@@ -293,7 +347,8 @@
     }
 
     if (/getByRole\(/.test(expr)) {
-      const role = expr.match(/getByRole\(\s*['"]((?:\\.|[^'"])+)['"]/);
+      const roleCall = callArg(expr, "getByRole");
+      const role = roleCall ? [null, roleCall.value] : null;
       const regex = expr.match(/name:\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
       const name = expr.match(/name:\s*['"]((?:\\.|[^'"])+)['"]/);
       const exact = /exact:\s*true/.test(expr);
@@ -313,8 +368,8 @@
         const re = buildRegex(regex[1], regex[2]);
         return re ? countLabelRegex(re, root) : 0;
       }
-      const m = expr.match(/getByLabel\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countLabel(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
+      const m = callArg(expr, "getByLabel");
+      return m ? countLabel(m.value, /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByText\(/.test(expr)) {
       const regex = expr.match(/getByText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
@@ -322,20 +377,20 @@
         const re = buildRegex(regex[1], regex[2]);
         return re ? allElements(root).filter((el) => matchesTextRegexSmallest(el, re)).length : 0;
       }
-      const m = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countText(U.unescapeString(m[1]), /exact:\s*true/.test(expr), root) : 0;
+      const m = callArg(expr, "getByText");
+      return m ? countText(m.value, /exact:\s*true/.test(expr), root) : 0;
     }
     if (/getByPlaceholder\(/.test(expr)) {
-      const m = expr.match(/getByPlaceholder\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countAttr("placeholder", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
+      const m = callArg(expr, "getByPlaceholder");
+      return m ? countAttr("placeholder", m.value, root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByAltText\(/.test(expr)) {
-      const m = expr.match(/getByAltText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countAttr("alt", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
+      const m = callArg(expr, "getByAltText");
+      return m ? countAttr("alt", m.value, root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByTitle\(/.test(expr)) {
-      const m = expr.match(/getByTitle\(\s*['"]((?:\\.|[^'"])+)['"]/);
-      return m ? countAttr("title", U.unescapeString(m[1]), root, /exact:\s*true/.test(expr)) : 0;
+      const m = callArg(expr, "getByTitle");
+      return m ? countAttr("title", m.value, root, /exact:\s*true/.test(expr)) : 0;
     }
     if (/getByTestId\(/.test(expr)) {
       const regex = expr.match(/getByTestId\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
@@ -343,70 +398,64 @@
         const re = buildRegex(regex[1], regex[2]);
         return re ? allElements(root).filter((el) => testRegex(re, U.attr(el, "data-testid"))).length : 0;
       }
-      const m = expr.match(/getByTestId\(\s*['"]((?:\\.|[^'"])+)['"]/);
+      const m = callArg(expr, "getByTestId");
       if (!m) return 0;
-      return countAttr("data-testid", U.unescapeString(m[1]), root, true, false);
+      return countAttr("data-testid", m.value, root, true, false);
     }
 
-    const cssEngine = expr.match(/locator\(\s*['"]css=([\s\S]*?)['"]\s*\)\s*$/);
-    if (cssEngine) {
-      try { return U.deepQueryAll(cssEngine[1], root).length; } catch (_) { return 0; }
-    }
-    const xpathEngine = expr.match(/locator\(\s*['"]xpath=([\s\S]*?)['"]\s*\)\s*$/);
-    if (xpathEngine) return DI.xpath.count(xpathEngine[1], root);
-    const textEngine = expr.match(/locator\(\s*['"]text=([\s\S]*?)['"]\s*\)\s*$/);
-    if (textEngine) {
-      const spec = parseTextFilter(textEngine[1]);
-      if (!spec) return 0;
-      const quoted = /^(['"])[\s\S]*\1$/.test(textEngine[1].trim());
-      return allElements(root).filter((el) => (spec.regex
-        ? matchesTextRegexSmallest(el, spec.regex)
-        : textMatches(el, spec.text, quoted))).length;
-    }
-
-    const visibility = expr.match(/locator\(\s*['"]([^'"]*?):(visible|hidden)['"]\s*\)/);
-    if (visibility) {
-      const base = (visibility[1] || "*").trim() || "*";
-      const wantVisible = visibility[2] === "visible";
-      return U.deepQueryAll(base, root).filter((el) => U.isVisible(el) === wantVisible).length;
-    }
-    const engine = expr.match(/locator\(\s*['"]([^'"]*?)(?::has-text|:text-is|:text)\(["']((?:\\.|[^"'])+)["']\)[^'"]*['"]\s*\)/);
-    if (engine) {
-      const tag = (engine[1] || "").trim() || "*";
-      const value = U.unescapeString(engine[2]);
-      const mode = expr.includes(":has-text(") ? "has-text"
-        : expr.includes(":text-is(") ? "text-is" : "text";
-      return allElements(root).filter((el) => {
-        if (tag !== "*" && U.tagOf(el) !== tag) return false;
-        if (mode === "has-text") {
-          const hay = U.normalizeText(el.textContent).toLowerCase();
-          return hay.includes(U.normalizeText(value).toLowerCase());
-        }
-        return textMatches(el, value, mode === "text-is");
-      }).length;
-    }
-    const chained = [...expr.matchAll(/\.locator\(\s*['"`]([^'"`]+)['"`]\s*\)/g)].map((m) => m[1]);
-    if (chained.length > 1) {
-      let nodes = U.deepQueryAll(chained[0], root);
-      for (let i = 1; i < chained.length; i += 1) {
+    const chainedLocators = [...expr.matchAll(/\.locator\(\s*(['"`])([\s\S]*?)\1\s*\)/g)]
+      .map((match) => U.unescapeString(match[2]));
+    if (chainedLocators.length > 1) {
+      let nodes = U.deepQueryAll(chainedLocators[0], root);
+      for (let i = 1; i < chainedLocators.length; i += 1) {
         const next = [];
         for (const node of nodes) {
           try {
             const scope = node.shadowRoot || node;
-            next.push(...scope.querySelectorAll(chained[i]));
+            next.push(...scope.querySelectorAll(chainedLocators[i]));
           } catch (_) { /* ignore invalid step */ }
         }
         nodes = next;
       }
       return nodes.length;
     }
-    const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
-    if (css && !css[1].startsWith("/") && !css[1].startsWith("(")) {
-      try { return U.deepQueryAll(css[1], root).length; } catch (_) { return 0; }
+    const call = parseLocatorCall(expr);
+    if (!call) return 0;
+    const arg = call.arg;
+    const engine = arg.match(/^(.*?):(has-text|text-is|text)\(\s*(['"])([\s\S]*)\3\s*\)\s*$/);
+    if (engine) {
+      const tag = (engine[1] || "").trim() || "*";
+      const mode = engine[2];
+      const value = U.unescapeString(engine[4]);
+      return allElements(root).filter((el) => {
+        if (tag !== "*" && U.tagOf(el) !== tag) return false;
+        if (mode === "has-text") {
+          return U.normalizeText(el.textContent).toLowerCase().includes(U.normalizeText(value).toLowerCase());
+        }
+        return textMatches(el, value, mode === "text-is");
+      }).length;
     }
-    const xp = expr.match(/locator\(\s*`([^`]+)`\s*\)/) || expr.match(/locator\(\s*['"](\/\/[^'"]+)['"]\s*\)/);
-    if (xp) return DI.xpath.count(xp[1], root);
-    return 0;
+    const visibility = arg.match(/^(.*?):(visible|hidden)$/);
+    if (visibility) {
+      const base = (visibility[1] || "*").trim() || "*";
+      const wantVisible = visibility[2] === "visible";
+      try { return U.deepQueryAll(base, root).filter((el) => U.isVisible(el) === wantVisible).length; } catch (_) { return 0; }
+    }
+    if (arg.startsWith("css=")) {
+      try { return U.deepQueryAll(arg.slice(4), root).length; } catch (_) { return 0; }
+    }
+    if (arg.startsWith("xpath=")) return DI.xpath.count(arg.slice(6), root);
+    if (arg.startsWith("text=")) {
+      const raw = arg.slice(5);
+      const spec = parseTextFilter(raw);
+      if (!spec) return 0;
+      const quoted = /^(['"])[\s\S]*\1$/.test(raw.trim());
+      return allElements(root).filter((el) => (spec.regex
+        ? matchesTextRegexSmallest(el, spec.regex)
+        : textMatches(el, spec.text, quoted))).length;
+    }
+    if (arg.startsWith("//") || arg.startsWith("(")) return DI.xpath.count(arg, root);
+    try { return U.deepQueryAll(arg, root).length; } catch (_) { return 0; }
   };
 
   const framePrefix = (win = window) => {
@@ -509,7 +558,8 @@
       if (exactMatch) add("getByText", `${base}.getByText(${quote(text)}, { exact: true })`, countText(text, true, root), 9);
       if (looseMatch) {
         add("getByText", `${base}.getByText(${quote(text)})`, countText(text, false, root), 10);
-        add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${cssString(text)}")')`, countHasText(U.tagOf(el), text, root), 22);
+        const hasText = `${U.tagOf(el)}:has-text("${cssString(text)}")`;
+        add("locator", `${base}.locator(${quote(hasText)})`, countHasText(U.tagOf(el), text, root), 22);
       }
     }
     const alt = U.attr(el, "alt");
@@ -622,7 +672,7 @@
   DI.playwright = {
     implicitRole, accessibleName, labelledByText, countExpr, countHasText,
     parseTextFilter, matchesHasText, matchesTextRegexSmallest, buildRegex,
-    isAriaHidden, roleEligible, shadowLocator,
+    isAriaHidden, roleEligible, shadowLocator, parseLocatorCall, callArg,
     generate, best, framePrefix, toPython, toJava, toCSharp
   };
 })();
