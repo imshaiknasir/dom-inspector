@@ -2,7 +2,7 @@
 
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { launchBrowser, openFixture } = require('../helpers/harness');
+const { launchBrowser, openFixture, injectGenerators } = require('../helpers/harness');
 
 let browser;
 let page;
@@ -211,5 +211,29 @@ test('validate: chained filters narrow the resolved set', async () => {
   for (const [expr, real] of cases) {
     const local = await page.evaluate((value) => DI.validate.test('playwright', value).count, expr);
     assert.equal(local, await real.count(), expr);
+  }
+});
+
+test('validate: highlight caps marks and skips detached nodes', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      ${Array.from({ length: 505 }, () => '<div class="h">x</div>').join('')}
+    </body></html>`);
+    await injectGenerators(local);
+    const out = await local.evaluate(() => {
+      const nodes = [...document.querySelectorAll('.h')];
+      const detached = document.createElement('div');
+      detached.style.outline = '1px solid red';
+      DI.validate.highlight(nodes.concat([detached]));
+      const marked = nodes.filter((node) => node.style.outline.includes('2px solid')).length;
+      const detachedOutline = detached.style.outline;
+      DI.validate.clearHighlight();
+      const cleared = nodes.filter((node) => node.style.outline.includes('2px solid')).length;
+      return { marked, detachedOutline, cleared };
+    });
+    assert.deepEqual(out, { marked: 500, detachedOutline: '1px solid red', cleared: 0 });
+  } finally {
+    await local.close();
   }
 });
