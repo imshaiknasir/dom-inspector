@@ -28,10 +28,7 @@
     return false;
   };
 
-  const attrValue = (value) => String(value)
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, " ");
+  const attrValue = (value) => DI.util.cssAttr(value);
 
   const classList = (el) => String(el.getAttribute("class") || "")
     .split(/\s+/)

@@ -426,8 +426,7 @@
   };
 
   const quote = (value) => `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\r/g, "\\r").replace(/\n/g, "\\n")}'`;
-  const cssString = (value) => String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
-    .replace(/\r/g, "\\d ").replace(/\n/g, "\\a ");
+  const cssString = (value) => U.cssAttr(value);
 
   /* A Playwright locator chain that reaches a shadow-DOM target from the
      document, adding .nth() only where a step is ambiguous in its own root. */

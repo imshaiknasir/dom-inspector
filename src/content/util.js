@@ -31,6 +31,14 @@
       return code;
     });
 
+  /* Quote/escape an attribute value for a CSS attribute selector string. */
+  const cssAttr = (value) => String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, "\\d ")
+    .replace(/\n/g, "\\a ")
+    .replace(/\f/g, "\\c ");
+
   const normalizeText = (value) => String(value == null ? "" : value).replace(/\s+/g, " ").trim();
 
   const directText = (el) => {
@@ -152,6 +160,7 @@
 
   DI.util = {
     cssEscape,
+    cssAttr,
     unescapeString,
     xpathLiteral,
     normalizeText,

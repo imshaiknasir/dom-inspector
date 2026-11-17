@@ -21,7 +21,7 @@
     };
 
     add("id", id, id ? DI.util.countIn(el, `#${U.cssEscape(id)}`) : 0);
-    add("name", name, name ? DI.util.countIn(el, `[name="${name.replace(/"/g, '\\"')}"]`) : 0);
+    add("name", name, name ? DI.util.countIn(el, `[name="${U.cssAttr(name)}"]`) : 0);
     add("className", cls, cls ? DI.util.countIn(el, `.${cls.trim().split(/\s+/).map(U.cssEscape).join(".")}`) : 0);
     add("tagName", tag, DI.util.countIn(el, tag));
     const anchors = linkText ? U.deepQueryAll("a", el.getRootNode ? el.getRootNode() : document)
@@ -47,7 +47,7 @@
     if (!label && ["input", "select", "textarea"].includes(tag)) {
       const id = U.attr(el, "id");
       const root = el.getRootNode ? el.getRootNode() : document;
-      const node = id ? root.querySelector(`label[for="${id.replace(/"/g, '\\"')}"]`) : null;
+      const node = id ? root.querySelector(`label[for="${U.cssAttr(id)}"]`) : null;
       if (node) label = U.normalizeText(node.textContent);
       else {
         const wrapping = el.closest ? el.closest("label") : null;
@@ -56,7 +56,8 @@
     }
     label = label || U.attr(el, "placeholder") || U.normalizeText(el.textContent) ||
       U.attr(el, "name") || U.attr(el, "id") || tag;
-    const safe = label.slice(0, 80).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const safe = label.slice(0, 80).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+      .replace(/\r/g, "\\r").replace(/\n/g, "\\n");
     return `"${safe}"`;
   };
 
@@ -82,7 +83,7 @@
         const id = U.attr(frame, "id");
         if (id) return `#${U.cssEscape(id)}`;
         const name = U.attr(frame, "name");
-        if (name) return `[name="${name.replace(/"/g, '\\"')}"]`;
+        if (name) return `[name="${U.cssAttr(name)}"]`;
         const best = DI.css.best(frame);
         return best && best.selector ? best.selector : "iframe";
       });
