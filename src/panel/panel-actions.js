@@ -73,6 +73,17 @@
         return list;
       };
 
+      // Playwright only treats header/footer as landmarks when they are not
+      // nested inside sectioning content.
+      const bodyScoped = (node) => {
+        let parent = node.parentElement;
+        while (parent) {
+          if (["article", "aside", "main", "nav", "section"].includes(tagOf(parent))) return false;
+          parent = parent.parentElement;
+        }
+        return true;
+      };
+      const named = (node) => !!(attr(node, "aria-label") || attr(node, "aria-labelledby"));
       const implicitRole = (node) => {
         const explicit = (attr(node, "role") || "").split(/\s+/)[0];
         if (explicit) return explicit;
@@ -81,6 +92,8 @@
         if (tag === "button") return "button";
         if (tag === "input") {
           const inputType = (attr(node, "type") || "text").toLowerCase();
+          if (inputType === "hidden") return null;
+          if (inputType === "file") return "button";
           if (["button", "submit", "reset", "image"].includes(inputType)) return "button";
           if (inputType === "checkbox") return "checkbox";
           if (inputType === "radio") return "radio";
@@ -91,16 +104,27 @@
         }
         if (tag === "select") return node.multiple || Number(attr(node, "size") || 0) > 1 ? "listbox" : "combobox";
         if (tag === "img") return node.hasAttribute("alt") && attr(node, "alt") === "" ? null : "img";
-        if (tag === "section") {
-          return attr(node, "aria-label") || attr(node, "aria-labelledby") ? "region" : null;
-        }
+        if (tag === "section") return named(node) ? "region" : null;
+        if (tag === "form") return named(node) ? "form" : null;
+        if (tag === "header") return bodyScoped(node) ? "banner" : null;
+        if (tag === "footer") return bodyScoped(node) ? "contentinfo" : null;
         if (tag === "th") return (attr(node, "scope") || "").toLowerCase() === "row" ? "rowheader" : "columnheader";
         const map = {
+          aside: "complementary",
+          caption: "caption",
+          dialog: "dialog",
+          fieldset: "group",
+          figure: "figure",
+          hr: "separator",
+          progress: "progressbar",
+          option: "option",
+          tbody: "rowgroup",
+          tfoot: "rowgroup",
+          thead: "rowgroup",
           textarea: "textbox",
           h1: "heading", h2: "heading", h3: "heading", h4: "heading", h5: "heading", h6: "heading",
           ul: "list", ol: "list", li: "listitem", table: "table", tr: "row", td: "cell",
-          nav: "navigation", main: "main", article: "article",
-          form: "form", dialog: "dialog"
+          nav: "navigation", main: "main", article: "article"
         };
         return map[tag] || null;
       };
