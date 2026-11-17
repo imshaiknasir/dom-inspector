@@ -1324,6 +1324,7 @@
     if (!target) return toast("Saved snippet is not a testable locator", "bad");
     const pageUrl = await currentPageUrl();
     if (!samePage(entry.url, pageUrl)) {
+      setStatus("Saved locator belongs to another page", "warn");
       return toast("Saved locator belongs to another page: " + entry.url, "bad");
     }
     const response = await testRow({
