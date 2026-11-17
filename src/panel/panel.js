@@ -143,6 +143,10 @@
     removeStore("di:panel:focus");
   };
 
+  const sanitizeSaved = (list) => (Array.isArray(list)
+    ? list.filter((entry) => entry && entry.id && typeof entry.value === "string" && entry.value)
+    : []);
+
   const persistSaved = () => writeStore(STORE_SAVED, state.saved);
 
   const recordHistory = (payload) => {
@@ -2199,17 +2203,33 @@
 
     if (api && api.storage && api.storage.onChanged) {
       api.storage.onChanged.addListener((changes, area) => {
-        if (area !== "local" || !changes["di:panel:focus"]) return;
-        const next = changes["di:panel:focus"].newValue;
-        const target = next && typeof next === "object" ? next.target : next;
-        if (target === "heal") {
-          $("di-heal-card").scrollIntoView({ block: "start", behavior: "smooth" });
-          $("di-heal-input").focus();
-        } else if (target === "tester") {
-          $("di-tester-card").scrollIntoView({ block: "start", behavior: "smooth" });
-          $("di-input").focus();
+        if (area !== "local") return;
+        if (changes[STORE_SAVED]) {
+          const next = sanitizeSaved(changes[STORE_SAVED].newValue);
+          if (JSON.stringify(next) !== JSON.stringify(state.saved)) {
+            state.saved = next;
+            renderSaved();
+            refreshSaveButtons();
+          }
         }
-        if (target) removeStore("di:panel:focus");
+        if (changes[STORE_HISTORY]) {
+          const next = changes[STORE_HISTORY].newValue;
+          state.history = Array.isArray(next)
+            ? next.filter((entry) => entry && entry.at && (entry.css || entry.xpath || entry.playwright))
+            : [];
+        }
+        if (changes["di:panel:focus"]) {
+          const value = changes["di:panel:focus"].newValue;
+          const target = value && typeof value === "object" ? value.target : value;
+          if (target === "heal") {
+            $("di-heal-card").scrollIntoView({ block: "start", behavior: "smooth" });
+            $("di-heal-input").focus();
+          } else if (target === "tester") {
+            $("di-tester-card").scrollIntoView({ block: "start", behavior: "smooth" });
+            $("di-input").focus();
+          }
+          if (target) removeStore("di:panel:focus");
+        }
       });
     }
 
@@ -2289,9 +2309,7 @@
         state.settings = sanitizeSettings(storedSettings);
       }
       const storedSaved = await readStore(STORE_SAVED);
-      if (Array.isArray(storedSaved)) {
-        state.saved = storedSaved.filter((entry) => entry && entry.id && entry.value);
-      }
+      if (Array.isArray(storedSaved)) state.saved = sanitizeSaved(storedSaved);
     } catch (_) { /* defaults are fine */ }
 
     bindEvents();
