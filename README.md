@@ -170,7 +170,7 @@ unpacked extension, drives the real picker and checks the cached payload.
 The panel and popup were additionally smoke-tested in headless Chrome with a
 stubbed extension API: rendering, counts, language switching, filtering,
 saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 146/146 unit checks and 21/21 extension e2e checks
+popup copy. Current status: 148/148 unit checks and 22/22 extension e2e checks
 pass, including real-extension coverage for the popup, axes reference,
 right-click bridge, repair and batch healing.
 
