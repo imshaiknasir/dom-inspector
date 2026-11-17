@@ -29,7 +29,9 @@ Milestone log for the clean-room build. All items committed in this folder.
 - `3e7c6ad` CSS attribute escaping + Playwright nth fallback
 - `f64f6f8` Playwright `:has-text`/`:text-is` evaluation
 - `e7c1da5` Selenium frame/shadow snippets
-- `2b2f1a0` regex role locator variant (see `git log`)
+- `b8cad3d` regex role locator variant
+- `5a18693` continuous picking option
+- `c3eba97` docs
 
 ## Remaining / next
 
