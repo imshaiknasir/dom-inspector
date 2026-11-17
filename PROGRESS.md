@@ -26,10 +26,13 @@ Milestone log for the clean-room build. All items committed in this folder.
 - [x] M13 — Batch/locators page with copy/export JSON/CSV.
 - [x] M14 — Saved locators (10) with use/copy/delete.
 - [x] M15 — Heuristic XPath/CSS/Playwright healing over a pasted script.
-- [x] M16 — Browser-backed tests, 88 passing at last run.
+- [x] M16 — Tests: 88 unit/browser generator tests + 7 extension e2e tests, all passing.
 - [x] M17 — Axes reference-picking mode (two-click relative XPath).
 - [x] M18 — Context-menu “Pick element with DOM Inspector”.
 - [x] M19 — Playwright language converters (Python/Java/C#) and :visible counts.
+- [x] M20 — E2E: extension loads, picker bridge works, CSS/XPath/Playwright/
+      Selenium payload verified, shadow and iframe cases pass, continuous pick works,
+      no page errors.
 
 ## Commits
 
