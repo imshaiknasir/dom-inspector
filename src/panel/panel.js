@@ -1447,8 +1447,9 @@
       const checked = list.length - skipped - otherPage;
       const scope = (skipped || otherPage) ? `${checked} of ${list.length}` : String(list.length);
       const message = `Checked ${scope} saved locator${list.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
+      const attention = broken || many || (checked === 0 && list.length > 0);
       toast(message, broken ? "bad" : "ok");
-      setStatus(message, broken || many ? "warn" : "ok");
+      setStatus(message, attention ? "warn" : "ok");
     } finally {
       state.savedBusy = false;
       button.disabled = false;
