@@ -104,9 +104,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 134/134 checks pass |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 143/143 checks pass |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e suites | done | 17/17 checks, including popup, axes, tester Fix, right-click bridge, repair and batch healing |
+| Extension e2e suites | done | 20/20 checks, including popup, axes, tester Fix, POM export, settings recovery and batch healing |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
@@ -131,12 +131,13 @@ not shipped). Last updated 17 Nov 2026.
 - `d270c92` single-locator Fix action in the tester
 - `11ab1e4` recent pick history in the popup
 - `1382440` saved locators → Playwright page-object snippet
+- `ad3b49f` sanitize persisted settings and reserved POM method names
 - `e47ee2b` popup keyboard shortcuts
 
 ## Next candidates
 
-1. Multi-column POM grid with rename, reorder and spreadsheet import.
+1. Multi-column POM grid with reorder and spreadsheet import.
 2. Attribute filter and per-row visibility controls.
 3. Aggregate match counts across frames and a choose-frame flow for actions.
-4. Optional POM code generation from the saved locator list.
-5. Aggregate match counts across frames and a choose-frame flow for actions.
+4. Popup history paging beyond the latest four distinct picks.
+5. Optional locator diffing between consecutive picks.
