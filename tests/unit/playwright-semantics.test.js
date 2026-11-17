@@ -278,3 +278,27 @@ test('playwright: accessible names prefer title and read icon children', async (
     await iconsPage.close();
   }
 });
+
+test('panel actions: icon and caption accessible names resolve', { todo: 'panel-actions ignores icon, legend, caption and figcaption names' }, async () => {
+  const namesPage = await browser.newPage();
+  try {
+    await namesPage.setContent(`<!doctype html><html><body>
+      <a id="icon-link" href="#"><svg aria-label="Icon link"></svg></a>
+      <button id="icon-button"><svg aria-label="Icon button"></svg></button>
+      <fieldset><legend>Shipping</legend><input></fieldset>
+      <table><caption>People</caption><tr><td>Cell</td></tr></table>
+      <figure><img alt="Logo"><figcaption>Figure one</figcaption></figure>
+    </body></html>`);
+    await namesPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
+    const out = await namesPage.evaluate(() => ({
+      link: DIPanel.pageAction('click', 'playwright', "page.getByRole('link', { name: 'Icon link' })", '', false).matched,
+      button: DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Icon button' })", '', false).matched,
+      group: DIPanel.pageAction('click', 'playwright', "page.getByRole('group', { name: 'Shipping' })", '', false).matched,
+      table: DIPanel.pageAction('click', 'playwright', "page.getByRole('table', { name: 'People' })", '', false).matched,
+      figure: DIPanel.pageAction('click', 'playwright', "page.getByRole('figure', { name: 'Figure one' })", '', false).matched
+    }));
+    assert.deepEqual(out, { link: 1, button: 1, group: 1, table: 1, figure: 1 });
+  } finally {
+    await namesPage.close();
+  }
+});
