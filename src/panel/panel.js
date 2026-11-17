@@ -1617,8 +1617,10 @@
   };
 
   const fixBrokenHeal = async () => {
-    const targets = state.healRows.filter((row) => row.status === "broken" || row.status === "fix-failed");
-    if (!targets.length) return toast("No broken selectors to fix", "bad");
+    const targets = state.healRows.filter((row) =>
+      row.status === "broken" || row.status === "many" || row.status === "fix-failed"
+    );
+    if (!targets.length) return toast("No flagged selectors to fix", "bad");
     const sequence = state.healSeq;
     state.healBusy = true;
     renderHeal();
@@ -1629,26 +1631,56 @@
       renderHeal();
       try {
         const repair = await repairSelector(row.original);
-        if (!repair || !repair.ok || !repair.fixed) {
+        if (!repair || !repair.ok) {
           row.status = "fix-failed";
           row.error = (repair && repair.error) || "No matching element found.";
           renderHeal();
           continue;
         }
-        row.fixed = repair.fixed;
-        row.fixedType = repair.type || detectType(repair.fixed);
+        const candidates = [];
+        const seen = new Set();
+        const addCandidate = (value, type) => {
+          if (!value || seen.has(value)) return;
+          seen.add(value);
+          candidates.push({ value, type: type || detectType(value) });
+        };
+        addCandidate(repair.fixed, repair.type);
+        const locators = repair.locators || {};
+        addCandidate(locators.css, "css");
+        addCandidate(locators.xpath, "xpath");
+        addCandidate(locators.playwright, "playwright");
+        if (!candidates.length) {
+          row.status = "fix-failed";
+          row.error = "No candidate fix was produced.";
+          renderHeal();
+          continue;
+        }
         row.score = repair.score || null;
         row.element = repair.element || null;
-        const verify = await healVerify(repair.fixed);
-        if (verify && verify.ok) {
+        let verified = null;
+        let verifyError = "";
+        for (const candidate of candidates) {
+          const result = await healVerify(candidate.value);
+          if (result && result.ok && result.count === 1) {
+            verified = { value: candidate.value, type: result.type || candidate.type };
+            break;
+          }
+          if (result && result.error && !verifyError) verifyError = result.error;
+        }
+        if (verified) {
+          row.fixed = verified.value;
+          row.fixedType = verified.type;
+          row.type = verified.type;
+          row.count = 1;
           row.status = "fixed";
-          row.count = verify.count;
-          row.type = verify.type || row.fixedType;
-          row.fixedType = verify.type || row.fixedType;
           row.error = null;
         } else {
+          row.fixed = candidates[0].value;
+          row.fixedType = candidates[0].type;
           row.status = "fix-failed";
-          row.error = "Suggested fix did not verify" + (verify && verify.error ? ": " + verify.error : ".");
+          row.error = verifyError
+            ? "No unique fix verified: " + verifyError
+            : "No candidate fix was unique.";
         }
       } catch (error) {
         row.status = "fix-failed";
