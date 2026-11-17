@@ -33,5 +33,6 @@ and a user-data directory.
   verifies the cached payload for CSS, XPath, Playwright, Selenium, shadow DOM
   and iframes, plus the background `DI_GET_LAST` cache.
 
-`node:test` `{ todo }` cases document known defects; they do not fail the suite.
-See `../../BLOCKERS.md` (workspace root) for the owning file:line.
+All 80 unit cases and 7 extension e2e cases pass. The workspace-root
+`../../BLOCKERS.md` tracks any defect that would require editing files owned
+by another agent.
