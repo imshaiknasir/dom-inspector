@@ -6,11 +6,13 @@ const { launchBrowser, openFixture } = require('../helpers/harness');
 
 let browser;
 let page;
+let aria;
 let duplicates;
 
 before(async () => {
   browser = await launchBrowser();
   page = await openFixture(browser, 'fixture.html');
+  aria = await openFixture(browser, 'fixtures/aria.html');
   duplicates = await openFixture(browser, 'fixtures/duplicates.html');
 });
 
@@ -116,4 +118,54 @@ test('formats: generated JS snippet is executable for ids needing CSS escapes', 
   });
   assert.ok(out.snippet.code.startsWith('document.querySelector('));
   assert.equal(out.result, true);
+});
+
+test('testRigor: label, aria-label, placeholder and fallback paths', async () => {
+  const out = await page.evaluate(() => ({
+    button: DI.formats.testRigorPath(document.getElementById('save')),
+    email: DI.formats.testRigorPath(document.getElementById('email')),
+    inFormats: DI.formats.formats(document.getElementById('save')).filter((row) => row.type === 'testRigor')
+  }));
+  const ariaOut = await aria.evaluate(() => ({
+    search: DI.formats.testRigorPath(document.getElementById('search')),
+    accept: DI.formats.testRigorPath(document.getElementById('check')),
+    fallback: (() => {
+      const el = document.createElement('div');
+      el.id = 'nid';
+      document.body.appendChild(el);
+      const path = DI.formats.testRigorPath(el);
+      el.remove();
+      return path;
+    })(),
+    placeholder: (() => {
+      const el = document.createElement('input');
+      el.placeholder = 'you@example.com';
+      document.body.appendChild(el);
+      const path = DI.formats.testRigorPath(el);
+      el.remove();
+      return path;
+    })()
+  }));
+  assert.equal(out.button, '"Save changes"');
+  assert.equal(out.email, '"Email address"');
+  assert.equal(out.inFormats.length, 1);
+  assert.equal(out.inFormats[0].code, '"Save changes"');
+  assert.equal(ariaOut.search, '"Search"');
+  assert.equal(ariaOut.accept, '"Accept"');
+  assert.equal(ariaOut.fallback, '"nid"');
+  assert.equal(ariaOut.placeholder, '"you@example.com"');
+});
+
+test('testRigor: quoted labels stay valid JavaScript string literals', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.createElement('button');
+    el.setAttribute('aria-label', 'He said "hi"\\path');
+    document.body.appendChild(el);
+    const code = DI.formats.testRigorPath(el);
+    const decoded = eval(code);
+    el.remove();
+    return { code, decoded };
+  });
+  assert.equal(out.code, '"He said \\\"hi\\\"\\\\path"');
+  assert.equal(out.decoded, 'He said "hi"\\path');
 });

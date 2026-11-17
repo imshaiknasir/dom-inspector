@@ -79,6 +79,7 @@ test('manifest: generator scripts load in dependency order', () => {
     'src/content/playwright.js',
     'src/content/formats.js',
     'src/content/validate.js',
+    'src/content/repair.js',
     'src/content/picker.js'
   ];
   assert.deepEqual(files, order);

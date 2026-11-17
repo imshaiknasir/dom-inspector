@@ -14,7 +14,8 @@ const GENERATOR_SCRIPTS = [
   'src/content/xpath.js',
   'src/content/playwright.js',
   'src/content/formats.js',
-  'src/content/validate.js'
+  'src/content/validate.js',
+  'src/content/repair.js'
 ].map((file) => path.join(ROOT, file));
 
 const fixtureUrl = (name = 'fixture.html') => {
