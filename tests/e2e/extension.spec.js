@@ -515,9 +515,15 @@ test('reference mode adds axes locators to the next pick', async () => {
   const referenceStart = await sendToFixture({ type: 'DI_START', mode: 'reference' });
   expect(referenceStart.ok).toBe(true);
   await clickElement(fixturePage.locator('label[for="email"]'));
-  await fixturePage.waitForTimeout(150);
+  await expect.poll(() => extensionPage.evaluate(() => {
+    const chip = document.getElementById('di-ref-chip');
+    return chip.hidden ? '' : chip.textContent;
+  }), { timeout: 6000 }).toContain('label');
+  await expect.poll(async () => {
+    const ping = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return ping && ping.picking;
+  }, { timeout: 6000 }).toBe(true);
 
-  await startPicking();
   await clickElement(fixturePage.locator('#email'));
 
   const payload = await waitFor(async () => {
