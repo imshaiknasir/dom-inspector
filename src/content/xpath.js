@@ -211,9 +211,14 @@
 
     const sameParent = reference.parentElement && reference.parentElement === target.parentElement;
     const out = [];
+    const seen = new Set();
     const add = (xpath, strategy) => {
-      const c = count(xpath);
-      if (c > 0) out.push({ xpath, count: c, strategy });
+      if (!xpath || seen.has(xpath)) return;
+      const nodes = snapshot(xpath);
+      // An axis expression is only useful if it actually reaches the target.
+      if (!nodes.includes(target)) return;
+      seen.add(xpath);
+      out.push({ xpath, count: nodes.length, strategy });
     };
 
     if (contains) add(`${ref.xpath}/descendant::${targetSeg}${targetPredicate}`, "descendant");
