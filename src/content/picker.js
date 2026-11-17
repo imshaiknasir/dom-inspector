@@ -75,7 +75,8 @@
       url: location.href,
       frame: {
         depth: U.iframeChain().length,
-        chain: U.iframeChain().map((frame) => ({ tag: U.tagOf(frame), id: U.attr(frame, "id"), name: U.attr(frame, "name"), src: U.attr(frame, "src").slice(0, 200) }))
+        chain: U.iframeChain().map((frame) => ({ tag: U.tagOf(frame), id: U.attr(frame, "id"), name: U.attr(frame, "name"), src: U.attr(frame, "src").slice(0, 200) })),
+        xpath: safe(() => DI.xpath.frameXPath(), null)
       },
       shadow: {
         inShadow: U.isInShadow(el),

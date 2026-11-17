@@ -145,7 +145,10 @@
       }
     }
 
-    push(positionalRelative(el), "positional", 50);
+    const positional = positionalRelative(el);
+    push(positional, "positional", 50);
+    const optimized = optimize(positional);
+    if (optimized !== positional) push(optimized, "optimized", 45);
     const abs = absoluteXPath(el);
     if (abs) push(abs, "absolute", 80);
     return out.sort((a, b) => a.score - b.score || a.count - b.count || a.xpath.length - b.xpath.length);
@@ -165,17 +168,19 @@
   };
 
   const optimize = (xpath) => {
-    if (!xpath || inShadowPath(xpath)) return xpath;
-    const parts = xpath.split("/");
+    if (!xpath || !xpath.startsWith("//")) return xpath;
+    const body = xpath.slice(2);
+    const parts = body.split("/");
     let out = xpath;
     for (let i = 1; i < parts.length - 1; i += 1) {
-      const trial = parts.filter((_, idx) => idx !== i).join("/");
-      if (trial && count(trial) === 1) out = trial;
+      const trial = "//" + parts.filter((_, idx) => idx !== i).join("/");
+      if (trial !== xpath && count(trial) === 1) {
+        out = trial;
+        break;
+      }
     }
     return out;
   };
-
-  const inShadowPath = () => false;
 
   /** Axes XPath from a reference element to a target element. */
   const axes = (reference, target) => {
