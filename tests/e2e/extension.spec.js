@@ -1750,6 +1750,38 @@ test('panel saves and removes a locator with the star action', async () => {
   )).toBe('false');
 });
 
+test('panel locks the healing input while checking', async () => {
+  await fixturePage.bringToFront();
+  await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+
+  await extensionPage.evaluate(() => {
+    window.__diSendMessage = chrome.tabs.sendMessage.bind(chrome.tabs);
+    chrome.tabs.sendMessage = (...args) => new Promise((resolve, reject) => {
+      setTimeout(() => window.__diSendMessage(...args).then(resolve, reject), 400);
+    });
+    const input = document.getElementById('di-heal-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-heal-check').click();
+  });
+  try {
+    await expect.poll(() => extensionPage.evaluate(() => document.getElementById('di-heal-input').disabled), { timeout: 3000 }).toBe(true);
+    await expect.poll(() => extensionPage.evaluate(() =>
+      [...document.querySelectorAll('#di-heal-results .heal-row')].every((row) => !/status-(pending|checking)/.test(row.className))
+    ), { timeout: 10000 }).toBe(true);
+    await expect.poll(() => extensionPage.evaluate(() => document.getElementById('di-heal-input').disabled), { timeout: 3000 }).toBe(false);
+  } finally {
+    await extensionPage.evaluate(() => {
+      if (window.__diSendMessage) chrome.tabs.sendMessage = window.__diSendMessage;
+      delete window.__diSendMessage;
+      document.getElementById('di-heal-clear').click();
+    });
+  }
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await startHealingExample();
 
