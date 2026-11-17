@@ -819,7 +819,9 @@
       state.saved.splice(index, 1);
       toast("Removed from saved locators");
     } else {
-      const pageUrl = (await currentPageUrl()) || (state.payload && state.payload.url) || "";
+      const pageUrl = state.payloadTopUrl
+        || (state.payload && state.payload.url)
+        || (await currentPageUrl());
       if (state.saved.some((entry) => entry.key === row.key)) return;
       state.saved.unshift({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
