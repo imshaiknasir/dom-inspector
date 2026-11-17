@@ -600,7 +600,7 @@
       result.tag = tagOf(target);
       result.text = norm(visibleText(target)).slice(0, 120);
       const inputType = (attr(target, "type") || "text").toLowerCase();
-      const editable = !target.disabled && !target.readOnly;
+      const editable = !target.disabled && !target.readOnly && attr(target, "aria-disabled") !== "true";
       result.typable = editable && (tagOf(target) === "textarea" ||
         (tagOf(target) === "input" && !["checkbox", "radio", "range", "color", "file", "image", "submit", "button", "reset", "hidden"].includes(inputType)) ||
         !!target.isContentEditable);
@@ -633,7 +633,7 @@
         }
         result.performed = true;
       } else if (kind === "type") {
-        if (target.disabled || target.readOnly) {
+        if (target.disabled || target.readOnly || attr(target, "aria-disabled") === "true") {
           result.error = "Element is not editable";
         } else if (!result.typable) {
           result.error = "Element is not a text field";
