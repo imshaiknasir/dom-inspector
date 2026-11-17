@@ -821,6 +821,57 @@ test('panel reorders saved locators with up/down controls', async () => {
   }), { timeout: 5000 }).toEqual(['order-a', 'order-b']);
 });
 
+test('panel filters saved locators and hides the filter when empty', async () => {
+  const entries = [
+    { id: 'filter-a', key: 'css::#save', name: 'First save', scope: 'CSS', type: 'css', value: '#save', savedAt: 2 },
+    { id: 'filter-b', key: 'css::#link', name: 'Second link', scope: 'CSS', type: 'css', value: '#link', url: 'https://example.test/docs', savedAt: 1 }
+  ];
+  await extensionPage.evaluate((value) => chrome.storage.local.set({ 'di:panel:saved': value }), entries);
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 10000 }).toBe(2);
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-saved-filter').hidden
+  ), { timeout: 5000 }).toBe(false);
+
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-saved-filter');
+    filter.value = 'link';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(1);
+  await expect(extensionPage.locator('#di-saved')).toContainText('#link');
+  await expect(extensionPage.locator('#di-saved')).not.toContainText('#save');
+
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-saved-filter');
+    filter.value = 'no-such-saved';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(0);
+  await expect(extensionPage.locator('#di-saved')).toContainText('No saved locators match the filter.');
+
+  await extensionPage.evaluate(() => {
+    const filter = document.getElementById('di-saved-filter');
+    filter.value = '';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(2);
+
+  await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
+  await extensionPage.reload();
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-saved-filter').hidden
+  ), { timeout: 10000 }).toBe(true);
+});
+
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
   await fixturePage.goto(baseURL);
   await fixturePage.waitForLoadState('domcontentloaded');
