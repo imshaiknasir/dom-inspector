@@ -498,6 +498,8 @@
     jquery: "jQuery",
     js: "JS path",
     "js-xpath": "JS XPath",
+    testRigor: "testRigor",
+    "cypress-shadow": "Cypress · shadow",
     "selenium-frame": "Selenium frame switch",
     "selenium-shadow": "Selenium shadow root"
   };
