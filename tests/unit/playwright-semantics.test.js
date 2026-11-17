@@ -193,3 +193,37 @@ test('playwright: accessible names fall back to title and role contents', { todo
     panelCustom: 1
   });
 });
+
+test('playwright: role counts exclude hidden and aria-hidden nodes', { todo: 'countRole includes hidden nodes' }, async () => {
+  const hiddenPage = await browser.newPage();
+  try {
+    await hiddenPage.setContent(`<!doctype html><html><body>
+      <button id="shown">Save</button>
+      <button id="display" style="display:none">Save</button>
+      <button id="visibility" style="visibility:hidden">Save</button>
+      <button id="aria" aria-hidden="true">Save</button>
+      <div hidden><button id="attr">Save</button></div>
+      <dialog id="closed">Closed</dialog>
+    </body></html>`);
+    await injectGenerators(hiddenPage);
+    await hiddenPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
+    const out = await hiddenPage.evaluate(() => ({
+      buttons: DI.playwright.countExpr("page.getByRole('button', { name: 'Save' })"),
+      dialog: DI.playwright.countExpr("page.getByRole('dialog')"),
+      validated: DI.validate.test('playwright', "page.getByRole('button', { name: 'Save' })").count,
+      panel: DIPanel.pageAction('click', 'playwright', "page.getByRole('button', { name: 'Save' })", '', false).matched
+    }));
+    const real = {
+      buttons: await hiddenPage.getByRole('button', { name: 'Save' }).count(),
+      dialog: await hiddenPage.getByRole('dialog').count()
+    };
+    assert.deepEqual(out, {
+      buttons: real.buttons,
+      dialog: real.dialog,
+      validated: real.buttons,
+      panel: real.buttons
+    });
+  } finally {
+    await hiddenPage.close();
+  }
+});
