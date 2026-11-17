@@ -835,6 +835,19 @@ test('panel tester resolves CSS selectors inside same-origin frames', async () =
     document.getElementById('di-result').textContent
   ), { timeout: 5000 }).toContain('Valid CSS: 1 match');
 
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = "page.locator('text=Save changes')";
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'auto';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('di-test').click();
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-result').textContent
+  ), { timeout: 5000 }).toContain('Valid PLAYWRIGHT: 1 match');
+
   await extensionPage.evaluate(() => document.getElementById('di-clear').click());
 });
 
