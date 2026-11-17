@@ -352,6 +352,31 @@ test('picker generates verified CSS, XPath, Playwright and Selenium locators', a
 
 });
 
+test('panel shows a locator diff between two picks on the same page', async () => {
+  await fixturePage.bringToFront();
+  await startPicking();
+  await clickElement(fixturePage.locator('#save'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'save';
+  }, 10000);
+
+  await startPicking();
+  await clickElement(fixturePage.locator('#email'));
+  await waitFor(async () => {
+    const stored = await extensionPage.evaluate(() => chrome.storage.session.get('di:lastPick'));
+    return stored['di:lastPick'] && stored['di:lastPick'].element.id === 'email';
+  }, 10000);
+
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.getElementById('di-diff').hidden
+  ), { timeout: 5000 }).toBe(false);
+  await expect(extensionPage.locator('#di-diff-summary')).toContainText('Changes since previous pick');
+  const text = await extensionPage.locator('#di-diff-body').evaluate((node) => node.textContent);
+  expect(text).toContain('#save');
+  expect(text).toContain('#email');
+});
+
 test('panel filters rows and exports picked locators as JSON', async () => {
   await fixturePage.bringToFront();
   await startPicking();
