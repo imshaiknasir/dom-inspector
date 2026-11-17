@@ -4,11 +4,34 @@
   const U = DI.util;
 
 
+  /* Strip quoted text so path/axis characters inside values stay CSS. */
+  const unquoted = (value) => {
+    let out = "";
+    let quote = null;
+    for (let i = 0; i < value.length; i += 1) {
+      const ch = value[i];
+      if (quote) {
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === "'" || ch === '"') { quote = ch; continue; }
+      if (ch === "\\") { out += ch; i += 1; continue; }
+      out += ch;
+    }
+    return out;
+  };
+
+  const AXIS = /(?:^|[/(|\s])(ancestor|ancestor-or-self|attribute|child|descendant|descendant-or-self|following|following-sibling|namespace|parent|preceding|preceding-sibling|self)::/;
+
   const detectType = (value) => {
     const v = String(value || "").trim();
     if (!v) return "css";
     if (v.startsWith("page.") || v.startsWith("getBy") || v.startsWith("locator(") || v.includes(".locator(")) return "playwright";
     if (v.startsWith("//") || v.startsWith("(/") || v.startsWith("./") || v.startsWith("(")) return "xpath";
+    // A bare relative path (`html/body/div`) or an explicit axis
+    // (`following-sibling::button`) is XPath even without a leading slash.
+    const plain = unquoted(v);
+    if (plain.includes("/") || AXIS.test(plain)) return "xpath";
     return "css";
   };
 
