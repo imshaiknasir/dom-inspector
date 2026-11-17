@@ -326,6 +326,9 @@
       return true;
     }
     if (message.type === "DI_PING") {
+      // Only the top frame represents the page: an un-addressed ping would
+      // otherwise race child frames and report an iframe URL or state.
+      if (window.top !== window.self) return undefined;
       sendResponse({ ok: true, url: location.href, picking: active });
       return true;
     }
