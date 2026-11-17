@@ -920,9 +920,11 @@
   const renderGroup = (group) => {
     const card = $(group.card);
     const container = $(group.rows);
+    const copy = $(group.copy);
     if (!card || !container) return;
     const all = state.groups[group.key] || [];
     if (!all.length) {
+      if (copy) copy.disabled = true;
       if (group.key === "axes" && (state.reference || (state.payload && state.payload.reference))) {
         card.hidden = false;
         container.textContent = "";
@@ -940,6 +942,7 @@
     }
     card.hidden = false;
     const rows = visibleRows(all);
+    if (copy) copy.disabled = rows.length === 0;
     container.textContent = "";
     if (!rows.length) {
       container.appendChild(el("div", "rows-empty",
