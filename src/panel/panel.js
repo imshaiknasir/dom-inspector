@@ -234,7 +234,7 @@
         id: element.id || "",
         role: element.role || "",
         accessibleName: element.accessibleName || "",
-        text: (element.text || "").slice(0, 80)
+        text: String(element.text || "").slice(0, 80)
       },
       css: css ? css.selector : null,
       cssCount: css ? css.count : null,
