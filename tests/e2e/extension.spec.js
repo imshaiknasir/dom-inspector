@@ -155,6 +155,8 @@ test('extension loads without runtime errors', async () => {
   await expect(extensionPage.locator('h1')).toHaveText('DOM Inspector');
   await expect(extensionPage.locator('#di-pick')).toBeVisible();
   await extensionPage.waitForTimeout(300);
+  await expect(extensionPage.locator('#di-live-badge')).toBeHidden();
+  await expect(extensionPage.locator('#di-ref-chip')).toBeHidden();
 
   const manifest = await extensionPage.evaluate(() => chrome.runtime.getManifest());
   expect(manifest.manifest_version).toBe(3);
@@ -281,6 +283,9 @@ test('toolbar popup renders the last picked locators', async () => {
   });
   await popup.reload();
   await expect(popup.locator('#pop-empty')).toBeVisible();
+  await expect(popup.locator('#pop-last-card')).toBeHidden();
+  await expect(popup.locator('#pop-history-card')).toBeHidden();
+  await expect(popup.locator('#pop-saved-card')).toBeHidden();
   await expect(popup.locator('#pop-status')).toContainText('Pick an element');
   await popup.locator('body').press('c');
   await expect(popup.locator('#pop-status')).toContainText('No locators to copy');
