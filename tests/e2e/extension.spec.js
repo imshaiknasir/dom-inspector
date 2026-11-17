@@ -548,13 +548,21 @@ test('panel exports saved locators as a Playwright POM snippet', async () => {
     {
       id: 'pom-2', key: 'css::save-link', name: 'Save CSS', type: 'css',
       value: '#link', testType: 'css', testValue: '#link', count: 1
+    },
+    {
+      id: 'pom-3', key: 'pw::dup', name: 'Save button', type: 'playwright',
+      value: "page.getByRole('button')", testType: 'playwright', testValue: "page.getByRole('button')", count: 2
+    },
+    {
+      id: 'pom-4', key: 'pw::reserved', name: 'constructor', type: 'playwright',
+      value: "page.getByText('Hi')", testType: 'playwright', testValue: "page.getByText('Hi')", count: 1
     }
   ];
   await extensionPage.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), saved);
   await extensionPage.reload();
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-saved .saved-row').length
-  ), { timeout: 10000 }).toBe(2);
+  ), { timeout: 10000 }).toBe(4);
 
   const downloadPromise = extensionPage.waitForEvent('download');
   await extensionPage.evaluate(() => document.getElementById('di-saved-pom').click());
@@ -565,8 +573,11 @@ test('panel exports saved locators as a Playwright POM snippet', async () => {
   expect(source).toContain('this.page = page;');
   expect(source).toContain('saveButton()');
   expect(source).toContain("this.page.getByTestId('save-btn')");
+  expect(source).toContain('saveButton2()');
   expect(source).toContain('saveCSS()');
   expect(source).toContain('this.page.locator("#link")');
+  expect(source).toContain('locatorConstructor()');
+  expect(source).not.toMatch(/\bconstructor\(\) \{/);
 });
 
 test('panel batch healing flags a broken selector and verifies its fix', async () => {
@@ -630,6 +641,28 @@ test('panel healing exports a JSON report and clears the rows', async () => {
     document.querySelectorAll('#di-heal-results .heal-row').length
   ), { timeout: 5000 }).toBe(0);
   await expect(extensionPage.locator('#di-heal-empty')).toBeVisible();
+});
+
+test('panel sanitizes corrupted persisted settings on reload', async () => {
+  await extensionPage.evaluate(() => chrome.storage.local.set({
+    'di:panel:settings': {
+      lang: 'ruby', await: 'yes', unique: 1, continuous: 0,
+      driverBase: 'nonsense', driver: 42, healText: {}, collapsed: 'no'
+    }
+  }));
+  await extensionPage.reload();
+
+  await expect.poll(() => extensionPage.evaluate(() => ({
+    lang: document.getElementById('di-lang').value,
+    await: document.getElementById('di-await').checked,
+    unique: document.getElementById('di-unique').checked,
+    continuous: document.getElementById('di-continuous').checked,
+    driverBase: document.getElementById('di-driver-base').value,
+    driver: document.getElementById('di-driver-template').value
+  })), { timeout: 10000 }).toEqual({
+    lang: 'js', await: true, unique: true, continuous: false,
+    driverBase: 'css', driver: ''
+  });
 });
 
 test('no page errors accumulated during the run', async () => {
