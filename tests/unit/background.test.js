@@ -40,7 +40,7 @@ const loadBackground = () => {
     action: { onClicked: { addListener: (fn) => listeners.action.push(fn) } },
     tabs: {
       query: async (query) => { calls.queries.push(query); return calls.activeTabs; },
-      sendMessage: async (tabId, message) => { calls.sent.push({ tabId, message }); },
+      sendMessage: async (tabId, message, options) => { calls.sent.push(Object.assign({ tabId, message }, options ? { options } : {})); },
       create: async (options) => { calls.created.push(options); }
     },
     commands: {
@@ -163,4 +163,15 @@ test('background: start-pick command ignores a missing active tab', async () => 
   await tick();
   assert.deepEqual(calls.opened, []);
   assert.deepEqual(calls.sent, []);
+});
+
+test('background: copy-best targets the right-clicked frame', async () => {
+  const { calls, listeners } = loadBackground();
+  listeners.clicked[0]({ menuItemId: 'di-copy-best', frameId: 4 }, { id: 9, windowId: 4 });
+  await tick();
+  assert.deepEqual(calls.sent, [{
+    tabId: 9,
+    message: { type: 'DI_COPY_BEST' },
+    options: { frameId: 4 }
+  }]);
 });

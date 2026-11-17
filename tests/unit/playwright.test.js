@@ -249,3 +249,27 @@ test('playwright: best() returns a unique locator', async () => {
   assert.ok(out.email);
   assert.equal(out.email.count, 1);
 });
+
+test('playwright: chained locators count inside shadow roots', async () => {
+  const out = await page.evaluate(() => ({
+    shadow: DI.playwright.countExpr("page.locator('#host').locator('#shadowbtn')"),
+    table: DI.playwright.countExpr("page.locator('#people').locator('.rowbtn')"),
+    missing: DI.playwright.countExpr("page.locator('#nope').locator('.rowbtn')")
+  }));
+  assert.equal(out.shadow, 1);
+  assert.equal(out.table, 2);
+  assert.equal(out.missing, 0);
+});
+
+test('playwright: shadow targets get an explicit locator chain', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.querySelector('#host').shadowRoot.getElementById('shadowbtn');
+    return DI.playwright.generate(el).map((item) => ({ ...item }));
+  });
+  const chain = out.find((item) => item.type === 'locator+shadow');
+  assert.ok(chain, 'locator+shadow candidate');
+  assert.equal(chain.count, 1);
+  assert.ok(chain.selector.includes("locator('#host')"), chain.selector);
+  assert.ok(chain.selector.includes("locator('#shadowbtn')"), chain.selector);
+  assert.equal(await page.evaluate((selector) => DI.playwright.countExpr(selector), chain.selector), 1);
+});
