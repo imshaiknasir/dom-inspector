@@ -73,6 +73,7 @@ not shipped). Last updated 17 Nov 2026.
 | Export all locators to JSON | done | includes element, counts, raw values, saved list |
 | Saved locator names editable | done | lightweight POM/list |
 | Saved locator export JSON / CSV | done | download via Blob |
+| Saved locators → Playwright POM snippet | done | `POM` downloads a `PageLocators` class with testable saved entries |
 | Saved locator delete / clear | done | confirm before clearing all |
 | Editable locator tester with live count | done | debounced, no highlight while typing |
 | Test & highlight + clear | done | scrolls first match into view |
@@ -129,6 +130,7 @@ not shipped). Last updated 17 Nov 2026.
 - `4d718d9` tester result wording matches the validation contract
 - `d270c92` single-locator Fix action in the tester
 - `11ab1e4` recent pick history in the popup
+- `1382440` saved locators → Playwright page-object snippet
 - `e47ee2b` popup keyboard shortcuts
 
 ## Next candidates
