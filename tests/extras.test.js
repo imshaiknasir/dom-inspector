@@ -173,3 +173,19 @@ test('playwright: aria-labelledby resolves to getByLabel', async () => {
   assert.equal(out.count, 1);
   assert.equal(out.validated.count, 1);
 });
+
+test('playwright: getByText is not emitted when only a descendant matches', async () => {
+  const out = await page.evaluate(() => {
+    const button = document.createElement('button');
+    button.id = 'nested-button';
+    button.innerHTML = '<span>Nested label</span>';
+    document.body.appendChild(button);
+    const selectors = DI.playwright.generate(button).map((c) => c.selector);
+    const descendantCount = DI.playwright.countExpr("page.getByText('Nested label')");
+    button.remove();
+    return { selectors, descendantCount };
+  });
+  assert.ok(out.selectors.some((s) => s.includes("locator('#nested-button')")));
+  assert.ok(!out.selectors.some((s) => s.includes("getByText('Nested label')")));
+  assert.equal(out.descendantCount, 1);
+});

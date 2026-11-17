@@ -293,9 +293,13 @@
     }
     const text = U.normalizeText(el.textContent);
     if (text && text.length <= 80) {
-      add("getByText", `${base}.getByText(${quote(text)}, { exact: true })`, countText(text, true, root), 9);
-      add("getByText", `${base}.getByText(${quote(text)})`, countText(text, false, root), 10);
-      add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${text.replace(/"/g, '\\"')}")')`, countText(text, false, root), 22);
+      const exactMatch = textMatches(el, text, true);
+      const looseMatch = textMatches(el, text, false);
+      if (exactMatch) add("getByText", `${base}.getByText(${quote(text)}, { exact: true })`, countText(text, true, root), 9);
+      if (looseMatch) {
+        add("getByText", `${base}.getByText(${quote(text)})`, countText(text, false, root), 10);
+        add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${text.replace(/"/g, '\\"')}")')`, countText(text, false, root), 22);
+      }
     }
     const alt = U.attr(el, "alt");
     if (alt) {
