@@ -105,10 +105,10 @@
     throw new Error("Side panel is unavailable");
   };
 
-  const setPanelFocus = async (target) => {
+  const setPanelFocus = async (target, extra) => {
     if (!api || !api.storage || !api.storage.local) return;
     try {
-      await api.storage.local.set({ [FOCUS_KEY]: { target, at: Date.now() } });
+      await api.storage.local.set({ [FOCUS_KEY]: Object.assign({ target, at: Date.now() }, extra || {}) });
     } catch (_) { /* ignore */ }
   };
 
@@ -150,6 +150,20 @@
     } catch (_) {
       return [];
     }
+  };
+
+  const bestLocator = () => {
+    const payload = state.payload;
+    if (!payload) return null;
+    const css = payload.css && payload.css.best;
+    const xpath = payload.xpath && payload.xpath.best;
+    const playwright = (payload.playwright || []).find((item) => item.count === 1) || (payload.playwright || [])[0];
+    if (css && css.count === 1) return { value: css.selector, type: "css" };
+    if (xpath && xpath.count === 1) return { value: xpath.xpath, type: "xpath" };
+    if (playwright) return { value: playwright.selector, type: "playwright" };
+    if (css) return { value: css.selector, type: "css" };
+    if (xpath) return { value: xpath.xpath, type: "xpath" };
+    return null;
   };
 
   const lastLocators = () => {
@@ -319,6 +333,19 @@
     }
   };
 
+  const openTester = async () => {
+    const best = bestLocator();
+    if (!best) return setStatus("Pick an element first", "bad");
+    try {
+      const tab = await activeTab();
+      await setPanelFocus("tester", best);
+      await openPanel(tab);
+      window.close();
+    } catch (error) {
+      setStatus(friendly(error), "bad");
+    }
+  };
+
   const openHealing = async () => {
     try {
       const tab = await activeTab();
@@ -347,6 +374,9 @@
     } else if (key === "r") {
       event.preventDefault();
       load();
+    } else if (key === "t") {
+      event.preventDefault();
+      openTester();
     } else if (key === "c") {
       event.preventDefault();
       $("pop-last-copy").click();
@@ -355,6 +385,7 @@
 
   $("pop-pick").addEventListener("click", startPick);
   $("pop-open").addEventListener("click", openOnly);
+  $("pop-last-test").addEventListener("click", openTester);
   $("pop-heal").addEventListener("click", openHealing);
   $("pop-refresh").addEventListener("click", load);
   $("pop-history-clear").addEventListener("click", async () => {

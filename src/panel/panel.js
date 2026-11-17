@@ -128,6 +128,23 @@
     try { localStorage.removeItem(key); } catch (_) { /* ignore */ }
   };
 
+  const applyFocusPayload = (value, smooth) => {
+    const target = value && typeof value === "object" ? value.target : value;
+    if (target === "heal") {
+      $("di-heal-card").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+      $("di-heal-input").focus();
+    } else if (target === "tester") {
+      $("di-tester-card").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+      if (value && typeof value === "object" && typeof value.value === "string" && value.value.trim()) {
+        $("di-input").value = value.value;
+        $("di-type").value = ["css", "xpath", "playwright"].includes(value.type) ? value.type : "auto";
+        scheduleLiveTest();
+      }
+      $("di-input").focus();
+    }
+    return target;
+  };
+
   const applyFocusRequest = async () => {
     const focus = await readStore("di:panel:focus");
     if (!focus || typeof focus !== "object") return;
@@ -135,13 +152,7 @@
       removeStore("di:panel:focus");
       return;
     }
-    if (focus.target === "heal") {
-      $("di-heal-card").scrollIntoView({ block: "start" });
-      $("di-heal-input").focus();
-    } else if (focus.target === "tester") {
-      $("di-tester-card").scrollIntoView({ block: "start" });
-      $("di-input").focus();
-    }
+    applyFocusPayload(focus, false);
     removeStore("di:panel:focus");
   };
 
@@ -2241,15 +2252,7 @@
             : [];
         }
         if (changes["di:panel:focus"]) {
-          const value = changes["di:panel:focus"].newValue;
-          const target = value && typeof value === "object" ? value.target : value;
-          if (target === "heal") {
-            $("di-heal-card").scrollIntoView({ block: "start", behavior: "smooth" });
-            $("di-heal-input").focus();
-          } else if (target === "tester") {
-            $("di-tester-card").scrollIntoView({ block: "start", behavior: "smooth" });
-            $("di-input").focus();
-          }
+          const target = applyFocusPayload(changes["di:panel:focus"].newValue, true);
           if (target) removeStore("di:panel:focus");
         }
       });
