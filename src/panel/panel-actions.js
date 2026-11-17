@@ -191,22 +191,52 @@
         return attr(node, "title") || attr(node, "placeholder") || "";
       };
 
-      const textMatches = (node, needle, exact) => {
+      const textMatches = (node, needle, exact, pattern) => {
         if (ignoredText.includes(tagOf(node))) return false;
+        const matches = (text) => (pattern ? pattern.test(text) : textEquals(text, needle, exact));
         const own = norm(visibleText(node));
         if (!own) return false;
-        if (!textEquals(own, needle, exact)) return false;
+        if (!matches(own)) return false;
         for (const child of node.children) {
           if (ignoredText.includes(tagOf(child))) continue;
           const childText = norm(visibleText(child));
-          if (childText && textEquals(childText, needle, exact)) return false;
+          if (childText && matches(childText)) return false;
         }
         return true;
       };
 
       const readFirstString = (args) => {
-        const start = args.search(/['"`]/);
+        const start = args.search(/['"`/]/);
         if (start < 0) return null;
+        if (args[start] === "/") {
+          let pattern = "";
+          let inClass = false;
+          let i = start + 1;
+          while (i < args.length) {
+            const ch = args[i];
+            if (ch === "\\") {
+              pattern += ch + (args[i + 1] || "");
+              i += 2;
+              continue;
+            }
+            if (ch === "[") inClass = true;
+            else if (ch === "]") inClass = false;
+            if (ch === "/" && !inClass) {
+              let flags = "";
+              i += 1;
+              while (i < args.length && /[a-z]/i.test(args[i])) {
+                flags += args[i];
+                i += 1;
+              }
+              let regex = null;
+              try { regex = new RegExp(pattern, flags); } catch (_) { regex = null; }
+              return { value: pattern, end: i, regex };
+            }
+            pattern += ch;
+            i += 1;
+          }
+          return null;
+        }
         const quote = args[start];
         let out = "";
         let i = start + 1;
@@ -217,7 +247,7 @@
             i += 2;
             continue;
           }
-          if (ch === quote) return { value: out, end: i + 1 };
+          if (ch === quote) return { value: out, end: i + 1, regex: null };
           out += ch;
           i += 1;
         }
@@ -292,8 +322,10 @@
           const args = call[2];
           const firstValue = readFirstString(args);
           const firstText = firstValue ? firstValue.value : "";
+          const firstPattern = firstValue ? firstValue.regex : null;
           const rest = firstValue ? args.slice(firstValue.end) : "";
           const exact = /exact:\s*true/.test(rest);
+          const firstMatch = (actual) => (firstPattern ? firstPattern.test(String(actual)) : textEquals(actual, firstText, exact));
           let namePattern = null;
           let nameValue = "";
 
@@ -317,12 +349,12 @@
               matches.push(node);
             }
           } else if (method === "Text") {
-            matches = all.filter((node) => textMatches(node, firstText, exact));
+            matches = all.filter((node) => textMatches(node, firstText, exact, firstPattern));
           } else if (method === "Label") {
             const seen = new Set();
             for (const node of all) {
               if (tagOf(node) === "label") {
-                if (textEquals(node.textContent, firstText, exact)) {
+                if (firstMatch(visibleText(node))) {
                   const id = attr(node, "for");
                   let target = null;
                   if (id) {
@@ -337,7 +369,7 @@
                 }
               }
               const aria = attr(node, "aria-label");
-              if (aria && textEquals(aria, firstText, exact) && !seen.has(node)) {
+              if (aria && firstMatch(aria) && !seen.has(node)) {
                 seen.add(node);
                 matches.push(node);
               }
@@ -348,20 +380,20 @@
                   const target = root.getElementById ? root.getElementById(ref) : null;
                   return target ? norm(target.textContent) : "";
                 }).join(" ").trim();
-                if (text && textEquals(text, firstText, exact) && !seen.has(node)) {
+                if (text && firstMatch(text) && !seen.has(node)) {
                   seen.add(node);
                   matches.push(node);
                 }
               }
             }
           } else if (method === "Placeholder") {
-            matches = all.filter((node) => textEquals(attr(node, "placeholder"), firstText, exact));
+            matches = all.filter((node) => firstMatch(attr(node, "placeholder")));
           } else if (method === "AltText") {
-            matches = all.filter((node) => textEquals(attr(node, "alt"), firstText, exact));
+            matches = all.filter((node) => firstMatch(attr(node, "alt")));
           } else if (method === "Title") {
-            matches = all.filter((node) => textEquals(attr(node, "title"), firstText, exact));
+            matches = all.filter((node) => firstMatch(attr(node, "title")));
           } else if (method === "TestId") {
-            matches = all.filter((node) => attr(node, "data-testid") === firstText);
+            matches = all.filter((node) => firstMatch(attr(node, "data-testid")));
           }
         } else if (locator) {
           const selectors = [];
