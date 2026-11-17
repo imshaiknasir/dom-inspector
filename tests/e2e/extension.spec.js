@@ -976,13 +976,21 @@ test('panel POM export sanitises comment labels and the page field', async () =>
     {
       id: 'pom-page', key: 'css::#link', name: 'page', type: 'css',
       value: '#link', testType: 'css', testValue: '#link', count: 1
+    },
+    {
+      id: 'pom-then', key: 'css::#email', name: 'then', type: 'css',
+      value: '#email', testType: 'css', testValue: '#email', count: 1
+    },
+    {
+      id: 'pom-newline', key: 'css::#title', name: 'Line\nBreak', type: 'css',
+      value: '#title', testType: 'css', testValue: '#title', count: 1
     }
   ];
   await extensionPage.evaluate((entries) => chrome.storage.local.set({ 'di:panel:saved': entries }), saved);
   await extensionPage.reload();
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-saved .saved-row').length
-  ), { timeout: 10000 }).toBe(2);
+  ), { timeout: 10000 }).toBe(4);
 
   const downloadPromise = extensionPage.waitForEvent('download');
   await extensionPage.evaluate(() => document.getElementById('di-saved-pom').click());
@@ -992,6 +1000,9 @@ test('panel POM export sanitises comment labels and the page field', async () =>
 
   expect(source).not.toContain('Bad */ name');
   expect(source).not.toMatch(/^\s{2}page\(\)/m);
+  expect(source).not.toMatch(/^\s{2}then\(\)/m);
+  expect(source).toContain('Line Break');
+  expect(source).not.toContain('Line\nBreak');
   const body = source.replace('export class PageLocators', 'class PageLocators');
   expect(() => new Function(body + '; return PageLocators;')).not.toThrow();
 });
