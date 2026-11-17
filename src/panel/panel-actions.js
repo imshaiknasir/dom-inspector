@@ -299,7 +299,7 @@
               }
               let regex = null;
               try { regex = new RegExp(pattern, flags); } catch (_) { regex = null; }
-              return { value: pattern, end: i, regex };
+              return { value: pattern, end: i, regex, invalid: !regex };
             }
             pattern += ch;
             i += 1;
@@ -406,22 +406,26 @@
           const firstValue = readFirstString(args);
           const firstText = firstValue ? firstValue.value : "";
           const firstPattern = firstValue ? firstValue.regex : null;
+          const firstInvalid = !firstValue || !!firstValue.invalid;
           const rest = firstValue ? args.slice(firstValue.end) : "";
           const exact = /exact:\s*true/.test(rest);
           const firstMatch = (actual) => (firstPattern ? regexTest(firstPattern, actual) : textEquals(actual, firstText, exact));
           let namePattern = null;
           let nameValue = "";
+          let invalidPattern = false;
 
           const nameString = rest.match(/name:\s*(['"])((?:\\.|(?!\1).)*)\1/);
           const nameRegex = rest.match(/name:\s*\/((?:\\.|[^/\\])*)\/([a-z]*)/);
           if (nameRegex) {
-            try { namePattern = new RegExp(nameRegex[1], nameRegex[2] || ""); } catch (_) { namePattern = null; }
+            try { namePattern = new RegExp(nameRegex[1], nameRegex[2] || ""); } catch (_) { namePattern = null; invalidPattern = true; }
           } else if (nameString) {
             nameValue = unescapeValue(nameString[2]);
           }
 
           const all = allElements();
-          if (method === "Role") {
+          if (firstInvalid || invalidPattern) {
+            /* Invalid regex arguments match nothing rather than everything. */
+          } else if (method === "Role") {
             for (const node of all) {
               if (implicitRole(node) !== firstText) continue;
               if (namePattern) {
