@@ -190,6 +190,7 @@
   /** Axes XPath from a reference element to a target element. */
   const axes = (reference, target) => {
     if (inShadow(reference) || inShadow(target)) return [];
+    if (!reference.ownerDocument || reference.ownerDocument !== target.ownerDocument) return [];
     const ref = best(reference);
     if (!ref) return [];
     const targetSeg = segment(target, true);
