@@ -509,7 +509,8 @@
             const engine = rawSelector.match(/^(css|xpath|text)=([\s\S]*)$/);
             const selector = engine ? engine[2] : rawSelector;
             if ((engine && engine[1] === "xpath") ||
-                (!engine && (selector.startsWith("//") || selector.startsWith("(/")))) {
+                (!engine && (selector.startsWith("//") || selector.startsWith("(/") ||
+                  selector.startsWith("./") || selector.startsWith("(")))) {
               const seen = new Set();
               for (const root of roots) {
                 const doc = root.ownerDocument || root;
