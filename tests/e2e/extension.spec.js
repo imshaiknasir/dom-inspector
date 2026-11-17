@@ -921,6 +921,37 @@ test('panel ignores a late live check after the input is cleared', async () => {
   }
 });
 
+test('panel locks action buttons while an action runs', async () => {
+  await fixturePage.bringToFront();
+  await extensionPage.evaluate(() => {
+    window.__diExecute = chrome.scripting.executeScript.bind(chrome.scripting);
+    chrome.scripting.executeScript = (...args) => new Promise((resolve, reject) => {
+      setTimeout(() => window.__diExecute(...args).then(resolve, reject), 400);
+    });
+    const input = document.getElementById('di-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'css';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('di-click').click();
+  });
+  try {
+    await expect.poll(() => extensionPage.evaluate(() => ({
+      click: document.getElementById('di-click').disabled,
+      hover: document.getElementById('di-hover').disabled,
+      type: document.getElementById('di-type-action').disabled
+    })), { timeout: 3000 }).toEqual({ click: true, hover: true, type: true });
+    await expect(extensionPage.locator('#di-result')).toContainText('Clicked <button>', { timeout: 10000 });
+    await expect.poll(() => extensionPage.evaluate(() => document.getElementById('di-click').disabled), { timeout: 3000 }).toBe(false);
+  } finally {
+    await extensionPage.evaluate(() => {
+      if (window.__diExecute) chrome.scripting.executeScript = window.__diExecute;
+      delete window.__diExecute;
+    });
+  }
+});
+
 test('panel action runner types, reports success and handles no matches', async () => {
   await fixturePage.bringToFront();
   await extensionPage.evaluate(() => {
