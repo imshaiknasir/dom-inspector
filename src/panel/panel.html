@@ -15,6 +15,8 @@
       <div class="di-actions">
         <button id="di-pick" class="primary" type="button">Pick element</button>
         <button id="di-stop" type="button">Stop</button>
+        <button id="di-add-batch" type="button" disabled>Add to batch</button>
+        <button id="di-save" type="button" disabled>Save pick</button>
       </div>
     </header>
 
@@ -52,6 +54,38 @@
         <h2>Selenium / Cypress / JS</h2>
         <div id="di-selenium" class="rows"></div>
         <div id="di-formats" class="rows"></div>
+      </section>
+
+      <section class="card" id="di-batch-card" hidden>
+        <div class="card-head">
+          <h2>Batch / locators page</h2>
+          <div class="row-actions">
+            <button id="di-batch-copy" type="button">Copy all</button>
+            <button id="di-batch-json" type="button">Export JSON</button>
+            <button id="di-batch-csv" type="button">Export CSV</button>
+            <button id="di-batch-clear" type="button">Clear</button>
+          </div>
+        </div>
+        <div id="di-batch" class="rows"></div>
+      </section>
+
+      <section class="card" id="di-saved-card" hidden>
+        <div class="card-head">
+          <h2>Saved locators</h2>
+          <button id="di-saved-clear" type="button">Clear all</button>
+        </div>
+        <div id="di-saved" class="rows"></div>
+      </section>
+
+      <section class="card">
+        <h2>Heal / verify a script</h2>
+        <p class="di-sub">Paste a script or locator list. Quoted XPath, CSS and Playwright locators are extracted heuristically and verified one by one.</p>
+        <textarea id="di-script" spellcheck="false" placeholder="await page.getByRole('button', { name: 'Save' }).click();&#10;driver.findElement(By.xpath(&quot;//input[@id='email']&quot;))"></textarea>
+        <div class="row-actions" style="margin-top:8px">
+          <button id="di-heal" type="button">Verify selectors</button>
+          <button id="di-heal-clear" type="button">Clear results</button>
+        </div>
+        <div id="di-heal-rows" class="rows"></div>
       </section>
 
       <section class="card">

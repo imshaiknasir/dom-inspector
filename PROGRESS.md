@@ -21,6 +21,12 @@ Milestone log for the clean-room build. All items committed in this folder.
 - [x] M8 — Panel: rows, counts, copy, test, language switch, validator, restore.
 - [x] M9 — Tests: 16 browser-backed tests (`node --test`), all passing.
 - [x] M10 — Chrome smoke load (`--load-extension`, no manifest errors).
+- [x] M11 — Stability scores for CSS/XPath/Playwright candidates.
+- [x] M12 — Cypress shadow chain + Selenium frame/shadow snippets.
+- [x] M13 — Batch/locators page with copy/export JSON/CSV.
+- [x] M14 — Saved locators (10) with use/copy/delete.
+- [x] M15 — Heuristic XPath/CSS/Playwright healing over a pasted script.
+- [x] M16 — 19 browser-backed tests, all passing.
 
 ## Commits
 
@@ -32,11 +38,13 @@ Milestone log for the clean-room build. All items committed in this folder.
 - `b8cad3d` regex role locator variant
 - `5a18693` continuous picking option
 - `c3eba97` docs
+- `6854193` stability scores + Cypress shadow chain
+- `d4a2c10` panel batch/saved/healing UI + 3 extra tests (this commit)
 
 ## Remaining / next
 
-- [ ] Batch/POM table and export/import.
-- [ ] XPath-healing batch mode.
+- [ ] Full POM class generation (current export is locator data, not page objects).
+- [ ] Excel export/import for the batch table.
 - [ ] DevTools-side continuous inspector shortcut (picker supports the flag).
 - [ ] ARIA accname parity and Playwright actionability-aware counts.
 - [ ] Optional Firefox port (MV3 sidebar differences).

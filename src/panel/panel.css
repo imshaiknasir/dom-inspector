@@ -42,3 +42,8 @@ main { padding:14px 16px 24px; display:grid; gap:12px; }
   .row code { color:#0f172a; }
   button, select { background:#eef3f9; }
 }
+
+textarea { width:100%; min-height:96px; resize:vertical; font:12px/1.45 ui-monospace,Menlo,Consolas,monospace; background:#0d1729; border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px; }
+.row .badge { margin-top:2px; }
+.row-actions { flex-wrap:wrap; }
+@media (prefers-color-scheme: light) { textarea { background:#f8fafc; } }

@@ -36,6 +36,11 @@ behavioural analysis in `../selectorshub/analysis/`.
   parser error, highlights all matches and scrolls the first into view.
 - Copy buttons for every locator; DevTools sidebar and Chrome side panel share
   one UI; last pick is restored from `chrome.storage.session`.
+- Batch/locators page: add picks, copy all, export JSON/CSV, remove/clear.
+- Saved locators (up to 10) persisted in `chrome.storage.local` with use/copy/delete.
+- XPath healing: extract quoted locators from a pasted script and verify each
+  against the live page, with per-locator counts.
+- Stability hint per candidate (`stable` / `medium` / `fragile`).
 - Everything is free and local. No ads, accounts, analytics, remote code or
   licence checks.
 
@@ -78,8 +83,9 @@ locators and counts, Selenium/Cypress formats, validation errors, iframe
 
 ## Known gaps vs SelectorsHub
 
-- No batch/POM table, XPath-healing batch mode, recorder/TestCase Studio bridge,
-  login/ads, or cloud features (all intentionally absent).
+- No recorder/TestCase Studio bridge, login/ads, or cloud features (intentionally absent).
+- Batch export is JSON/CSV, not Excel.
+- Healing uses heuristic quoted-locator extraction, not a full parser.
 - Closed shadow roots and cross-origin iframes remain inaccessible, as in the
   original and in browsers generally.
 - Playwright role/name matching is a DOM approximation, not the full ARIA
