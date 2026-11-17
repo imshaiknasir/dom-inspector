@@ -59,3 +59,10 @@ test('language: package.json has no build step or compiler dependency', () => {
   const deps = Object.keys({ ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) });
   assert.ok(!deps.some((name) => /typescript|webpack|rollup|esbuild|vite|ts-node/.test(name)), deps.join(', '));
 });
+
+test('language: manifest keeps the default strict CSP', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+  assert.ok(!manifest.content_security_policy, 'must not override the MV3 CSP');
+  assert.ok(!JSON.stringify(manifest).includes('unsafe-eval'));
+  assert.ok(!JSON.stringify(manifest).includes('unsafe-inline'));
+});
