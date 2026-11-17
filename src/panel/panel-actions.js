@@ -22,7 +22,7 @@
     try {
       const value = String(rawValue || "").trim();
       const wanted = type === "auto"
-        ? (/^page\.|^getBy/.test(value) ? "playwright"
+        ? (/^page\.|^getBy|^locator\(/.test(value) ? "playwright"
           : /^\/\/|^\(\/|^\.\/|^\(/.test(value) ? "xpath" : "css")
         : type;
 
@@ -190,21 +190,47 @@
         );
 
         let nth = null;
-        const nthMatch = expression.match(/\.nth\((\d+)\)\s*$/);
-        if (nthMatch) {
-          nth = Number(nthMatch[1]);
-          expression = expression.slice(0, nthMatch.index);
+        let first = false;
+        let last = false;
+        let filterText = null;
+        let stripping = true;
+        while (stripping) {
+          stripping = false;
+          let modifier;
+          if ((modifier = expression.match(/\.first\(\)\s*$/))) {
+            first = true;
+            expression = expression.slice(0, modifier.index);
+            stripping = true;
+            continue;
+          }
+          if ((modifier = expression.match(/\.last\(\)\s*$/))) {
+            last = true;
+            expression = expression.slice(0, modifier.index);
+            stripping = true;
+            continue;
+          }
+          if ((modifier = expression.match(/\.nth\((\d+)\)\s*$/))) {
+            nth = Number(modifier[1]);
+            expression = expression.slice(0, modifier.index);
+            stripping = true;
+            continue;
+          }
+          if ((modifier = expression.match(/\.filter\(\{\s*hasText:\s*(['"])((?:\\.|(?!\1).)*)\1\s*\}\s*\)\s*$/))) {
+            filterText = modifier[2].replace(/\\(['"\\])/g, "$1");
+            expression = expression.slice(0, modifier.index);
+            stripping = true;
+          }
         }
 
         const call = expression.match(/getBy(Role|Text|Label|Placeholder|AltText|Title|TestId)\((.*)\)\s*$/);
-        const locator = !call && expression.match(/locator\((.*)\)\s*$/);
+        const locator = !call && /^locator\(/.test(expression);
 
         if (call) {
           const method = call[1];
           const args = call[2];
-          const first = readFirstString(args);
-          const firstValue = first ? first.value : "";
-          const rest = first ? args.slice(first.end) : "";
+          const firstValue = readFirstString(args);
+          const firstText = firstValue ? firstValue.value : "";
+          const rest = firstValue ? args.slice(firstValue.end) : "";
           const exact = /exact:\s*true/.test(rest);
           let namePattern = null;
           let nameValue = "";
@@ -220,7 +246,7 @@
           const all = allElements();
           if (method === "Role") {
             for (const node of all) {
-              if (implicitRole(node) !== firstValue) continue;
+              if (implicitRole(node) !== firstText) continue;
               if (namePattern) {
                 if (!namePattern.test(norm(accessibleName(node)))) continue;
               } else if (nameValue) {
@@ -230,13 +256,13 @@
               matches.push(node);
             }
           } else if (method === "Text") {
-            matches = all.filter((node) => textMatches(node, firstValue, exact));
+            matches = all.filter((node) => textMatches(node, firstText, exact));
           } else if (method === "Label") {
             const seen = new Set();
             for (const node of all) {
               if (tagOf(node) === "label") {
                 const labelText = norm(node.textContent);
-                if (exact ? labelText === firstValue : labelText.includes(firstValue)) {
+                if (exact ? labelText === firstText : labelText.includes(firstText)) {
                   const id = attr(node, "for");
                   let target = null;
                   if (id) {
@@ -251,51 +277,77 @@
                 }
               }
               const aria = attr(node, "aria-label");
-              if (aria && (exact ? aria === firstValue : aria.includes(firstValue)) && !seen.has(node)) {
+              if (aria && (exact ? aria === firstText : aria.includes(firstText)) && !seen.has(node)) {
                 seen.add(node);
                 matches.push(node);
               }
             }
           } else if (method === "Placeholder") {
-            matches = all.filter((node) => attr(node, "placeholder") === firstValue);
+            matches = all.filter((node) => attr(node, "placeholder") === firstText);
           } else if (method === "AltText") {
-            matches = all.filter((node) => attr(node, "alt") === firstValue);
+            matches = all.filter((node) => attr(node, "alt") === firstText);
           } else if (method === "Title") {
-            matches = all.filter((node) => attr(node, "title") === firstValue);
+            matches = all.filter((node) => attr(node, "title") === firstText);
           } else if (method === "TestId") {
             matches = all.filter((node) =>
-              attr(node, "data-testid") === firstValue ||
-              attr(node, "data-test-id") === firstValue ||
-              attr(node, "data-test") === firstValue ||
-              attr(node, "data-cy") === firstValue
+              attr(node, "data-testid") === firstText ||
+              attr(node, "data-test-id") === firstText ||
+              attr(node, "data-test") === firstText ||
+              attr(node, "data-cy") === firstText
             );
           }
         } else if (locator) {
-          const parsed = readFirstString(locator[1]);
-          const selector = parsed ? parsed.value : "";
-          if (selector.startsWith("//") || selector.startsWith("(/")) {
-            const seen = new Set();
-            for (const root of roots) {
-              const doc = root.ownerDocument || root;
-              try {
-                const snapshot = doc.evaluate(selector, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-                for (let i = 0; i < snapshot.snapshotLength; i += 1) {
-                  const node = snapshot.snapshotItem(i);
-                  if (node && !seen.has(node)) {
-                    seen.add(node);
-                    matches.push(node);
+          const selectors = [];
+          let rest = expression;
+          let match;
+          const pattern = /^locator\(\s*(['"`])((?:\\.|(?!\1).)*)\1\s*\)/;
+          while ((match = rest.match(pattern))) {
+            selectors.push(match[2].replace(/\\(['"`\\])/g, "$1"));
+            rest = rest.slice(match[0].length).replace(/^\./, "");
+          }
+          if (selectors.length) {
+            let nodes = [];
+            const selector = selectors[0];
+            if (selector.startsWith("//") || selector.startsWith("(/")) {
+              const seen = new Set();
+              for (const root of roots) {
+                const doc = root.ownerDocument || root;
+                try {
+                  const snapshot = doc.evaluate(selector, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                  for (let i = 0; i < snapshot.snapshotLength; i += 1) {
+                    const node = snapshot.snapshotItem(i);
+                    if (node && !seen.has(node)) {
+                      seen.add(node);
+                      nodes.push(node);
+                    }
                   }
-                }
-              } catch (_) { /* ignore */ }
+                } catch (_) { /* ignore */ }
+              }
+            } else {
+              const css = selector.replace(/:visible\b/g, "");
+              for (const root of roots) {
+                try { nodes.push(...root.querySelectorAll(css)); } catch (_) { /* ignore */ }
+              }
             }
-          } else {
-            const css = selector.replace(/:visible\b/g, "");
-            for (const root of roots) {
-              try { matches.push(...root.querySelectorAll(css)); } catch (_) { /* ignore */ }
+            for (let i = 1; i < selectors.length; i += 1) {
+              const next = [];
+              const css = selectors[i].replace(/:visible\b/g, "");
+              for (const node of nodes) {
+                const scope = node.shadowRoot || node;
+                try { next.push(...scope.querySelectorAll(css)); } catch (_) { /* ignore */ }
+              }
+              nodes = next;
+              if (!nodes.length) break;
             }
+            matches = nodes;
           }
         }
 
+        if (filterText !== null) {
+          matches = matches.filter((node) => norm(node.textContent).includes(filterText));
+        }
+        if (first) matches = matches.slice(0, 1);
+        if (last) matches = matches.slice(-1);
         if (nth != null && matches.length) {
           matches = matches[Number(nth)] ? [matches[Number(nth)]] : [];
         }

@@ -89,14 +89,14 @@ test('panel actions: invalid selectors report an error', async () => {
   assert.equal(out.performed, false);
 });
 
-test('panel actions: auto mode recognises a bare locator() expression', { todo: 'BLOCKERS.md — panel-actions auto detection misses bare locator() (src/panel/panel-actions.js:24)' }, async () => {
+test('panel actions: auto mode recognises a bare locator() expression', async () => {
   const out = await page.evaluate(() => DIPanel.pageAction('click', 'auto', "locator('#save')", '', false));
   assert.equal(out.matched, 1);
   assert.equal(out.tag, 'button');
   assert.equal(out.error, null);
 });
 
-test('panel actions: chained shadow locator targets the inner element', { todo: 'BLOCKERS.md — chained locator() resolves the host, not the shadow child (src/panel/panel-actions.js:200-295)' }, async () => {
+test('panel actions: chained shadow locator targets the inner element', async () => {
   const out = await page.evaluate(() =>
     DIPanel.pageAction('click', 'playwright', "page.locator('#host').locator('#shadowbtn')", '', false)
   );
@@ -105,7 +105,7 @@ test('panel actions: chained shadow locator targets the inner element', { todo: 
   assert.equal(out.text, 'Shadow action');
 });
 
-test('panel actions: first/last/filter modifiers narrow the match set', { todo: 'BLOCKERS.md — panel-actions only honours .nth(); .first/.last/.filter are ignored (src/panel/panel-actions.js:185-300)' }, async () => {
+test('panel actions: first/last/filter modifiers narrow the match set', async () => {
   const out = await page.evaluate(() => ({
     first: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn').first()", '', false),
     last: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn').last()", '', false),
