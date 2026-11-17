@@ -1168,9 +1168,18 @@
     empty.hidden = state.saved.length > 0;
 
     if (!state.saved.length && state.savedFilter) state.savedFilter = "";
+    const hasTestable = state.saved.some((entry) => savedTestTarget(entry));
     for (const id of ["di-saved-check", "di-saved-pom", "di-saved-json", "di-saved-csv", "di-saved-clear"]) {
       const button = $(id);
-      if (button) button.disabled = state.saved.length === 0 || state.savedBusy;
+      if (!button) continue;
+      if (id === "di-saved-pom") {
+        button.disabled = !hasTestable || state.savedBusy;
+        button.title = hasTestable
+          ? "Download a Playwright page-object snippet from saved locators"
+          : "Save a testable CSS, XPath or Playwright locator first";
+      } else {
+        button.disabled = state.saved.length === 0 || state.savedBusy;
+      }
     }
     const importButton = $("di-saved-import");
     if (importButton) importButton.disabled = state.savedBusy;
