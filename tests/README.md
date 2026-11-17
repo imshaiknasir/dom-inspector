@@ -43,6 +43,6 @@ and a user-data directory.
   the driver template, single-locator Fix, batch healing and JSON/POM exports,
   plus the background `DI_GET_LAST` cache.
 
-All 206 unit cases (204 pass, 2 tracked todo) and 34 e2e cases pass. The workspace-root
+All 207 unit cases (205 pass, 2 tracked todo) and 34 e2e cases pass. The workspace-root
 `../../BLOCKERS.md` tracks any defect that would require editing files owned
 by another agent.

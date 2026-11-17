@@ -8,12 +8,14 @@ let browser;
 let page;
 let aria;
 let duplicates;
+let escaping;
 
 before(async () => {
   browser = await launchBrowser();
   page = await openFixture(browser, 'fixture.html');
   aria = await openFixture(browser, 'fixtures/aria.html');
   duplicates = await openFixture(browser, 'fixtures/duplicates.html');
+  escaping = await openFixture(browser, 'fixtures/escaping.html');
 });
 
 after(async () => { if (browser) await browser.close(); });
@@ -168,4 +170,13 @@ test('testRigor: quoted labels stay valid JavaScript string literals', async () 
   });
   assert.equal(out.code, '"He said \\\"hi\\\"\\\\path"');
   assert.equal(out.decoded, 'He said "hi"\\path');
+});
+
+test('testRigor: control whitespace stays a valid JS string literal', async () => {
+  const out = await escaping.evaluate(() => {
+    const value = DI.formats.testRigorPath(document.getElementById('labelmultiline'));
+    return { value, parsed: (() => { try { return JSON.parse(value); } catch (_) { return null; } })() };
+  });
+  assert.equal(out.value, '"Line one\\nLine two"');
+  assert.equal(out.parsed, 'Line one\nLine two');
 });
