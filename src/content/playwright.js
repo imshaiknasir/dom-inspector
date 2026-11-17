@@ -131,6 +131,13 @@
   const countAttr = (name, value, root) => U.deepQueryAll(`[${name}="${String(value).replace(/"/g, '\\"')}"]`, root).length;
 
   const countExpr = (expr, root = document) => {
+    const modifier = expr.match(/\.(first|last|nth)\((\d*)\)$/);
+    if (modifier) {
+      const base = expr.slice(0, modifier.index);
+      const total = countExpr(base, root);
+      if (modifier[1] === "first" || modifier[1] === "last") return total > 0 ? 1 : 0;
+      return Number(modifier[2]) < total ? 1 : 0;
+    }
     if (/getByRole\(/.test(expr)) {
       const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
       const regex = expr.match(/name:\s*\/(.+?)\/([gimsuy]*)/);
@@ -187,6 +194,10 @@
         const text = U.normalizeText(el.textContent);
         return mode === "exact" ? text === value : text.includes(value);
       }).length;
+    }
+    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
+    if (filtered) {
+      return U.deepQueryAll(filtered[1], root).filter((el) => U.normalizeText(el.textContent).includes(filtered[2])).length;
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/") && !css[1].startsWith("(")) {

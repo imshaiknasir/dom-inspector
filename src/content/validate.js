@@ -48,6 +48,13 @@
   };
 
   const resolvePlaywright = (expr, doc = document) => {
+    const modifier = expr.match(/\.(first|last|nth)\((\d*)\)$/);
+    if (modifier) {
+      const base = resolvePlaywright(expr.slice(0, modifier.index), doc);
+      if (modifier[1] === "first") return base.slice(0, 1);
+      if (modifier[1] === "last") return base.slice(-1);
+      return base[Number(modifier[2])] ? [base[Number(modifier[2])]] : [];
+    }
     const framePattern = /\.frameLocator\(\s*(['"])(.*?)\1\s*\)/g;
     const frameSelectors = [];
     let fm;
@@ -112,6 +119,10 @@
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
         return textMatches(el, value, exact);
       });
+    }
+    const filtered = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)\.filter\(\{\s*hasText:\s*['"]([^'"]+)['"]\s*\}\)/);
+    if (filtered) {
+      return U.deepQueryAll(filtered[1], doc).filter((el) => U.normalizeText(el.textContent).includes(filtered[2]));
     }
     const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
     if (css && !css[1].startsWith("/")) return U.deepQueryAll(css[1], doc);

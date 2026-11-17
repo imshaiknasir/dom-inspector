@@ -81,3 +81,20 @@ test('validate: CSS and XPath fall back into same-origin frames', async () => {
   assert.equal(out.xpath.ok, true);
   assert.equal(out.xpath.count, 1);
 });
+
+test('playwright: filter and first/last/nth modifiers are evaluated', async () => {
+  const out = await page.evaluate(() => ({
+    filter: DI.playwright.countExpr("page.locator('.rowbtn').filter({ hasText: 'Edit' })"),
+    first: DI.playwright.countExpr("page.locator('.rowbtn').first()"),
+    last: DI.playwright.countExpr("page.locator('.rowbtn').last()"),
+    nth: DI.playwright.countExpr("page.locator('.rowbtn').nth(1)"),
+    nthOut: DI.playwright.countExpr("page.locator('.rowbtn').nth(9)"),
+    filtered: DI.validate.test('playwright', "page.locator('.rowbtn').filter({ hasText: 'Edit' })")
+  }));
+  assert.equal(out.filter, 2);
+  assert.equal(out.first, 1);
+  assert.equal(out.last, 1);
+  assert.equal(out.nth, 1);
+  assert.equal(out.nthOut, 0);
+  assert.equal(out.filtered.count, 2);
+});
