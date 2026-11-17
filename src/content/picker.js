@@ -4,6 +4,7 @@
   const U = DI.util;
 
   let active = false;
+  let continuous = false;
   let overlay = null;
   let lastTarget = null;
 
@@ -113,6 +114,12 @@
     setTimeout(() => {
       if (overlay) overlay.classList.add("di-picked");
     }, 0);
+    if (!continuous) {
+      // Keep the overlay visible on the last pick; the next DI_START resets it.
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("mousemove", onMove, true);
+      active = false;
+    }
   };
 
   const start = () => {
@@ -137,6 +144,7 @@
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (!message || !message.type) return undefined;
     if (message.type === "DI_START") {
+      continuous = !!message.continuous;
       start();
       sendResponse({ ok: true, frame: location.href });
       return true;
