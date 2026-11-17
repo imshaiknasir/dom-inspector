@@ -205,3 +205,22 @@ test('xpath: inShadow reports tree scope', async () => {
   assert.equal(out.shadow, true);
   assert.equal(out.light, false);
 });
+
+test('xpath: frameXPath chains nested frames', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <iframe id="outer" srcdoc="<!doctype html><body>
+        <iframe id='inner' srcdoc='<!doctype html><button id=deep>Deep</button>'></iframe>
+      </body>"></iframe>
+    </body></html>`);
+    await local.waitForTimeout(400);
+    const deepest = local.frames()[local.frames().length - 1];
+    await injectGenerators(deepest);
+    const out = await deepest.evaluate(() => DI.xpath.frameXPath());
+    assert.equal(out.frames, 2);
+    assert.equal(out.xpath, "//iframe[@id='outer'] >> //iframe[@id='inner']");
+  } finally {
+    await local.close();
+  }
+});
