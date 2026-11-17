@@ -103,3 +103,28 @@ test('manifest: popup assets are local and present', () => {
   assert.ok(fs.existsSync(path.join(dir, 'popup.css')));
   assert.ok(fs.existsSync(path.join(dir, 'popup.js')));
 });
+
+test('manifest: content script runs early in about:blank frames', () => {
+  for (const entry of manifest.content_scripts) {
+    assert.equal(entry.run_at, 'document_start');
+    assert.equal(entry.match_about_blank, true);
+  }
+});
+
+test('manifest: declared icons exist at every declared size', () => {
+  const groups = [manifest.icons, manifest.action.default_icon];
+  for (const group of groups) {
+    assert.ok(group, 'missing icon group');
+    for (const [size, file] of Object.entries(group)) {
+      const icon = path.join(ROOT, file);
+      assert.ok(fs.existsSync(icon), `missing ${size}px icon`);
+      const bytes = fs.readFileSync(icon);
+      assert.deepEqual([...bytes.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], `${size}px icon is not PNG`);
+    }
+  }
+});
+
+test('manifest: minimum Chrome version supports the side panel API', () => {
+  const minimum = Number.parseInt(manifest.minimum_chrome_version, 10);
+  assert.ok(minimum >= 114, 'side_panel requires Chrome 114+');
+});
