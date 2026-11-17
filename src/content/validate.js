@@ -167,14 +167,21 @@
       if (spec.regex) return all.filter((el) => DI.playwright.matchesTextRegexSmallest(el, spec.regex));
       return all.filter((el) => textMatches(el, spec.text, quoted));
     }
-    const framePattern = /\.frameLocator\(\s*(['"])(.*?)\1\s*\)/g;
-    const frameSelectors = [];
+    const framePattern = /\.frameLocator\(\s*(['"])(.*?)\1\s*\)(?:\.(first|last|nth)\(\s*(\d*)\s*\))?/g;
+    const frameSteps = [];
     let fm;
-    while ((fm = framePattern.exec(expr)) !== null) frameSelectors.push(fm[2]);
-    if (frameSelectors.length) {
+    while ((fm = framePattern.exec(expr)) !== null) {
+      frameSteps.push({ selector: fm[2], modifier: fm[3] || null, index: fm[4] });
+    }
+    if (frameSteps.length) {
       let currentDoc = doc;
-      for (const sel of frameSelectors) {
-        const frame = U.deepQueryAll(sel, currentDoc)[0];
+      for (const step of frameSteps) {
+        const matches = U.deepQueryAll(step.selector, currentDoc);
+        let frame = null;
+        if (step.modifier === "first") frame = matches[0] || null;
+        else if (step.modifier === "last") frame = matches[matches.length - 1] || null;
+        else if (step.modifier === "nth") frame = matches[Number(step.index || 0)] || null;
+        else frame = matches[0] || null;
         if (!frame) return [];
         let nextDoc = null;
         try { nextDoc = frame.contentDocument || frame.contentWindow.document; } catch (_) { return []; }

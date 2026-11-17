@@ -599,16 +599,27 @@
   const framePrefix = (win = window) => {
     const frames = U.iframeChain(win);
     return frames.map((frame) => {
+      let selector = "";
       const id = U.attr(frame, "id");
-      if (id) return `frameLocator('#${U.cssEscape(id)}')`;
       const name = U.attr(frame, "name");
-      if (name) return `frameLocator('[name="${name.replace(/"/g, '\\"')}"]')`;
       const title = U.attr(frame, "title");
-      if (title) return `frameLocator('[title="${title.replace(/"/g, '\\"')}"]')`;
       const src = (U.attr(frame, "src").split("?")[0].split("/").pop() || "");
-      if (src) return `frameLocator('[src*="${cssString(src)}"]')`;
-      const css = DI.css.best(frame);
-      return css && css.count === 1 ? `frameLocator(${quote(css.selector)})` : "frameLocator('iframe')";
+      if (id) selector = `#${U.cssEscape(id)}`;
+      else if (name) selector = `[name="${U.cssAttr(name)}"]`;
+      else if (title) selector = `[title="${U.cssAttr(title)}"]`;
+      else if (src) selector = `[src*="${U.cssAttr(src)}"]`;
+      else {
+        const css = DI.css.best(frame);
+        selector = css && css.selector ? css.selector : "iframe";
+      }
+      // Identical frames (same id/title/src) need an nth step to stay unique.
+      let suffix = "";
+      try {
+        const nodes = U.deepQueryAll(selector, U.rootOf(frame));
+        const index = nodes.indexOf(frame);
+        if (nodes.length > 1 && index >= 0) suffix = `.nth(${index})`;
+      } catch (_) { /* leave the frame locator unindexed */ }
+      return `frameLocator(${quote(selector)})${suffix}`;
     });
   };
 
