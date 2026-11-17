@@ -1990,6 +1990,7 @@
       const hit = (probe || []).find((entry) => entry && entry.result && entry.result.matched > 0);
       if (!hit) {
         showResult("No elements matched — nothing to " + kind + ".", "bad");
+        setStatus("No elements matched", "warn");
         return;
       }
       const run = await api.scripting.executeScript({
@@ -2000,10 +2001,12 @@
       const result = run && run[0] ? run[0].result : null;
       if (!result) {
         showResult("The action returned no result.", "bad");
+        setStatus("Action did not run", "bad");
         return;
       }
       if (!result.performed) {
         showResult(result.error || `Matched ${result.matched} element(s), but the action did not run.`, "warn");
+        setStatus("Action did not run", "warn");
         return;
       }
       const labels = { click: "Clicked", hover: "Hovered", type: "Typed into" };
@@ -2013,6 +2016,7 @@
     } catch (error) {
       const message = friendlyError(error);
       showResult("Action failed: " + message, "bad");
+      setStatus("Action failed", "bad");
       toast(message, "bad");
     } finally {
       setActionBusy(false);
