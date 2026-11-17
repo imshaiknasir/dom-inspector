@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "DOM Inspector",
+  "description": "Pick an element and generate verified CSS, XPath, Playwright, Selenium and Cypress locators.",
+  "version": "1.0.0",
+  "minimum_chrome_version": "116",
+  "action": {
+    "default_title": "DOM Inspector"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "side_panel": {
+    "default_path": "src/panel/panel.html"
+  },
+  "devtools_page": "src/devtools/devtools.html",
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle",
+      "js": [
+        "src/content/util.js",
+        "src/content/css.js",
+        "src/content/xpath.js",
+        "src/content/playwright.js",
+        "src/content/formats.js",
+        "src/content/validate.js",
+        "src/content/picker.js"
+      ],
+      "css": ["src/content/overlay.css"]
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": { "default": "Ctrl+Shift+I", "mac": "Command+Shift+I" },
+      "description": "Open DOM Inspector side panel"
+    }
+  }
+}

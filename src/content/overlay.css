@@ -1,0 +1,16 @@
+#di-picker-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid #ff5a1f;
+  background: rgba(255, 90, 31, 0.12);
+  border-radius: 2px;
+  transition: width 40ms linear, height 40ms linear, transform 40ms linear;
+}
+#di-picker-overlay.di-picked {
+  background: rgba(20, 184, 166, 0.16);
+  border-color: #14b8a6;
+}

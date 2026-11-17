@@ -1,0 +1,277 @@
+/* DOM Inspector — Playwright locators with a local counting engine. */
+(() => {
+  const DI = (globalThis.DI = globalThis.DI || {});
+  const U = DI.util;
+
+  const ROLE_MAP = {
+    a: (el) => (el.hasAttribute("href") ? "link" : null),
+    area: (el) => (el.hasAttribute("href") ? "link" : null),
+    article: () => "article",
+    aside: () => "complementary",
+    button: () => "button",
+    caption: () => "caption",
+    dialog: () => "dialog",
+    fieldset: () => "group",
+    figure: () => "figure",
+    footer: () => "contentinfo",
+    form: () => "form",
+    h1: () => "heading", h2: () => "heading", h3: () => "heading",
+    h4: () => "heading", h5: () => "heading", h6: () => "heading",
+    header: () => "banner",
+    hr: () => "separator",
+    img: (el) => (el.getAttribute("alt") === "" ? null : "img"),
+    input: (el) => {
+      const type = (el.getAttribute("type") || "text").toLowerCase();
+      if (["button", "submit", "reset", "image"].includes(type)) return "button";
+      if (type === "checkbox") return "checkbox";
+      if (type === "radio") return "radio";
+      if (type === "range") return "slider";
+      if (type === "number") return "spinbutton";
+      if (type === "search") return "searchbox";
+      return "textbox";
+    },
+    li: () => "listitem",
+    main: () => "main",
+    nav: () => "navigation",
+    ol: () => "list",
+    option: () => "option",
+    progress: () => "progressbar",
+    section: (el) => (el.hasAttribute("aria-label") ? "region" : null),
+    select: (el) => (el.multiple || Number(el.getAttribute("size") || 0) > 1 ? "listbox" : "combobox"),
+    table: () => "table",
+    tbody: () => "rowgroup",
+    td: () => "cell",
+    textarea: () => "textbox",
+    tfoot: () => "rowgroup",
+    th: (el) => ((el.getAttribute("scope") || "").toLowerCase() === "row" ? "rowheader" : "columnheader"),
+    thead: () => "rowgroup",
+    tr: () => "row",
+    ul: () => "list"
+  };
+
+  const implicitRole = (el) => {
+    const explicit = (el.getAttribute("role") || "").split(/\s+/)[0];
+    if (explicit) return explicit;
+    const fn = ROLE_MAP[U.tagOf(el)];
+    return fn ? fn(el) : null;
+  };
+
+  const labelFor = (el) => {
+    const id = el.getAttribute("id");
+    if (id) {
+      const root = el.getRootNode ? el.getRootNode() : document;
+      const label = root.querySelector(`label[for="${id.replace(/"/g, '\\"')}"]`);
+      if (label) return U.normalizeText(label.textContent);
+    }
+    const wrapping = el.closest("label");
+    return wrapping ? U.normalizeText(wrapping.textContent) : "";
+  };
+
+  const accessibleName = (el) => {
+    const aria = U.attr(el, "aria-label");
+    if (aria) return aria;
+    const labelledBy = U.attr(el, "aria-labelledby");
+    if (labelledBy) {
+      const root = el.getRootNode ? el.getRootNode() : document;
+      const text = labelledBy.split(/\s+/).map((id) => {
+        const node = root.getElementById ? root.getElementById(id) : document.getElementById(id);
+        return node ? U.normalizeText(node.textContent) : "";
+      }).join(" ").trim();
+      if (text) return text;
+    }
+    const fromLabel = labelFor(el);
+    if (fromLabel) return fromLabel;
+    if (U.attr(el, "alt")) return U.attr(el, "alt");
+    if (["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th"].includes(U.tagOf(el))) {
+      return U.normalizeText(el.textContent);
+    }
+    return U.attr(el, "placeholder") || U.attr(el, "title") || "";
+  };
+
+  const textMatches = (el, value, exact) => {
+    const own = U.normalizeText(el.textContent);
+    if (!own) return false;
+    if (exact ? own !== value : !own.includes(value)) return false;
+    for (const child of el.children) {
+      const childText = U.normalizeText(child.textContent);
+      if (childText && (exact ? childText === value : childText.includes(value))) return false;
+    }
+    return true;
+  };
+
+  const allElements = (root) => U.deepEveryElement(root, []);
+
+  const countRole = (role, name, exact, root) => allElements(root).filter((el) => {
+    if (implicitRole(el) !== role) return false;
+    if (!name) return true;
+    const actual = U.normalizeText(accessibleName(el));
+    return exact ? actual === name : actual.includes(name);
+  }).length;
+
+  const countLabel = (value, exact, root) => {
+    const seen = new Set();
+    const add = (el) => { if (el) seen.add(el); };
+    for (const el of allElements(root)) {
+      if (U.tagOf(el) === "label") {
+        const text = U.normalizeText(el.textContent);
+        if (exact ? text === value : text.includes(value)) {
+          const id = el.getAttribute("for");
+          if (id) add((el.getRootNode ? el.getRootNode() : document).getElementById(id));
+          else add(el.querySelector("input, select, textarea"));
+        }
+      }
+      const aria = U.attr(el, "aria-label");
+      if (aria && (exact ? aria === value : aria.includes(value))) add(el);
+    }
+    return seen.size;
+  };
+
+  const countText = (value, exact, root) => allElements(root).filter((el) => textMatches(el, value, exact)).length;
+
+  const countAttr = (name, value, root) => U.deepQueryAll(`[${name}="${String(value).replace(/"/g, '\\"')}"]`, root).length;
+
+  const countExpr = (expr, root = document) => {
+    if (/getByRole\(/.test(expr)) {
+      const role = expr.match(/getByRole\(\s*['"]([^'"]+)['"]/);
+      const name = expr.match(/name:\s*['"]([^'"]+)['"]/);
+      const exact = /exact:\s*true/.test(expr);
+      return role ? countRole(role[1], name ? name[1] : "", exact, root) : 0;
+    }
+    if (/getByLabel\(/.test(expr)) {
+      const m = expr.match(/getByLabel\(\s*['"]([^'"]+)['"]/);
+      return m ? countLabel(m[1], /exact:\s*true/.test(expr), root) : 0;
+    }
+    if (/getByText\(/.test(expr)) {
+      const m = expr.match(/getByText\(\s*['"]([^'"]+)['"]/);
+      return m ? countText(m[1], /exact:\s*true/.test(expr), root) : 0;
+    }
+    if (/getByPlaceholder\(/.test(expr)) {
+      const m = expr.match(/getByPlaceholder\(\s*['"]([^'"]+)['"]/);
+      return m ? countAttr("placeholder", m[1], root) : 0;
+    }
+    if (/getByAltText\(/.test(expr)) {
+      const m = expr.match(/getByAltText\(\s*['"]([^'"]+)['"]/);
+      return m ? countAttr("alt", m[1], root) : 0;
+    }
+    if (/getByTitle\(/.test(expr)) {
+      const m = expr.match(/getByTitle\(\s*['"]([^'"]+)['"]/);
+      return m ? countAttr("title", m[1], root) : 0;
+    }
+    if (/getByTestId\(/.test(expr)) {
+      const m = expr.match(/getByTestId\(\s*['"]([^'"]+)['"]/);
+      if (!m) return 0;
+      return ["data-testid", "data-test-id", "data-test", "data-cy"]
+        .reduce((sum, name) => sum + countAttr(name, m[1], root), 0);
+    }
+    const css = expr.match(/locator\(\s*['"]([^'"]+)['"]\s*\)/);
+    if (css && !css[1].startsWith("/") && !css[1].startsWith("(")) {
+      try { return U.deepQueryAll(css[1], root).length; } catch (_) { return 0; }
+    }
+    const xp = expr.match(/locator\(\s*`([^`]+)`\s*\)/) || expr.match(/locator\(\s*['"](\/\/[^'"]+)['"]\s*\)/);
+    if (xp) return DI.xpath.count(xp[1], root);
+    return 0;
+  };
+
+  const framePrefix = (win = window) => {
+    const frames = U.iframeChain(win);
+    return frames.map((frame) => {
+      const id = U.attr(frame, "id");
+      if (id) return `frameLocator('#${U.cssEscape(id)}')`;
+      const name = U.attr(frame, "name");
+      if (name) return `frameLocator('[name="${name.replace(/"/g, '\\"')}"]')`;
+      const title = U.attr(frame, "title");
+      if (title) return `frameLocator('[title="${title.replace(/"/g, '\\"')}"]')`;
+      const src = (U.attr(frame, "src").split("?")[0].split("/").pop() || "");
+      return src ? `frameLocator('[src*="${src.replace(/"/g, '\\"')}"]')` : "frameLocator('iframe')";
+    });
+  };
+
+  const quote = (value) => `'${String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ")}'`;
+
+  const generate = (el) => {
+    const out = [];
+    const prefix = framePrefix();
+    const base = prefix.length ? `page.${prefix.join(".")}` : "page";
+    const root = el.getRootNode ? el.getRootNode() : document;
+    const add = (method, code, count, score, type) => {
+      if (!code || count <= 0) return;
+      out.push({ type: type || method, selector: code, count, score });
+    };
+    const testId = U.attr(el, "data-testid");
+    if (testId) add("getByTestId", `${base}.getByTestId(${quote(testId)})`, countAttr("data-testid", testId, root), 1);
+
+    for (const name of ["data-test-id", "data-test", "data-cy"]) {
+      const value = U.attr(el, name);
+      if (value) add("locator", `${base}.locator('[${name}="${value.replace(/"/g, '\\"')}"]')`, countAttr(name, value, root), 3);
+    }
+
+    const role = implicitRole(el);
+    const name = U.normalizeText(accessibleName(el));
+    if (role) {
+      if (name && name.length <= 80) {
+        add("getByRole", `${base}.getByRole(${quote(role)}, { name: ${quote(name)}, exact: true })`, countRole(role, name, true, root), 2);
+        add("getByRole", `${base}.getByRole(${quote(role)}, { name: ${quote(name)} })`, countRole(role, name, false, root), 4);
+      }
+      add("getByRole", `${base}.getByRole(${quote(role)})`, countRole(role, "", false, root), 30);
+    }
+
+    const label = labelFor(el) || U.attr(el, "aria-label");
+    if (label && label.length <= 80) {
+      add("getByLabel", `${base}.getByLabel(${quote(label)}, { exact: true })`, countLabel(label, true, root), 5);
+      add("getByLabel", `${base}.getByLabel(${quote(label)})`, countLabel(label, false, root), 6);
+    }
+    const placeholder = U.attr(el, "placeholder");
+    if (placeholder && placeholder.length <= 80) {
+      add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)}, { exact: true })`, countAttr("placeholder", placeholder, root), 7);
+      add("getByPlaceholder", `${base}.getByPlaceholder(${quote(placeholder)})`, countAttr("placeholder", placeholder, root), 8);
+    }
+    const text = U.normalizeText(el.textContent);
+    if (text && text.length <= 80) {
+      add("getByText", `${base}.getByText(${quote(text)}, { exact: true })`, countText(text, true, root), 9);
+      add("getByText", `${base}.getByText(${quote(text)})`, countText(text, false, root), 10);
+      add("locator", `${base}.locator('${U.tagOf(el)}:has-text("${text.replace(/"/g, '\\"')}")')`, countText(text, false, root), 22);
+    }
+    const alt = U.attr(el, "alt");
+    if (alt) add("getByAltText", `${base}.getByAltText(${quote(alt)})`, countAttr("alt", alt, root), 12);
+    const title = U.attr(el, "title");
+    if (title) add("getByTitle", `${base}.getByTitle(${quote(title)})`, countAttr("title", title, root), 14);
+
+    const css = DI.css.best(el);
+    if (css) {
+      add("locator", `${base}.locator(${quote(css.selector)})`, css.count, 38);
+      if (css.count === 1) add("locator", `${base}.locator(${quote(css.selector + ":visible")})`, css.count, 40);
+    }
+    const xp = DI.xpath.best(el);
+    if (xp) add("locator", `${base}.locator(\`${xp.xpath}\`)`, xp.count, 48);
+
+    return out
+      .filter((item, index, arr) => arr.findIndex((other) => other.selector === item.selector) === index)
+      .sort((a, b) => (a.count === 1 ? 0 : 1) - (b.count === 1 ? 0 : 1) || a.score - b.score || a.count - b.count);
+  };
+
+  const best = (el) => generate(el).find((c) => c.count === 1) || generate(el)[0] || null;
+
+  /* Minimal language formatters for the generated JavaScript locator. */
+  const toPython = (code) => {
+    const map = { getByRole: "get_by_role", getByText: "get_by_text", getByLabel: "get_by_label", getByPlaceholder: "get_by_placeholder", getByAltText: "get_by_alt_text", getByTitle: "get_by_title", getByTestId: "get_by_test_id" };
+    return code.replace(/page/g, "page")
+      .replace(/([a-zA-Z]+)\(/g, (m, name) => (map[name] ? `${map[name]}(` : m))
+      .replace(/name: '/g, "name='").replace(/' \}/g, "'}")
+      .replace(/exact: true/g, "exact=True").replace(/exact: false/g, "exact=False")
+      .replace(/`(.*?)`/g, '"$1"').replace(/'/g, '"');
+  };
+  const toJava = (code) => code
+    .replace(/page/g, "page")
+    .replace(/getByRole\('([^']+)', \{ name: '([^']+)' \}\)/g, "getByRole(AriaRole.$1, new Page.GetByRoleOptions().setName(\"$2\"))")
+    .replace(/getByRole\('([^']+)'\)/g, "getByRole(AriaRole.$1)")
+    .replace(/getBy(Text|Label|Placeholder|AltText|Title|TestId)\('([^']+)'\)/g, "getBy$1(\"$2\")")
+    .replace(/locator\('([^']+)'\)/g, "locator(\"$1\")");
+  const toCSharp = (code) => code
+    .replace(/getByRole\('([^']+)', \{ name: '([^']+)' \}\)/g, "GetByRole(AriaRole.$1, new Page.GetByRoleOptions { Name = \"$2\" })")
+    .replace(/getByRole\('([^']+)'\)/g, "GetByRole(AriaRole.$1)")
+    .replace(/getBy(Text|Label|Placeholder|AltText|Title|TestId)\('([^']+)'\)/g, "GetBy$1(\"$2\")")
+    .replace(/locator\('([^']+)'\)/g, "Locator(\"$1\")")
+    .replace(/^page/, "Page");
+
+  DI.playwright = { implicitRole, accessibleName, countExpr, generate, best, framePrefix, toPython, toJava, toCSharp };
+})();

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DOM Inspector</title>
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <header class="di-header">
+      <div>
+        <h1>DOM Inspector</h1>
+        <p class="di-sub" id="di-status">Open a page, then start picking.</p>
+      </div>
+      <div class="di-actions">
+        <button id="di-pick" class="primary" type="button">Pick element</button>
+        <button id="di-stop" type="button">Stop</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="card" id="di-info-card" hidden>
+        <h2>Selected element</h2>
+        <div id="di-info" class="kv"></div>
+        <div id="di-context" class="context"></div>
+      </section>
+
+      <section class="card" id="di-css-card" hidden>
+        <h2>CSS</h2>
+        <div id="di-css" class="rows"></div>
+      </section>
+
+      <section class="card" id="di-xpath-card" hidden>
+        <h2>XPath</h2>
+        <div id="di-xpath" class="rows"></div>
+      </section>
+
+      <section class="card" id="di-pw-card" hidden>
+        <div class="card-head">
+          <h2>Playwright</h2>
+          <select id="di-lang" aria-label="Playwright language">
+            <option value="js">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="csharp">C#</option>
+          </select>
+        </div>
+        <div id="di-pw" class="rows"></div>
+      </section>
+
+      <section class="card" id="di-selenium-card" hidden>
+        <h2>Selenium / Cypress / JS</h2>
+        <div id="di-selenium" class="rows"></div>
+        <div id="di-formats" class="rows"></div>
+      </section>
+
+      <section class="card">
+        <h2>Validate a locator</h2>
+        <div class="validator">
+          <select id="di-type" aria-label="Locator type">
+            <option value="auto">Auto</option>
+            <option value="css">CSS</option>
+            <option value="xpath">XPath</option>
+            <option value="playwright">Playwright</option>
+          </select>
+          <input id="di-input" type="text" spellcheck="false" placeholder="Paste CSS, XPath or page.getBy…" />
+          <button id="di-test" type="button">Test &amp; highlight</button>
+          <button id="di-clear" type="button">Clear</button>
+        </div>
+        <p id="di-result" class="result" role="status">No locator tested yet.</p>
+      </section>
+    </main>
+
+    <footer class="di-footer">
+      <span>CSS · XPath · Playwright · Selenium · Cypress</span>
+      <a href="https://github.com/" id="di-help" target="_blank" rel="noreferrer" hidden>Help</a>
+    </footer>
+
+    <script src="panel.js"></script>
+  </body>
+</html>
