@@ -1205,8 +1205,9 @@
     let many = 0;
     let broken = 0;
     let skipped = 0;
+    const list = state.saved;
     try {
-      for (const entry of state.saved) {
+      for (const entry of list) {
         const target = savedTestTarget(entry);
         if (!target) {
           entry.count = null;
@@ -1228,12 +1229,23 @@
         else broken += 1;
         renderSaved();
       }
-      persistSaved();
+      if (state.saved === list) {
+        persistSaved();
+      } else {
+        const current = new Map(state.saved.map((entry) => [entry.id, entry]));
+        for (const entry of list) {
+          const live = current.get(entry.id);
+          if (!live) continue;
+          live.count = entry.count;
+          live.error = entry.error;
+        }
+        persistSaved();
+      }
       const notes = [`${unique} unique`];
       if (many) notes.push(`${many} not unique`);
       if (broken) notes.push(`${broken} broken`);
       if (skipped) notes.push(`${skipped} not testable`);
-      const message = `Checked ${state.saved.length} saved locator${state.saved.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
+      const message = `Checked ${list.length} saved locator${list.length === 1 ? "" : "s"} · ${notes.join(" · ")}`;
       toast(message, broken ? "bad" : "ok");
       setStatus(message, broken || many ? "warn" : "ok");
     } finally {
@@ -1280,7 +1292,11 @@
       }
       const note = [entry.testType, typeof entry.count === "number" ? entry.count + " match" + (entry.count === 1 ? "" : "es") : ""]
         .filter(Boolean).join(" · ");
-      methods.push(`  /** ${entry.name || entry.type}${note ? " — " + note : ""} */\n  ${name}() {\n    return ${expression};\n  }`);
+      const label = String(entry.name || entry.type || "locator")
+        .replace(/\*\//g, "* /")
+        .replace(/[\r\n\u2028\u2029]+/g, " ")
+        .trim() || "locator";
+      methods.push(`  /** ${label}${note ? " — " + note : ""} */\n  ${name}() {\n    return ${expression};\n  }`);
     }
     const header = [
       "/**",
