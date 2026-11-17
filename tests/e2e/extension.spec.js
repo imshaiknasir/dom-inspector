@@ -946,6 +946,24 @@ test('panel action runner types, reports success and handles no matches', async 
   await expect(extensionPage.locator('#di-result')).toContainText('No elements matched');
   await expect(extensionPage.locator('#di-status')).toContainText('No elements matched');
 
+  const frame = fixturePage.frames().find((candidate) => candidate !== fixturePage.mainFrame() && candidate.url() !== 'about:blank');
+  await frame.waitForSelector('#inner');
+  await frame.evaluate(() => {
+    window.__diClicked = 0;
+    document.getElementById('inner').addEventListener('click', () => { window.__diClicked += 1; });
+  });
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-input');
+    input.value = "page.frameLocator('#frame').getByTestId('inner-btn')";
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const type = document.getElementById('di-type');
+    type.value = 'auto';
+    type.dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('di-click').click();
+  });
+  await expect.poll(() => frame.evaluate(() => window.__diClicked), { timeout: 8000 }).toBe(1);
+  await expect(extensionPage.locator('#di-result')).toContainText('Clicked <button>');
+
   await extensionPage.evaluate(() => {
     const input = document.getElementById('di-input');
     input.value = '';
