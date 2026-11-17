@@ -209,7 +209,7 @@ test('toolbar popup renders the last picked locators', async () => {
     playwright: [{ selector: "page.getByText('Read the docs')", count: 1, type: 'getByText' }]
   };
   await popup.evaluate((value) => chrome.storage.session.set({ 'di:lastPick': value }), linkPayload);
-  await popup.locator('#pop-refresh').click();
+  await popup.keyboard.press('r');
   await expect(popup.locator('#pop-status')).toContainText('Last pick: a#link');
   await expect(popup.locator('#pop-last-rows')).toContainText('#link');
 
@@ -220,7 +220,7 @@ test('toolbar popup renders the last picked locators', async () => {
   await popup.reload();
   await expect(popup.locator('#pop-empty')).toBeVisible();
   await expect(popup.locator('#pop-status')).toContainText('Pick an element');
-  await popup.locator('#pop-last-copy').click();
+  await popup.locator('body').press('c');
   await expect(popup.locator('#pop-status')).toContainText('No locators to copy');
   await popup.close();
 });

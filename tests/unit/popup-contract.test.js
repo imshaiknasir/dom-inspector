@@ -25,6 +25,9 @@ test('popup: markup has the expected actions and no duplicate ids', () => {
   for (const id of ['pop-pick', 'pop-open', 'pop-heal', 'pop-refresh', 'pop-last-rows']) {
     assert.match(html, new RegExp(`id="${id}"`), 'missing ' + id);
   }
+  for (const key of ['P', 'O', 'H', 'R', 'C']) {
+    assert.match(html, new RegExp(`aria-keyshortcuts="${key}"`), 'missing shortcut ' + key);
+  }
   const all = [...html.matchAll(/id="([^"]+)"/g)].map((match) => match[1]);
   const duplicates = all.filter((id, index) => all.indexOf(id) !== index);
   assert.deepEqual([...new Set(duplicates)], []);
