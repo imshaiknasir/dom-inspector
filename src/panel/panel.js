@@ -1146,6 +1146,47 @@
     }
   };
 
+  const fixInput = async () => {
+    const input = $("di-input");
+    const value = input.value.trim();
+    if (!value) {
+      showResult("Enter a locator to fix first.", "bad");
+      input.focus();
+      return;
+    }
+    const button = $("di-fix");
+    button.disabled = true;
+    showResult("Finding a stable fix…");
+    setStatus("Repairing locator…");
+    try {
+      const response = await sendToTab({ type: "DI_FIX", value });
+      if (!response || !response.ok || !response.fixed) {
+        const message = response && response.error ? response.error : "No matching element found";
+        showResult("Could not fix: " + message, "bad");
+        setStatus("Fix failed", "bad");
+        return;
+      }
+      input.value = response.fixed;
+      const type = response.type || detectType(response.fixed);
+      $("di-type").value = ["css", "xpath", "playwright"].includes(type) ? type : "auto";
+      const label = String(type).toUpperCase();
+      if (response.repaired === false) {
+        showResult(`Already valid ${label}: ${response.fixed}`, "ok");
+        setStatus("Locator is already valid", "ok");
+      } else {
+        showResult(`Fixed ${label}: ${response.fixed}`, "ok");
+        setStatus("Fixed locator", "ok");
+      }
+      await testInput();
+    } catch (error) {
+      const message = friendlyError(error);
+      showResult("Fix failed: " + message, "bad");
+      setStatus("Fix failed", "bad");
+    } finally {
+      button.disabled = false;
+    }
+  };
+
   /* ---------------------------------------------------------------- */
   /* Page actions                                                     */
   /* ---------------------------------------------------------------- */
@@ -1822,6 +1863,7 @@
     });
     $("di-type").addEventListener("change", scheduleLiveTest);
     $("di-test").addEventListener("click", testInput);
+    $("di-fix").addEventListener("click", fixInput);
     $("di-clear").addEventListener("click", () => {
       state.liveSeq += 1;
       $("di-input").value = "";
