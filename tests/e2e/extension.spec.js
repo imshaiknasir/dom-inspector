@@ -1346,6 +1346,9 @@ test('panel healing exports a JSON report and clears the rows', async () => {
   expect(csvText).toContain('"fixed"');
   expect(csvText).toContain('"#save"');
 
+  await extensionPage.evaluate(() => document.getElementById('di-heal-copy').click());
+  await expect(extensionPage.locator('#di-toast')).toContainText('Copied healing report');
+
   await extensionPage.evaluate(() => document.getElementById('di-heal-clear').click());
   await expect.poll(() => extensionPage.evaluate(() =>
     document.querySelectorAll('#di-heal-results .heal-row').length
