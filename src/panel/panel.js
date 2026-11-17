@@ -49,7 +49,9 @@
     test: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/><path d="M8 10.5h5M10.5 8v5"/></svg>',
     edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5 4 20Z"/><path d="m13 6 5 5"/></svg>',
     star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/></svg>',
-    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg>'
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 6-6 6 6"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 10 6 6 6-6"/></svg>'
   };
 
   const state = {
@@ -692,7 +694,7 @@
       state.saved.splice(index, 1);
       toast("Removed from saved locators");
     } else {
-      state.saved.push({
+      state.saved.unshift({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         key: row.key,
         name: suggestedName(row),
@@ -970,6 +972,19 @@
     saved: state.saved
   });
 
+  const moveSaved = (entry, delta) => {
+    const index = state.saved.findIndex((item) => item.id === entry.id);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= state.saved.length) return;
+    const next = state.saved.slice();
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    state.saved = next;
+    persistSaved();
+    renderSaved();
+    refreshSaveButtons();
+  };
+
   const renderSaved = () => {
     const list = $("di-saved");
     const meta = $("di-saved-meta");
@@ -978,8 +993,9 @@
     meta.textContent = String(state.saved.length);
     empty.hidden = state.saved.length > 0;
 
-    const entries = state.saved.slice().sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
-    for (const entry of entries) {
+    const entries = state.saved;
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index];
       const row = el("div", "loc-row saved-row");
       const main = el("div", "loc-main");
 
@@ -1026,6 +1042,12 @@
         })));
       }
       actions.appendChild(iconButton("copy", "Copy locator", () => copyText(entry.value, "Copied saved locator")));
+      const up = iconButton("up", "Move up", () => moveSaved(entry, -1));
+      up.disabled = index === 0;
+      actions.appendChild(up);
+      const down = iconButton("down", "Move down", () => moveSaved(entry, 1));
+      down.disabled = index === entries.length - 1;
+      actions.appendChild(down);
       actions.appendChild(iconButton("trash", "Delete saved locator", () => {
         state.saved = state.saved.filter((item) => item.id !== entry.id);
         persistSaved();
