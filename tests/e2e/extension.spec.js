@@ -514,6 +514,11 @@ test('panel filters rows and exports picked locators as JSON', async () => {
   await expect(extensionPage.locator('#di-filter')).toHaveValue('');
   await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
 
+  await extensionPage.evaluate(() => document.getElementById('di-info-copy').click());
+  await expect(extensionPage.locator('#di-toast')).toContainText('Copied element summary');
+  await extensionPage.evaluate(() => document.getElementById('di-css-copy').click());
+  await expect(extensionPage.locator('#di-toast')).toContainText('Copied CSS locators');
+
   const downloadPromise = extensionPage.waitForEvent('download');
   await extensionPage.evaluate(() => document.getElementById('di-export').click());
   const download = await downloadPromise;
