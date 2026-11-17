@@ -1630,7 +1630,7 @@
     state.savedBusy = true;
     renderSaved();
     try {
-      const text = await file.text();
+      const text = (await file.text()).replace(/^\uFEFF/, "");
       const isCsv = /\.csv$/i.test(file.name || "") || (!/^\s*[\[{]/.test(text) && text.includes(","));
       if (isCsv) importSavedCsvText(text);
       else {
@@ -1662,7 +1662,11 @@
     toast(ok ? "Saved locators exported" : "Download failed", ok ? "ok" : "bad");
   };
 
-  const csvCell = (value) => '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"';
+  const csvCell = (value) => {
+    let text = String(value == null ? "" : value);
+    if (/^[=+\-@]/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  };
 
   const exportSavedCsv = () => {
     if (!state.saved.length) return toast("No saved locators yet", "bad");
