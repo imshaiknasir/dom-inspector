@@ -503,3 +503,16 @@ test('playwright: exact text matching normalises whitespace', async () => {
   const out = await page.evaluate(() => DI.playwright.countExpr("page.getByText('  Save   changes ', { exact: true })"));
   assert.equal(out, 1);
 });
+
+test('formats: testRigor uses alt text for images', async () => {
+  const out = await page.evaluate(() => {
+    const img = document.createElement('img');
+    img.id = 'logo-img';
+    img.setAttribute('alt', 'Company logo');
+    document.body.appendChild(img);
+    const value = DI.formats.testRigorPath(img);
+    img.remove();
+    return value;
+  });
+  assert.equal(out, '"Company logo"');
+});

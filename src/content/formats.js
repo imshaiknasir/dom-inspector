@@ -38,7 +38,7 @@
   };
 
   const testRigorPath = (el) => {
-    let label = U.attr(el, "aria-label");
+    let label = U.attr(el, "aria-label") || U.attr(el, "alt");
     const tag = U.tagOf(el);
     if (!label && ["input", "select", "textarea"].includes(tag)) {
       const id = U.attr(el, "id");
