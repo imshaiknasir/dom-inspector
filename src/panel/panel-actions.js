@@ -420,6 +420,8 @@
             try { namePattern = new RegExp(nameRegex[1], nameRegex[2] || ""); } catch (_) { namePattern = null; invalidPattern = true; }
           } else if (nameString) {
             nameValue = unescapeValue(nameString[2]);
+          } else if (/name\s*:/.test(rest)) {
+            invalidPattern = true;
           }
 
           const all = allElements();
