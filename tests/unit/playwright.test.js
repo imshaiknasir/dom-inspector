@@ -434,3 +434,32 @@ test('playwright: frameLocator falls back to the frame name', async () => {
     await local.close();
   }
 });
+
+test('playwright: exact attribute matching preserves whitespace', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <div id="padded" data-testid=" padded value ">Padded</div>
+      <input id="ph" placeholder=" padded placeholder ">
+      <img id="alt" alt=" padded alt ">
+      <button id="title" title=" padded title ">B</button>
+    </body></html>`);
+    await injectGenerators(local);
+    const out = await local.evaluate(() => ({
+      testIdExact: DI.playwright.countExpr("page.getByTestId(' padded value ')"),
+      testIdTrimmed: DI.playwright.countExpr("page.getByTestId('padded value')"),
+      placeholderExact: DI.playwright.countExpr("page.getByPlaceholder(' padded placeholder ', { exact: true })"),
+      placeholderLoose: DI.playwright.countExpr("page.getByPlaceholder('padded placeholder')"),
+      altExact: DI.playwright.countExpr("page.getByAltText(' padded alt ', { exact: true })"),
+      titleExact: DI.playwright.countExpr("page.getByTitle(' padded title ', { exact: true })"),
+      validated: DI.validate.test('playwright', "page.getByTestId(' padded value ')").count
+    }));
+    assert.deepEqual(out, {
+      testIdExact: 1, testIdTrimmed: 0,
+      placeholderExact: 1, placeholderLoose: 1,
+      altExact: 1, titleExact: 1, validated: 1
+    });
+  } finally {
+    await local.close();
+  }
+});

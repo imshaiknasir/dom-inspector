@@ -210,3 +210,12 @@ test('formats: shadow Selenium snippet enters each shadow root', async () => {
   assert.match(out.code, /#host/);
   assert.match(out.code, /findElement\(By\.cssSelector/);
 });
+
+test('formats: name values keep their declared whitespace', async () => {
+  const out = await escaping.evaluate(() => {
+    const el = document.getElementById('paddedname');
+    return DI.formats.generate(el).find((row) => row.type === 'name');
+  });
+  assert.equal(out.value, ' padded name ');
+  assert.equal(out.count, 1);
+});

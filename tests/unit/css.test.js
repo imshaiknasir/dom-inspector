@@ -222,3 +222,24 @@ test('css: control whitespace in attribute values stays escaped', async () => {
   assert.equal(attributeRows.length, 3);
   for (const row of attributeRows) assert.equal(row.resolves, true, row.selector);
 });
+
+test('css: attribute selectors preserve declared whitespace', async () => {
+  const out = await escaping.evaluate(() => {
+    const el = document.getElementById('paddedattr');
+    return DI.css.candidates(el)
+      .filter((candidate) => candidate.strategy === 'attr:data-testid')
+      .map((candidate) => ({
+        selector: candidate.selector,
+        count: candidate.count,
+        resolves: (() => {
+          try { return document.querySelector(candidate.selector) === el; } catch (_) { return false; }
+        })()
+      }));
+  });
+  assert.ok(out.length > 0);
+  for (const row of out) {
+    assert.ok(row.selector.includes(' padded value '), row.selector);
+    assert.equal(row.count, 1, row.selector);
+    assert.equal(row.resolves, true, row.selector);
+  }
+});
