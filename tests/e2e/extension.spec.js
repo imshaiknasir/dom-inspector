@@ -1770,6 +1770,7 @@ test('panel healing exports a JSON report and clears the rows', async () => {
     document.querySelectorAll('#di-heal-results .heal-row').length
   ), { timeout: 5000 }).toBe(0);
   await expect(extensionPage.locator('#di-heal-empty')).toBeVisible();
+  await expect(extensionPage.locator('#di-status')).toContainText('Healing results cleared.');
 });
 
 test('panel persists language and picking toggles across reload', async () => {
