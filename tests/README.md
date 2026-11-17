@@ -25,6 +25,8 @@ and a user-data directory.
 - `fixtures/aria.html` — labels, roles, table headers, media and form controls.
 - `helpers/harness.js` — launches Chromium once per unit file, loads a fixture,
   and injects the generators in manifest order.
+- `extras.test.js` — stability scores, Cypress shadow chains, regex roles,
+  frameLocator/frame fallbacks and Playwright modifiers.
 - `unit/` — CSS, XPath, Playwright, Selenium/Cypress/JS, validation, utilities,
   manifest and panel-contract checks. Every generated count is resolved against
   the live DOM.

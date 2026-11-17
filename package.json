@@ -5,7 +5,7 @@
   "description": "Clean-room MV3 element locator inspector",
   "scripts": {
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "node --test --test-concurrency=1 tests/unit/*.test.js",
+    "test:unit": "node --test --test-concurrency=1 tests/*.test.js tests/unit/*.test.js",
     "test:e2e": "playwright test",
     "install:browsers": "playwright install chromium"
   },
