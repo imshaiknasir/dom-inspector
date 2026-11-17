@@ -305,6 +305,8 @@
       setStatus("Last pick: " + (element.tag || "element") + (element.id ? "#" + element.id : ""), "ok");
     } else if (state.saved.length) {
       setStatus(state.saved.length + " saved locator" + (state.saved.length === 1 ? "" : "s"));
+    } else if (state.history.length) {
+      setStatus(state.history.length + " recent pick" + (state.history.length === 1 ? "" : "s"));
     } else {
       setStatus("Pick an element to see its best locators.");
     }
