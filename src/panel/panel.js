@@ -1405,19 +1405,20 @@
   };
 
   const pomSource = () => {
-    const entries = state.saved.filter((entry) => entry.testType && entry.testValue);
+    const entries = state.saved.map((entry) => ({ entry, target: savedTestTarget(entry) }))
+      .filter((item) => item.target);
     const used = new Set();
     const methods = [];
-    for (const entry of entries) {
+    for (const { entry, target } of entries) {
       const name = pomMethodName(entry, used);
       let expression;
-      if (entry.testType === "playwright") {
-        const raw = String(entry.testValue).replace(/^page\./, "");
+      if (target.type === "playwright") {
+        const raw = String(target.value).replace(/^page\./, "");
         expression = "this.page." + raw;
       } else {
-        expression = "this.page.locator(" + JSON.stringify(String(entry.testValue)) + ")";
+        expression = "this.page.locator(" + JSON.stringify(String(target.value)) + ")";
       }
-      const note = [entry.testType, typeof entry.count === "number" ? entry.count + " match" + (entry.count === 1 ? "" : "es") : ""]
+      const note = [target.type, typeof entry.count === "number" ? entry.count + " match" + (entry.count === 1 ? "" : "es") : ""]
         .filter(Boolean).join(" · ");
       const label = String(entry.name || entry.type || "locator")
         .replace(/\*\//g, "* /")
@@ -1567,7 +1568,7 @@
   };
 
   const exportSavedPom = () => {
-    const entries = state.saved.filter((entry) => entry.testType && entry.testValue);
+    const entries = state.saved.filter((entry) => savedTestTarget(entry));
     if (!entries.length) return toast("Save a testable locator first", "bad");
     const ok = download(`dom-inspector-page-locators-${stamp()}.js`, "text/javascript", pomSource());
     toast(ok ? "POM snippet exported" : "Download failed", ok ? "ok" : "bad");
