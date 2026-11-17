@@ -241,6 +241,45 @@ test('toolbar popup renders the last picked locators', async () => {
   await popup.close();
 });
 
+test('popup history expands past four rows and collapses again', async () => {
+  const popup = await context.newPage();
+  collectErrors(popup, 'popup', errors);
+  await popup.goto(`chrome-extension://${extensionId}/src/popup/popup.html`);
+
+  const history = Array.from({ length: 6 }, (_, index) => ({
+    at: 600 - index,
+    url: `https://example.test/page-${index}`,
+    css: `#recent-${index}`,
+    cssCount: 1,
+    element: { tag: 'button', id: `recent-${index}` }
+  }));
+  await popup.evaluate(async (entries) => {
+    await chrome.storage.session.remove('di:lastPick');
+    await chrome.storage.session.remove('di:panel:saved');
+    await chrome.storage.local.set({ 'di:panel:history': entries });
+  }, history);
+  await popup.reload();
+
+  await expect(popup.locator('#pop-history-card')).toBeVisible();
+  await expect(popup.locator('#pop-history-rows .loc-row')).toHaveCount(4);
+  await expect(popup.locator('#pop-history-more')).toBeVisible();
+  await expect(popup.locator('#pop-history-more')).toHaveText('Show all (6)');
+  await expect(popup.locator('#pop-history-more')).toHaveAttribute('aria-expanded', 'false');
+
+  await popup.locator('#pop-history-more').click();
+  await expect(popup.locator('#pop-history-rows .loc-row')).toHaveCount(6);
+  await expect(popup.locator('#pop-history-more')).toHaveText('Show less');
+  await expect(popup.locator('#pop-history-more')).toHaveAttribute('aria-expanded', 'true');
+  await expect(popup.locator('#pop-history-rows')).toContainText('#recent-5');
+
+  await popup.locator('#pop-history-more').click();
+  await expect(popup.locator('#pop-history-rows .loc-row')).toHaveCount(4);
+  await expect(popup.locator('#pop-history-more')).toHaveAttribute('aria-expanded', 'false');
+
+  await popup.evaluate(() => chrome.storage.local.remove('di:panel:history'));
+  await popup.close();
+});
+
 test('content script answers the picker bridge', async () => {
   const ping = await waitFor(async () => {
     const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
