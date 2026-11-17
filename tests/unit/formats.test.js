@@ -100,3 +100,20 @@ test('formats: linkText count matches the number of identical anchors', async ()
   assert.equal(link.value, 'Docs');
   assert.equal(link.count, 2);
 });
+
+test('formats: generated JS snippet is executable for ids needing CSS escapes', async () => {
+  const out = await page.evaluate(() => {
+    // Reuse the escaping fixture page through an iframe-free inline clone.
+    const el = document.createElement('div');
+    el.id = "a'b";
+    el.textContent = 'apostrophe';
+    document.body.appendChild(el);
+    const snippet = DI.formats.formats(el).find((row) => row.type === 'js');
+    const found = eval(snippet.code);
+    const result = found === el;
+    el.remove();
+    return { snippet, result };
+  });
+  assert.ok(out.snippet.code.startsWith('document.querySelector('));
+  assert.equal(out.result, true);
+});

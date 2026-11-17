@@ -167,3 +167,42 @@ test('playwright: Java and C# keep the exact option', async () => {
   assert.ok(out.java.includes('setExact(true)'), out.java);
   assert.ok(out.cs.includes('Exact = true'), out.cs);
 });
+
+test('playwright: implicit roles cover form, text, heading and list controls', async () => {
+  const out = await aria.evaluate(() => {
+    const role = (id) => DI.playwright.implicitRole(document.getElementById(id));
+    return {
+      checkbox: role('check'),
+      radio: role('radio'),
+      range: role('range'),
+      submit: role('submit'),
+      textarea: role('notes'),
+      heading: role('heading'),
+      nav: role('nav'),
+      list: role('list'),
+      item: role('item'),
+      dialog: role('dialog')
+    };
+  });
+  assert.deepEqual(out, {
+    checkbox: 'checkbox',
+    radio: 'radio',
+    range: 'slider',
+    submit: 'button',
+    textarea: 'textbox',
+    heading: 'heading',
+    nav: 'navigation',
+    list: 'list',
+    item: 'listitem',
+    dialog: 'dialog'
+  });
+});
+
+test('playwright: accessible names prefer aria-labelledby and aria-label', async () => {
+  const out = await aria.evaluate(() => ({
+    dialog: DI.playwright.accessibleName(document.getElementById('dialog')),
+    navlink: DI.playwright.accessibleName(document.getElementById('navlink'))
+  }));
+  assert.equal(out.dialog, 'Dialog box');
+  assert.equal(out.navlink, 'Nav link');
+});
