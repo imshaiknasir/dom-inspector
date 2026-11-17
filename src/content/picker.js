@@ -51,6 +51,7 @@
     if (!active) return;
     const el = targetFromEvent(event);
     if (!el || el === overlay) return;
+    if (overlay) overlay.classList.remove("di-picked");
     paint(el);
   };
 
