@@ -18,18 +18,18 @@
 
     <main class="pop-main">
       <div class="pop-actions">
-        <button id="pop-pick" class="btn primary" type="button">Pick element</button>
-        <button id="pop-open" class="btn" type="button">Open panel</button>
+        <button id="pop-pick" class="btn primary" type="button" aria-keyshortcuts="P" title="Pick element (P)">Pick element</button>
+        <button id="pop-open" class="btn" type="button" aria-keyshortcuts="O" title="Open panel (O)">Open panel</button>
       </div>
       <div class="pop-actions secondary">
-        <button id="pop-heal" class="btn small" type="button" title="Open the panel at batch selector healing">Batch healing</button>
-        <button id="pop-refresh" class="btn small subtle" type="button" title="Reload recent locators">Refresh</button>
+        <button id="pop-heal" class="btn small" type="button" aria-keyshortcuts="H" title="Open the panel at batch selector healing (H)">Batch healing</button>
+        <button id="pop-refresh" class="btn small subtle" type="button" aria-keyshortcuts="R" title="Reload recent locators (R)">Refresh</button>
       </div>
 
       <section class="card" id="pop-last-card" hidden>
         <div class="card-head">
           <h2>Last picked</h2>
-          <button id="pop-last-copy" class="btn small subtle" type="button" title="Copy every locator shown">Copy all</button>
+          <button id="pop-last-copy" class="btn small subtle" type="button" aria-keyshortcuts="C" title="Copy every locator shown (C)">Copy all</button>
         </div>
         <p class="element" id="pop-last-element"></p>
         <div id="pop-last-rows" class="rows"></div>

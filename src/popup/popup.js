@@ -330,6 +330,29 @@
     }
   };
 
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
+    if (tag === "input" || tag === "textarea" || tag === "select" || (event.target && event.target.isContentEditable)) return;
+    const key = event.key.toLowerCase();
+    if (key === "p") {
+      event.preventDefault();
+      startPick();
+    } else if (key === "o") {
+      event.preventDefault();
+      openOnly();
+    } else if (key === "h") {
+      event.preventDefault();
+      openHealing();
+    } else if (key === "r") {
+      event.preventDefault();
+      load();
+    } else if (key === "c") {
+      event.preventDefault();
+      $("pop-last-copy").click();
+    }
+  });
+
   $("pop-pick").addEventListener("click", startPick);
   $("pop-open").addEventListener("click", openOnly);
   $("pop-heal").addEventListener("click", openHealing);
