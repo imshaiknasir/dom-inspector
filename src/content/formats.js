@@ -37,6 +37,25 @@
     return out;
   };
 
+  const testRigorPath = (el) => {
+    let label = U.attr(el, "aria-label");
+    const tag = U.tagOf(el);
+    if (!label && ["input", "select", "textarea"].includes(tag)) {
+      const id = U.attr(el, "id");
+      const root = el.getRootNode ? el.getRootNode() : document;
+      const node = id ? root.querySelector(`label[for="${id.replace(/"/g, '\\"')}"]`) : null;
+      if (node) label = U.normalizeText(node.textContent);
+      else {
+        const wrapping = el.closest ? el.closest("label") : null;
+        if (wrapping) label = U.normalizeText(wrapping.textContent);
+      }
+    }
+    label = label || U.attr(el, "placeholder") || U.normalizeText(el.textContent) ||
+      U.attr(el, "name") || U.attr(el, "id") || tag;
+    const safe = label.slice(0, 80).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    return `"${safe}"`;
+  };
+
   const formats = (el) => {
     const css = (DI.css.best(el) || {}).selector || "";
     const xp = (DI.xpath.best(el) || {}).xpath || "";
@@ -50,6 +69,8 @@
       out.push({ type: "cypress-xpath", code: `cy.xpath(${q(xp)})` });
       out.push({ type: "js-xpath", code: `document.evaluate(${q(xp)}, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue` });
     }
+
+    out.push({ type: "testRigor", code: testRigorPath(el) });
 
     const frames = U.iframeChain();
     if (frames.length) {
@@ -80,5 +101,5 @@
     return out;
   };
 
-  DI.formats = { generate, formats };
+  DI.formats = { generate, formats, testRigorPath };
 })();
