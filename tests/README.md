@@ -8,7 +8,7 @@ Plain Node test + Playwright. No TypeScript or build step.
 npm install
 npm run install:browsers   # once: downloads Playwright's Chromium
 npm test                   # unit suites, then the extension e2e suite
-npm run test:unit          # tests/unit/*.test.js (Node test runner)
+npm run test:unit          # tests/*.test.js + tests/unit/*.test.js
 npm run test:e2e           # tests/e2e/*.spec.js (Playwright test runner)
 ```
 
@@ -27,14 +27,18 @@ and a user-data directory.
   and injects the generators in manifest order.
 - `extras.test.js` — stability scores, Cypress shadow chains, regex roles,
   frameLocator/frame fallbacks and Playwright modifiers.
-- `unit/` — CSS, XPath, Playwright, Selenium/Cypress/JS, validation, utilities,
-  manifest and panel-contract checks. Every generated count is resolved against
-  the live DOM.
+- `unit/` — CSS, XPath, Playwright, testRigor, Selenium/Cypress/JS, validation,
+  utilities, manifest/popup/devtools contracts, service-worker routing and the
+  repair loop (single, batch, same-origin frames). Every generated count is
+  resolved against the live DOM.
 - `e2e/extension.spec.js` — loads the unpacked extension over HTTP, checks the
   panel is error-free, drives the real picker (`DI_START` → mouse click), and
-  verifies the cached payload for CSS, XPath, Playwright, Selenium, shadow DOM
-  and iframes, plus the background `DI_GET_LAST` cache.
+  verifies the cached payload for CSS, XPath, Playwright, Selenium, testRigor,
+  shadow DOM, iframes and axes references. It also exercises right-click copy,
+  the popup (last pick, saved list, history, shortcuts), panel filters/exports,
+  the driver template, single-locator Fix, batch healing and JSON/POM exports,
+  plus the background `DI_GET_LAST` cache.
 
-All 80 unit cases and 7 extension e2e cases pass. The workspace-root
+All 143 unit cases and 20 extension e2e cases pass. The workspace-root
 `../../BLOCKERS.md` tracks any defect that would require editing files owned
 by another agent.
