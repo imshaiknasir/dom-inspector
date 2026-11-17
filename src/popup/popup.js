@@ -212,7 +212,8 @@
     if (!payload) return "";
     const css = payload.css && payload.css.best ? payload.css.best.selector : "";
     const xpath = payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "";
-    return (payload.url || "") + "\n" + css + "\n" + xpath;
+    const playwright = (payload.playwright || [])[0];
+    return (payload.url || "") + "\n" + css + "\n" + xpath + "\n" + (playwright ? playwright.selector : "");
   };
 
   const renderHistory = () => {
@@ -223,7 +224,7 @@
       .slice()
       .sort((a, b) => (b.at || 0) - (a.at || 0))
       .filter((entry) => {
-        const key = (entry.url || "") + "\n" + (entry.css || "") + "\n" + (entry.xpath || "");
+        const key = (entry.url || "") + "\n" + (entry.css || "") + "\n" + (entry.xpath || "") + "\n" + (entry.playwright || "");
         return key !== current;
       });
     const entries = state.historyExpanded ? all : all.slice(0, 4);
