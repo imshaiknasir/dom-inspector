@@ -119,8 +119,14 @@
         return false;
       };
       const queryCss = (scope, selector) => {
-        const wantsVisible = /:visible\b/.test(selector);
-        const css = selector.replace(/^css=/, "").replace(/:visible\b/g, "").trim() || "*";
+        const trimmed = selector.trim();
+        if (!trimmed) return [];
+        const wantsVisible = /:visible\b/.test(trimmed);
+        let css = trimmed.replace(/^css=/, "").replace(/:visible\b/g, "").trim();
+        if (!css) {
+          if (!wantsVisible) return [];
+          css = "*";
+        }
         let nodes = [];
         try { nodes = [...scope.querySelectorAll(css)]; } catch (_) { nodes = []; }
         return wantsVisible ? nodes.filter(isVisible) : nodes;
