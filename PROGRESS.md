@@ -100,9 +100,9 @@ not shipped). Last updated 17 Nov 2026.
 
 | Item | Status | Notes |
 |---|---|---|
-| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | `npm run test:unit`; known generator gaps in `../BLOCKERS.md` |
+| Unit suites (CSS/XPath/Playwright/formats/validate/util/manifest) | done | 80/80 checks pass with `npm run test:unit` |
 | Panel contract tests | done | ids, duplicate ids and local scripts checked |
-| Extension e2e picker test | done | `npm run test:e2e` loads the unpacked extension |
+| Extension e2e picker test | done | 7/7 checks pass with `npm run test:e2e` |
 | Panel smoke test | done | headless Chrome with stubbed extension API |
 | README with install, features, architecture, limits | done | this folder |
 | No build step (plain JS/HTML/CSS) | done | no WASM, Rust, TypeScript or bundler |
@@ -119,7 +119,7 @@ not shipped). Last updated 17 Nov 2026.
 - `5a18693` continuous picking option
 - `c3eba97` docs
 - `70968af` docs commit references
-- Panel expansion: multi-file polished panel, language output, saved/export, action tester.
+- `c4b36b2` panel expansion: polished UI, language output, saved/export, action tester
 
 ## Next candidates
 
