@@ -375,3 +375,38 @@ test('panel actions: locator hasText options narrow matches', { todo: 'panel-act
   }));
   assert.deepEqual(out, { text: 2, regex: 2 });
 });
+
+test('playwright: extended implicit roles agree with Playwright', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <details id="details" open><summary>More</summary>Body</details>
+      <menu id="menu"><li>One</li><li>Two</li></menu>
+      <dl><dt id="term">Term</dt><dd id="definition">Def</dd></dl>
+      <output id="output">42</output>
+      <meter id="meter" value="0.5" min="0" max="1">50%</meter>
+      <search id="search"><input></search>
+    </body></html>`);
+    await injectGenerators(local);
+    const roles = await local.evaluate(() => ({
+      details: DI.playwright.implicitRole(document.getElementById('details')),
+      menu: DI.playwright.implicitRole(document.getElementById('menu')),
+      term: DI.playwright.implicitRole(document.getElementById('term')),
+      definition: DI.playwright.implicitRole(document.getElementById('definition')),
+      output: DI.playwright.implicitRole(document.getElementById('output')),
+      meter: DI.playwright.implicitRole(document.getElementById('meter')),
+      search: DI.playwright.implicitRole(document.getElementById('search')),
+      document: DI.playwright.implicitRole(document.documentElement)
+    }));
+    assert.deepEqual(roles, {
+      details: 'group', menu: 'list', term: 'term', definition: 'definition',
+      output: 'status', meter: 'meter', search: 'search', document: 'document'
+    });
+    for (const role of ['group', 'list', 'term', 'definition', 'status', 'meter', 'search', 'document']) {
+      const localCount = await local.evaluate((value) => DI.playwright.countExpr(`page.getByRole('${value}')`), role);
+      assert.equal(localCount, await local.getByRole(role).count(), role);
+    }
+  } finally {
+    await local.close();
+  }
+});
