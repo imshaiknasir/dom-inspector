@@ -894,6 +894,33 @@ test('panel tester resolves CSS selectors inside same-origin frames', async () =
   await extensionPage.evaluate(() => document.getElementById('di-clear').click());
 });
 
+test('panel ignores a late live check after the input is cleared', async () => {
+  await extensionPage.evaluate(() => {
+    window.__diSendMessage = chrome.tabs.sendMessage.bind(chrome.tabs);
+    chrome.tabs.sendMessage = (...args) => new Promise((resolve, reject) => {
+      setTimeout(() => window.__diSendMessage(...args).then(resolve, reject), 400);
+    });
+    const input = document.getElementById('di-input');
+    input.value = '#save';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  try {
+    await extensionPage.waitForTimeout(120);
+    await extensionPage.evaluate(() => {
+      const input = document.getElementById('di-input');
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await extensionPage.waitForTimeout(900);
+    await expect(extensionPage.locator('#di-live-badge')).toBeHidden();
+  } finally {
+    await extensionPage.evaluate(() => {
+      if (window.__diSendMessage) chrome.tabs.sendMessage = window.__diSendMessage;
+      delete window.__diSendMessage;
+    });
+  }
+});
+
 test('panel action runner types, reports success and handles no matches', async () => {
   await fixturePage.bringToFront();
   await extensionPage.evaluate(() => {
