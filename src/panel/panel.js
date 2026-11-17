@@ -1740,7 +1740,7 @@
     return text;
   };
 
-  const applyDriverTemplate = (template, value) => {
+  const applyDriverTemplate = (template, values) => {
     let out = "";
     let quote = null;
     let i = 0;
@@ -1748,6 +1748,10 @@
       const rest = template.slice(i);
       const placeholder = rest.match(/^(?:\{selector\}|xpathvalue|cssvalue)/i);
       if (placeholder) {
+        const token = placeholder[0].toLowerCase();
+        const key = token === "xpathvalue" ? "xpath" : token === "cssvalue" ? "css" : "selector";
+        const value = values[key];
+        if (!value) return "";
         out += escapeForQuote(value, quote);
         i += placeholder[0].length;
         continue;
@@ -1772,11 +1776,13 @@
   const renderDriver = () => {
     const base = state.settings.driverBase === "xpath" ? "xpath" : "css";
     const payload = state.payload || {};
-    const value = base === "xpath"
-      ? (payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "")
-      : (payload.css && payload.css.best ? payload.css.best.selector : "");
+    const css = payload.css && payload.css.best ? payload.css.best.selector : "";
+    const xpath = payload.xpath && payload.xpath.best ? payload.xpath.best.xpath : "";
+    const value = base === "xpath" ? xpath : css;
     const template = state.settings.driver || "";
-    const output = template && value ? applyDriverTemplate(template, value) : "";
+    const output = template && (css || xpath)
+      ? applyDriverTemplate(template, { selector: value, css, xpath })
+      : "";
     $("di-driver-output").textContent = output || "Pick an element and enter a template.";
     $("di-driver-copy").disabled = !output;
     $("di-driver-base").value = base;
