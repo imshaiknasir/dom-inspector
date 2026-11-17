@@ -2369,6 +2369,7 @@
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
     if (!restored) recordHistory(payload);
+    if (pageChanged) state.reference = null;
     if (pageChanged && (state.healRows.length || state.healBusy)) {
       state.healRows = [];
       state.healSeq += 1;
