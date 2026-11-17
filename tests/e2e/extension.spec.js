@@ -879,6 +879,24 @@ test('panel imports saved locators from JSON and skips duplicates', async () => 
     document.querySelectorAll('#di-saved .saved-row').length
   )).toBe(1);
 
+  const rekeyed = {
+    saved: [
+      {
+        key: 'imported-renamed', type: 'css', value: '#save', name: 'Same target, new key',
+        scope: 'CSS', testType: 'css', testValue: '#save', count: 1
+      }
+    ]
+  };
+  await extensionPage.locator('#di-saved-import-file').setInputFiles({
+    name: 'rekeyed.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(rekeyed))
+  });
+  await expect(extensionPage.locator('#di-toast')).toContainText('No new saved locators to import');
+  expect(await extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  )).toBe(1);
+
   const csv = [
     'name,scope,type,value,testType,testValue,count,url,savedAt',
     'CSV locator,CSS,css,#link,css,#link,1,https://example.test/,'
