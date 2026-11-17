@@ -56,6 +56,16 @@
     return fn ? fn(el) : null;
   };
 
+  const labelledByText = (el) => {
+    const ids = U.attr(el, "aria-labelledby");
+    if (!ids) return "";
+    const root = el.getRootNode ? el.getRootNode() : document;
+    return ids.split(/\s+/).map((id) => {
+      const node = root.getElementById ? root.getElementById(id) : null;
+      return node ? U.normalizeText(node.textContent) : "";
+    }).join(" ").trim();
+  };
+
   const labelFor = (el) => {
     const id = el.getAttribute("id");
     if (id) {
@@ -127,6 +137,8 @@
       }
       const aria = U.attr(el, "aria-label");
       if (aria && (exact ? aria === value : aria.includes(value))) add(el);
+      const by = labelledByText(el);
+      if (by && (exact ? by === value : by.includes(value))) add(el);
     }
     return seen.size;
   };
@@ -269,7 +281,7 @@
       add("getByRole", `${base}.getByRole(${quote(role)})`, countRole(role, "", false, root), 30);
     }
 
-    const label = labelFor(el) || U.attr(el, "aria-label");
+    const label = U.attr(el, "aria-label") || labelledByText(el) || labelFor(el);
     if (label && label.length <= 80) {
       add("getByLabel", `${base}.getByLabel(${quote(label)}, { exact: true })`, countLabel(label, true, root), 5);
       add("getByLabel", `${base}.getByLabel(${quote(label)})`, countLabel(label, false, root), 6);
@@ -382,5 +394,5 @@
       .replace(/^page/, "Page");
   };
 
-  DI.playwright = { implicitRole, accessibleName, countExpr, generate, best, framePrefix, toPython, toJava, toCSharp };
+  DI.playwright = { implicitRole, accessibleName, labelledByText, countExpr, generate, best, framePrefix, toPython, toJava, toCSharp };
 })();

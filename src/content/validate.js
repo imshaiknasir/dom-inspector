@@ -43,6 +43,15 @@
       }
       const aria = U.attr(el, "aria-label");
       if (aria && (exact ? aria === value : aria.includes(value))) out.add(el);
+      const ids = U.attr(el, "aria-labelledby");
+      if (ids) {
+        const root = el.getRootNode ? el.getRootNode() : doc;
+        const by = ids.split(/\s+/).map((id) => {
+          const node = root.getElementById ? root.getElementById(id) : null;
+          return node ? U.normalizeText(node.textContent) : "";
+        }).join(" ").trim();
+        if (by && (exact ? by === value : by.includes(value))) out.add(el);
+      }
     }
     return [...out];
   };

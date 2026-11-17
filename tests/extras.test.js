@@ -151,3 +151,23 @@ test('playwright: input submit value is its accessible name', async () => {
   assert.ok(out.generated.some((s) => s.includes("getByRole('button'") && s.includes('Confirm order')));
   assert.equal(out.count, 1);
 });
+
+test('playwright: aria-labelledby resolves to getByLabel', async () => {
+  const out = await page.evaluate(() => {
+    const heading = document.createElement('span');
+    heading.id = 'ship-label';
+    heading.textContent = 'Shipping address';
+    const input = document.createElement('input');
+    input.id = 'ship-input';
+    input.setAttribute('aria-labelledby', 'ship-label');
+    document.body.append(heading, input);
+    const generated = DI.playwright.generate(input).map((c) => c.selector);
+    const count = DI.playwright.countExpr("page.getByLabel('Shipping address')");
+    const validated = DI.validate.test('playwright', "page.getByLabel('Shipping address')");
+    heading.remove(); input.remove();
+    return { generated, count, validated };
+  });
+  assert.ok(out.generated.some((s) => s.includes("getByLabel('Shipping address')")));
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.count, 1);
+});
