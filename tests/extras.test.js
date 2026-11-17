@@ -189,3 +189,22 @@ test('playwright: getByText is not emitted when only a descendant matches', asyn
   assert.ok(!out.selectors.some((s) => s.includes("getByText('Nested label')")));
   assert.equal(out.descendantCount, 1);
 });
+
+test('css: duplicate ids never produce a selector for the wrong node', async () => {
+  const out = await page.evaluate(() => {
+    const first = document.createElement('div');
+    first.id = 'dup-id';
+    const second = document.createElement('div');
+    second.id = 'dup-id';
+    first.textContent = 'first';
+    second.textContent = 'second';
+    document.body.append(first, second);
+    const best = DI.css.best(second);
+    const hit = best ? document.querySelector(best.selector) === second : false;
+    first.remove(); second.remove();
+    return { best, hit };
+  });
+  assert.ok(out.best);
+  assert.equal(out.best.count, 1);
+  assert.equal(out.hit, true);
+});

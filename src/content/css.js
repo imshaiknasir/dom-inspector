@@ -62,8 +62,12 @@
   const pushCandidate = (list, seen, selector, strategy, score, el) => {
     if (!selector || seen.has(selector)) return;
     seen.add(selector);
-    const count = countIn(el, selector);
-    list.push({ selector, count, strategy, score, stability: stabilityFor(strategy) });
+    const scope = rootOf(el);
+    let count = countIn(el, selector);
+    let selectsTarget = false;
+    try { selectsTarget = scope.querySelector(selector) === el; } catch (_) { selectsTarget = false; }
+    if (!selectsTarget) count = 0;
+    list.push({ selector, count, selectsTarget, strategy, score, stability: stabilityFor(strategy) });
   };
 
   const ancestorPath = (el, maxDepth = 7) => {
