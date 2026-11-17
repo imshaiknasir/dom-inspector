@@ -145,6 +145,11 @@
         return wrapping ? norm(wrapping.textContent) : "";
       };
 
+      const NAME_FROM_CONTENT = [
+        "button", "cell", "checkbox", "columnheader", "gridcell", "heading",
+        "link", "menuitem", "menuitemcheckbox", "menuitemradio", "option",
+        "radio", "row", "rowheader", "switch", "tab", "tooltip", "treeitem"
+      ];
       const accessibleName = (node) => {
         const aria = attr(node, "aria-label");
         if (aria) return aria;
@@ -160,16 +165,20 @@
         const fromLabel = labelFor(node);
         if (fromLabel) return fromLabel;
         if (attr(node, "alt")) return attr(node, "alt");
-        if (tagOf(node) === "input") {
+        const tag = tagOf(node);
+        if (tag === "input") {
           const inputType = (attr(node, "type") || "text").toLowerCase();
           if (["submit", "button", "reset"].includes(inputType)) {
             return attr(node, "value") || (inputType === "submit" ? "Submit" : "");
           }
         }
-        if (["button", "a", "option", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tagOf(node))) {
-          return norm(node.textContent);
+        const role = implicitRole(node);
+        if (NAME_FROM_CONTENT.includes(role) ||
+            ["button", "a", "option", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tag)) {
+          const contents = norm(node.textContent);
+          if (contents) return contents;
         }
-        return attr(node, "placeholder") || attr(node, "title") || "";
+        return attr(node, "title") || attr(node, "placeholder") || "";
       };
 
       const textMatches = (node, needle, exact) => {
