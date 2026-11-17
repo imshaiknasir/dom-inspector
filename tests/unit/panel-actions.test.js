@@ -175,6 +175,9 @@ test('panel actions: refuse hidden and disabled targets', async () => {
       <button id="disabled" disabled>Disabled</button>
       <button id="aria-disabled" aria-disabled="true">Aria</button>
       <input id="disabled-input" disabled>
+      <input id="aria-input" aria-disabled="true">
+      <input id="checkbox" type="checkbox">
+      <input id="number" type="number">
     </body></html>`);
     await local.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
     const out = await local.evaluate(() => ({
@@ -182,7 +185,10 @@ test('panel actions: refuse hidden and disabled targets', async () => {
       disabled: DIPanel.pageAction('click', 'css', '#disabled', '', true),
       aria: DIPanel.pageAction('click', 'css', '#aria-disabled', '', true),
       hover: DIPanel.pageAction('hover', 'css', '#disabled', '', true),
-      type: DIPanel.pageAction('type', 'css', '#disabled-input', 'text', true)
+      type: DIPanel.pageAction('type', 'css', '#disabled-input', 'text', true),
+      ariaInput: DIPanel.pageAction('type', 'css', '#aria-input', 'text', true),
+      checkbox: DIPanel.pageAction('type', 'css', '#checkbox', 'yes', true),
+      number: DIPanel.pageAction('type', 'css', '#number', '5', true)
     }));
     assert.deepEqual(
       { hidden: [out.hidden.performed, out.hidden.error], disabled: [out.disabled.performed, out.disabled.error] },
@@ -191,6 +197,9 @@ test('panel actions: refuse hidden and disabled targets', async () => {
     assert.deepEqual([out.aria.performed, out.aria.error], [false, 'Element is disabled']);
     assert.deepEqual([out.hover.performed, out.hover.error], [false, 'Element is disabled']);
     assert.deepEqual([out.type.performed, out.type.error], [false, 'Element is not editable']);
+    assert.deepEqual([out.ariaInput.performed, out.ariaInput.error], [false, 'Element is not editable']);
+    assert.deepEqual([out.checkbox.performed, out.checkbox.error], [false, 'Element is not a text field']);
+    assert.deepEqual([out.number.performed, out.number.error], [true, null]);
   } finally {
     await local.close();
   }
