@@ -60,6 +60,7 @@
     tabId: null,
     settings: Object.assign({}, DEFAULT_SETTINGS),
     saved: [],
+    savedFilter: "",
     history: [],
     healRows: [],
     healBusy: false,
@@ -1068,9 +1069,19 @@
     meta.textContent = String(state.saved.length);
     empty.hidden = state.saved.length > 0;
 
-    const entries = state.saved;
-    for (let index = 0; index < entries.length; index += 1) {
-      const entry = entries[index];
+    const filter = state.savedFilter.trim().toLowerCase();
+    const filterInput = $("di-saved-filter");
+    filterInput.hidden = state.saved.length === 0;
+    if (filterInput.value !== state.savedFilter) filterInput.value = state.savedFilter;
+    const entries = state.saved.filter((entry) => !filter ||
+      [entry.name, entry.type, entry.value, entry.url, entry.scope, entry.label]
+        .filter(Boolean).join(" ").toLowerCase().includes(filter)
+    );
+    if (!entries.length && state.saved.length) {
+      list.appendChild(el("div", "rows-empty", "No saved locators match the filter."));
+    }
+    for (const entry of entries) {
+      const index = state.saved.indexOf(entry);
       const row = el("div", "loc-row saved-row");
       const main = el("div", "loc-main");
 
@@ -2062,6 +2073,8 @@
     state.settings = Object.assign({}, DEFAULT_SETTINGS, { collapsed: {} });
     state.filter = "";
     state.previousPayload = null;
+    state.savedFilter = "";
+    if ($("di-saved-filter")) $("di-saved-filter").value = "";
     state.healRows = [];
     state.healSeq += 1;
     $("di-filter").value = "";
@@ -2327,6 +2340,10 @@
       });
     }
 
+    $("di-saved-filter").addEventListener("input", (event) => {
+      state.savedFilter = event.target.value;
+      renderSaved();
+    });
     $("di-saved-import").addEventListener("click", () => $("di-saved-import-file").click());
     $("di-saved-import-file").addEventListener("change", (event) => importSavedFile(event.target.files && event.target.files[0]));
     $("di-saved-pom").addEventListener("click", exportSavedPom);

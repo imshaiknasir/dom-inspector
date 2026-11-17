@@ -491,6 +491,7 @@ select { cursor: pointer; }
 .saved-name:hover { border-color: var(--line-2); }
 .saved-name:focus { background: var(--card-3); border-color: var(--focus); outline: none; }
 .saved-row-meta { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.saved-filter { width: 100%; margin-bottom: 7px; font-size: 11.5px; }
 
 
 /* ---------- Batch healing ---------- */
