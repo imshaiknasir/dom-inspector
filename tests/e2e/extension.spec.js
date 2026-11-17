@@ -384,6 +384,26 @@ test('panel batch healing flags a broken selector and verifies its fix', async (
   expect(healed.meta).toContain('fixed');
 });
 
+test('panel healing exports a JSON report and clears the rows', async () => {
+  const downloadPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-heal-json').click());
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^dom-inspector-healing-.*\.json$/);
+  const file = await download.path();
+  expect(file).toBeTruthy();
+  const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+  expect(report.extension).toBe('DOM Inspector');
+  expect(Array.isArray(report.results)).toBe(true);
+  expect(report.results.length).toBe(2);
+  expect(report.results.some((row) => row.fixed === '#save' && row.status === 'fixed')).toBe(true);
+
+  await extensionPage.evaluate(() => document.getElementById('di-heal-clear').click());
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-heal-results .heal-row').length
+  ), { timeout: 5000 }).toBe(0);
+  await expect(extensionPage.locator('#di-heal-empty')).toBeVisible();
+});
+
 test('no page errors accumulated during the run', async () => {
   expect(errors).toEqual([]);
 });
