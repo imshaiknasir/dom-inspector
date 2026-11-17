@@ -1069,6 +1069,7 @@
     meta.textContent = String(state.saved.length);
     empty.hidden = state.saved.length > 0;
 
+    if (!state.saved.length && state.savedFilter) state.savedFilter = "";
     const filter = state.savedFilter.trim().toLowerCase();
     const filterInput = $("di-saved-filter");
     filterInput.hidden = state.saved.length === 0;
