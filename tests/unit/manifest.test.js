@@ -83,3 +83,11 @@ test('manifest: generator scripts load in dependency order', () => {
   ];
   assert.deepEqual(files, order);
 });
+
+test('manifest: context menu copy permission and background handlers exist', () => {
+  assert.ok((manifest.permissions || []).includes('contextMenus'));
+  const background = fs.readFileSync(path.join(ROOT, manifest.background.service_worker), 'utf8');
+  assert.match(background, /contextMenus\.create/);
+  assert.match(background, /["']di-copy-best["']/);
+  assert.match(background, /DI_COPY_BEST/);
+});

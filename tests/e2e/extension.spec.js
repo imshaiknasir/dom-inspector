@@ -149,6 +149,12 @@ test('content script answers the picker bridge', async () => {
   expect(ping).toMatchObject({ ok: true, picking: false, url: baseURL });
 });
 
+test('right-click copy bridge returns the best selector for the context element', async () => {
+  await fixturePage.locator('#link').dispatchEvent('contextmenu', { bubbles: true, composed: true, button: 2 });
+  const copied = await sendToFixture({ type: 'DI_COPY_BEST' }, { frameId: 0 });
+  expect(copied).toMatchObject({ ok: true, value: '#link' });
+});
+
 test('picker generates verified CSS, XPath, Playwright and Selenium locators', async () => {
   await fixturePage.bringToFront();
   await startPicking();
