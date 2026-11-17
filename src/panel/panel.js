@@ -1571,7 +1571,9 @@
   };
 
   const importSavedFile = async (file) => {
-    if (!file) return;
+    if (!file || state.savedBusy) return;
+    state.savedBusy = true;
+    renderSaved();
     try {
       const text = await file.text();
       const isCsv = /\.csv$/i.test(file.name || "") || (!/^\s*[\[{]/.test(text) && text.includes(","));
@@ -1585,7 +1587,9 @@
     } catch (error) {
       toast("Import failed: " + (error.message || error), "bad");
     } finally {
+      state.savedBusy = false;
       $("di-saved-import-file").value = "";
+      renderSaved();
     }
   };
 
