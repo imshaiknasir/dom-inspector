@@ -116,7 +116,7 @@ test('panel actions: first/last/filter modifiers narrow the match set', async ()
   assert.equal(out.filtered.matched, 0);
 });
 
-test('panel actions: Playwright name, role and test-id semantics match the generator', { todo: 'BLOCKERS.md — panel-actions accessible-name/role/test-id matching diverges from generator semantics' }, async () => {
+test('panel actions: Playwright name, role and test-id semantics match the generator', async () => {
   const out = await page.evaluate(() => {
     const submit = document.createElement('input');
     submit.type = 'submit';

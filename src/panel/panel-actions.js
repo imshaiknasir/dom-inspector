@@ -84,12 +84,18 @@
           if (inputType === "search") return "searchbox";
           return "textbox";
         }
+        if (tag === "select") return node.multiple || Number(attr(node, "size") || 0) > 1 ? "listbox" : "combobox";
+        if (tag === "img") return node.hasAttribute("alt") && attr(node, "alt") === "" ? null : "img";
+        if (tag === "section") {
+          return attr(node, "aria-label") || attr(node, "aria-labelledby") ? "region" : null;
+        }
+        if (tag === "th") return (attr(node, "scope") || "").toLowerCase() === "row" ? "rowheader" : "columnheader";
         const map = {
-          select: "combobox", textarea: "textbox", img: "img",
+          textarea: "textbox",
           h1: "heading", h2: "heading", h3: "heading", h4: "heading", h5: "heading", h6: "heading",
           ul: "list", ol: "list", li: "listitem", table: "table", tr: "row", td: "cell",
-          th: "columnheader", nav: "navigation", main: "main", article: "article",
-          form: "form", dialog: "dialog", section: "region"
+          nav: "navigation", main: "main", article: "article",
+          form: "form", dialog: "dialog"
         };
         return map[tag] || null;
       };
@@ -125,6 +131,12 @@
         const fromLabel = labelFor(node);
         if (fromLabel) return fromLabel;
         if (attr(node, "alt")) return attr(node, "alt");
+        if (tagOf(node) === "input") {
+          const inputType = (attr(node, "type") || "text").toLowerCase();
+          if (["submit", "button", "reset"].includes(inputType)) {
+            return attr(node, "value") || (inputType === "submit" ? "Submit" : "");
+          }
+        }
         if (["button", "a", "option", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6"].includes(tagOf(node))) {
           return norm(node.textContent);
         }
@@ -281,6 +293,18 @@
                 seen.add(node);
                 matches.push(node);
               }
+              const labelledBy = attr(node, "aria-labelledby");
+              if (labelledBy) {
+                const root = node.getRootNode ? node.getRootNode() : document;
+                const text = labelledBy.split(/\s+/).map((ref) => {
+                  const target = root.getElementById ? root.getElementById(ref) : null;
+                  return target ? norm(target.textContent) : "";
+                }).join(" ").trim();
+                if (text && (exact ? text === firstText : text.includes(firstText)) && !seen.has(node)) {
+                  seen.add(node);
+                  matches.push(node);
+                }
+              }
             }
           } else if (method === "Placeholder") {
             matches = all.filter((node) => attr(node, "placeholder") === firstText);
@@ -289,12 +313,7 @@
           } else if (method === "Title") {
             matches = all.filter((node) => attr(node, "title") === firstText);
           } else if (method === "TestId") {
-            matches = all.filter((node) =>
-              attr(node, "data-testid") === firstText ||
-              attr(node, "data-test-id") === firstText ||
-              attr(node, "data-test") === firstText ||
-              attr(node, "data-cy") === firstText
-            );
+            matches = all.filter((node) => attr(node, "data-testid") === firstText);
           }
         } else if (locator) {
           const selectors = [];
