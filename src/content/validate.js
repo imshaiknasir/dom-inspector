@@ -352,13 +352,18 @@
     highlighted.clear();
   };
 
+  const HIGHLIGHT_LIMIT = 500;
+
   const highlight = (elements) => {
     clearHighlight();
+    let marked = 0;
     for (const el of elements) {
-      if (!el || el.nodeType !== 1) continue;
+      if (!el || el.nodeType !== 1 || !el.isConnected) continue;
+      if (marked >= HIGHLIGHT_LIMIT) break;
       highlighted.set(el, { outline: el.style.outline, offset: el.style.outlineOffset });
       el.style.outline = "2px solid #ff5a1f";
       el.style.outlineOffset = "1px";
+      marked += 1;
     }
     if (elements[0] && elements[0].scrollIntoView) {
       try { elements[0].scrollIntoView({ block: "center", inline: "nearest" }); } catch (_) {}
