@@ -464,11 +464,10 @@ test('panel filters rows and exports picked locators as JSON', async () => {
     filter.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
-  await extensionPage.evaluate(() => {
-    const filter = document.getElementById('di-filter');
-    filter.value = '';
-    filter.dispatchEvent(new Event('input', { bubbles: true }));
-  });
+
+  await extensionPage.locator('#di-filter').press('Escape');
+  await expect(extensionPage.locator('#di-filter')).toHaveValue('');
+  await expect(extensionPage.locator('#di-css code').first()).toContainText('#save');
 
   const downloadPromise = extensionPage.waitForEvent('download');
   await extensionPage.evaluate(() => document.getElementById('di-export').click());
@@ -1025,6 +1024,12 @@ test('panel filters saved locators and hides the filter when empty', async () =>
   ), { timeout: 5000 }).toBe(1);
   await expect(extensionPage.locator('#di-saved')).toContainText('#link');
   await expect(extensionPage.locator('#di-saved')).not.toContainText('#save');
+
+  await extensionPage.locator('#di-saved-filter').press('Escape');
+  await expect(extensionPage.locator('#di-saved-filter')).toHaveValue('');
+  await expect.poll(() => extensionPage.evaluate(() =>
+    document.querySelectorAll('#di-saved .saved-row').length
+  ), { timeout: 5000 }).toBe(2);
 
   await extensionPage.evaluate(() => {
     const filter = document.getElementById('di-saved-filter');
