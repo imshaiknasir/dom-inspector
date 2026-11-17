@@ -737,6 +737,55 @@ test('panel sanitizes corrupted persisted settings on reload', async () => {
   });
 });
 
+test('panel healing replaces a non-unique selector with a verified unique fix', async () => {
+  await fixturePage.goto(baseURL);
+  await fixturePage.waitForLoadState('domcontentloaded');
+  await fixturePage.bringToFront();
+  const ready = await waitFor(async () => {
+    const response = await sendToFixture({ type: 'DI_PING' }, { frameId: 0 });
+    return response && response.ok ? response : null;
+  }, 10000);
+  expect(ready).toBeTruthy();
+
+  await extensionPage.evaluate(() => {
+    const input = document.getElementById('di-heal-input');
+    input.value = '.rowbtn\n#definitely-missing';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('di-heal-check').click();
+  });
+  await expect.poll(() => extensionPage.evaluate(() =>
+    [...document.querySelectorAll('#di-heal-results .heal-row')].every((row) => !/status-(pending|checking)/.test(row.className))
+  ), { timeout: 15000 }).toBe(true);
+  const checked = await extensionPage.evaluate(() =>
+    [...document.querySelectorAll('#di-heal-results .heal-row')].map((row) => row.className)
+  );
+  expect(checked.some((value) => value.includes('status-many'))).toBe(true);
+  expect(checked.some((value) => value.includes('status-broken'))).toBe(true);
+
+  await extensionPage.evaluate(() => document.getElementById('di-heal-fix').click());
+  await expect.poll(() => extensionPage.evaluate(() =>
+    [...document.querySelectorAll('#di-heal-results .heal-row')].every((row) => !/status-(pending|checking)/.test(row.className))
+  ), { timeout: 15000 }).toBe(true);
+
+  const result = await extensionPage.evaluate(() => {
+    const fixedRow = document.querySelector('#di-heal-results .heal-row.status-fixed');
+    return {
+      fixedRows: document.querySelectorAll('#di-heal-results .heal-row.status-fixed').length,
+      original: fixedRow ? fixedRow.querySelector('.heal-selector').textContent : null,
+      fix: fixedRow && fixedRow.querySelector('.heal-fix code') ? fixedRow.querySelector('.heal-fix code').textContent : null,
+      failedRows: document.querySelectorAll('#di-heal-results .heal-row.status-fix-failed').length
+    };
+  });
+  expect(result.fixedRows).toBe(1);
+  expect(result.original).toBe('.rowbtn');
+  expect(result.fix).toBeTruthy();
+  expect(result.fix).not.toBe('.rowbtn');
+  expect(result.failedRows).toBe(1);
+
+  const verified = await sendToFixture({ type: 'DI_TEST', locatorType: 'auto', value: result.fix }, { frameId: 0 });
+  expect(verified).toMatchObject({ ok: true, count: 1 });
+});
+
 test('no page errors accumulated during the run', async () => {
   expect(errors).toEqual([]);
 });
