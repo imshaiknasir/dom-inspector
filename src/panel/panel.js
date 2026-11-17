@@ -61,6 +61,7 @@
     settings: Object.assign({}, DEFAULT_SETTINGS),
     saved: [],
     savedFilter: "",
+    savedBusy: false,
     history: [],
     healRows: [],
     healBusy: false,
@@ -1081,7 +1082,7 @@
     if (!state.saved.length && state.savedFilter) state.savedFilter = "";
     for (const id of ["di-saved-check", "di-saved-pom", "di-saved-json", "di-saved-csv", "di-saved-clear"]) {
       const button = $(id);
-      if (button) button.disabled = state.saved.length === 0;
+      if (button) button.disabled = state.saved.length === 0 || state.savedBusy;
     }
     const filterInput = $("di-saved-filter");
     filterInput.hidden = state.saved.length === 0;
@@ -1160,6 +1161,7 @@
   const checkSaved = async () => {
     if (!state.saved.length) return toast("No saved locators to check", "bad");
     setStatus("Checking saved locators…");
+    state.savedBusy = true;
     const button = $("di-saved-check");
     button.disabled = true;
     let unique = 0;
@@ -1192,6 +1194,7 @@
       toast(message, broken ? "bad" : "ok");
       setStatus(message, broken || many ? "warn" : "ok");
     } finally {
+      state.savedBusy = false;
       button.disabled = false;
       renderSaved();
     }
