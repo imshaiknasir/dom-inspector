@@ -1087,43 +1087,126 @@
     return header.concat(methods.flatMap((method) => [method, ""])).concat(["}"]).join("\n") + "\n";
   };
 
-  const importSavedJson = async (file) => {
+  const mergeSavedEntries = (incoming) => {
+    const existing = new Set(state.saved.map((entry) => entry.key || (entry.type + "::" + (entry.testValue || entry.value))));
+    const added = [];
+    for (const raw of incoming.slice(0, 500)) {
+      if (!raw || typeof raw !== "object" || typeof raw.value !== "string" || !raw.value.trim()) continue;
+      const type = typeof raw.type === "string" && raw.type ? raw.type : "css";
+      const testValue = typeof raw.testValue === "string" && raw.testValue ? raw.testValue : null;
+      const key = typeof raw.key === "string" && raw.key ? raw.key : (type + "::" + (testValue || raw.value));
+      if (existing.has(key)) continue;
+      existing.add(key);
+      added.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "-" + added.length,
+        key,
+        name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Imported locator",
+        scope: typeof raw.scope === "string" ? raw.scope : "Imported",
+        type,
+        value: raw.value,
+        testType: typeof raw.testType === "string" && raw.testType ? raw.testType : null,
+        testValue,
+        count: typeof raw.count === "number" ? raw.count : null,
+        label: typeof raw.label === "string" ? raw.label : "",
+        url: typeof raw.url === "string" ? raw.url : "",
+        savedAt: typeof raw.savedAt === "number" ? raw.savedAt : Date.now()
+      });
+    }
+    if (!added.length) {
+      toast("No new saved locators to import", "bad");
+      return 0;
+    }
+    state.saved = added.concat(state.saved);
+    persistSaved();
+    renderSaved();
+    refreshSaveButtons();
+    toast(`Imported ${added.length} saved locator${added.length === 1 ? "" : "s"}`, "ok");
+    return added.length;
+  };
+
+  const parseCsv = (text) => {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let quoted = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"' && text[i + 1] === '"') {
+          field += '"';
+          i += 1;
+        } else if (ch === '"') {
+          quoted = false;
+        } else {
+          field += ch;
+        }
+        continue;
+      }
+      if (ch === '"') {
+        quoted = true;
+      } else if (ch === ",") {
+        row.push(field);
+        field = "";
+      } else if (ch === "\n") {
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = "";
+      } else if (ch !== "\r") {
+        field += ch;
+      }
+    }
+    if (field.length || row.length) {
+      row.push(field);
+      rows.push(row);
+    }
+    return rows.filter((cells) => cells.some((cell) => String(cell).trim()));
+  };
+
+  const importSavedCsvText = (text) => {
+    const rows = parseCsv(text);
+    if (rows.length < 2) return toast("CSV has no locator rows", "bad");
+    const header = rows[0].map((cell) => String(cell).trim().toLowerCase());
+    const index = (name) => header.indexOf(name);
+    const hasHeader = index("value") !== -1;
+    const at = (cells, name, fallback) => {
+      const position = hasHeader ? index(name) : fallback;
+      return position >= 0 && position < cells.length ? cells[position] : "";
+    };
+    const entries = [];
+    for (const cells of rows.slice(hasHeader ? 1 : 0)) {
+      const value = at(cells, "value", 3);
+      if (!value) continue;
+      const countText = at(cells, "count", 6);
+      const savedText = at(cells, "savedat", 8);
+      const savedAt = /^\d+$/.test(savedText) ? Number(savedText) : Date.parse(savedText);
+      entries.push({
+        name: at(cells, "name", 0),
+        scope: at(cells, "scope", 1),
+        type: at(cells, "type", 2),
+        value,
+        testType: at(cells, "testtype", 4),
+        testValue: at(cells, "testvalue", 5),
+        count: /^\d+$/.test(String(countText).trim()) ? Number(countText) : null,
+        url: at(cells, "url", 7),
+        savedAt: Number.isFinite(savedAt) ? savedAt : Date.now()
+      });
+    }
+    return mergeSavedEntries(entries);
+  };
+
+  const importSavedFile = async (file) => {
     if (!file) return;
     try {
       const text = await file.text();
-      const parsed = JSON.parse(text);
-      const incoming = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.saved) ? parsed.saved : null);
-      if (!incoming) throw new Error("Expected a saved locator array or an exported JSON object.");
-      const existing = new Set(state.saved.map((entry) => entry.key || (entry.type + "::" + (entry.testValue || entry.value))));
-      const added = [];
-      for (const raw of incoming.slice(0, 500)) {
-        if (!raw || typeof raw !== "object" || typeof raw.value !== "string" || !raw.value.trim()) continue;
-        const type = typeof raw.type === "string" && raw.type ? raw.type : "css";
-        const testValue = typeof raw.testValue === "string" ? raw.testValue : null;
-        const key = typeof raw.key === "string" && raw.key ? raw.key : (type + "::" + (testValue || raw.value));
-        if (existing.has(key)) continue;
-        existing.add(key);
-        added.push({
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-          key,
-          name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Imported locator",
-          scope: typeof raw.scope === "string" ? raw.scope : "Imported",
-          type,
-          value: raw.value,
-          testType: typeof raw.testType === "string" ? raw.testType : null,
-          testValue,
-          count: typeof raw.count === "number" ? raw.count : null,
-          label: typeof raw.label === "string" ? raw.label : "",
-          url: typeof raw.url === "string" ? raw.url : "",
-          savedAt: typeof raw.savedAt === "number" ? raw.savedAt : Date.now()
-        });
+      const isCsv = /\.csv$/i.test(file.name || "") || (!/^\s*[\[{]/.test(text) && text.includes(","));
+      if (isCsv) importSavedCsvText(text);
+      else {
+        const parsed = JSON.parse(text);
+        const incoming = Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.saved) ? parsed.saved : null);
+        if (!incoming) throw new Error("Expected a saved locator array or an exported JSON object.");
+        mergeSavedEntries(incoming);
       }
-      if (!added.length) return toast("No new saved locators to import", "bad");
-      state.saved = added.concat(state.saved);
-      persistSaved();
-      renderSaved();
-      refreshSaveButtons();
-      toast(`Imported ${added.length} saved locator${added.length === 1 ? "" : "s"}`, "ok");
     } catch (error) {
       toast("Import failed: " + (error.message || error), "bad");
     } finally {
@@ -2131,7 +2214,7 @@
     }
 
     $("di-saved-import").addEventListener("click", () => $("di-saved-import-file").click());
-    $("di-saved-import-file").addEventListener("change", (event) => importSavedJson(event.target.files && event.target.files[0]));
+    $("di-saved-import-file").addEventListener("change", (event) => importSavedFile(event.target.files && event.target.files[0]));
     $("di-saved-pom").addEventListener("click", exportSavedPom);
     $("di-saved-json").addEventListener("click", exportSavedJson);
     $("di-saved-csv").addEventListener("click", exportSavedCsv);
