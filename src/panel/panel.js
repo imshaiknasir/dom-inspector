@@ -56,6 +56,7 @@
 
   const state = {
     payload: null,
+    previousPayload: null,
     tabId: null,
     settings: Object.assign({}, DEFAULT_SETTINGS),
     saved: [],
@@ -635,6 +636,68 @@
       const row = button.closest(".loc-row");
       if (row) row.classList.toggle("is-saved", saved);
     }
+  };
+
+  const locatorMap = (payload) => {
+    const groups = buildGroups(payload);
+    const map = new Map();
+    for (const group of GROUPS) {
+      for (const row of groups[group.key] || []) {
+        const key = row.type + "::" + (row.raw || row.value);
+        map.set(key, row);
+      }
+    }
+    return map;
+  };
+
+  const renderDiff = () => {
+    const card = $("di-diff");
+    if (!card) return;
+    const previous = state.previousPayload;
+    const current = state.payload;
+    if (!previous || !current || previous.url !== current.url) {
+      card.hidden = true;
+      return;
+    }
+    const before = locatorMap(previous);
+    const after = new Map();
+    for (const row of allRows()) after.set(row.type + "::" + (row.raw || row.value), row);
+    const added = [];
+    const removed = [];
+    const changed = [];
+    for (const [key, row] of after) {
+      if (!before.has(key)) added.push(row);
+      else {
+        const old = before.get(key);
+        if (typeof old.count === "number" && typeof row.count === "number" && old.count !== row.count) {
+          changed.push({ row, oldCount: old.count });
+        }
+      }
+    }
+    for (const [key, row] of before) if (!after.has(key)) removed.push(row);
+    if (!added.length && !removed.length && !changed.length) {
+      card.hidden = true;
+      return;
+    }
+    card.hidden = false;
+    const summary = $("di-diff-summary");
+    summary.textContent = `Changes since previous pick · +${added.length} −${removed.length}` +
+      (changed.length ? ` · ${changed.length} count change${changed.length === 1 ? "" : "s"}` : "");
+    const body = $("di-diff-body");
+    body.textContent = "";
+    const addGroup = (label, items, tone) => {
+      if (!items.length) return;
+      const group = el("div", "diff-group");
+      group.appendChild(el("div", "diff-label", label));
+      for (const item of items.slice(0, 6)) {
+        group.appendChild(el("div", "diff-item " + tone, item.text));
+      }
+      if (items.length > 6) group.appendChild(el("div", "diff-label", `+${items.length - 6} more`));
+      body.appendChild(group);
+    };
+    addGroup("Added", added.map((row) => ({ text: row.value })), "add");
+    addGroup("Removed", removed.map((row) => ({ text: row.value })), "remove");
+    addGroup("Count changed", changed.map((entry) => ({ text: `${entry.row.value} · ${entry.oldCount} → ${entry.row.count}` })), "change");
   };
 
   const refreshStats = () => {
@@ -1940,6 +2003,7 @@
     state.groups = buildGroups(state.payload);
     renderInfo();
     for (const group of GROUPS) renderGroup(group);
+    renderDiff();
     renderDriver();
     renderHeal();
     renderReference();
@@ -1995,6 +2059,7 @@
   const resetSettings = () => {
     state.settings = Object.assign({}, DEFAULT_SETTINGS, { collapsed: {} });
     state.filter = "";
+    state.previousPayload = null;
     state.healRows = [];
     state.healSeq += 1;
     $("di-filter").value = "";
@@ -2006,7 +2071,9 @@
 
   const handlePayload = (payload, restored) => {
     if (!payload) return;
+    const previous = state.payload;
     state.payload = payload;
+    state.previousPayload = !restored && previous && previous.url === payload.url ? previous : null;
     state.autoCounted = new Set();
     if (!state.settings.continuous) state.picking = false;
     renderAll();

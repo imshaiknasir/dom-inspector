@@ -384,6 +384,35 @@ select { cursor: pointer; }
 .paths b { color: var(--muted-2); font-weight: 600; margin-right: 4px; }
 .paths code { color: var(--text); overflow-wrap: anywhere; }
 
+.diff { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 7px; }
+.diff summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.diff summary::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+}
+.diff[open] summary::before { transform: rotate(45deg); }
+.diff summary:hover { color: var(--text); }
+.diff-body { display: grid; gap: 6px; margin-top: 7px; }
+.diff-group { display: grid; gap: 3px; }
+.diff-label { font-size: 9.8px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-2); }
+.diff-item { font: 11px/1.4 var(--mono); overflow-wrap: anywhere; }
+.diff-item.add { color: var(--ok); }
+.diff-item.remove { color: var(--bad); }
+.diff-item.change { color: var(--warn); }
+
 /* ---------- Locator rows ---------- */
 
 .rows { display: grid; gap: 6px; }
