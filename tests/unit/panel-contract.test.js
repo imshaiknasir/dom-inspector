@@ -15,7 +15,7 @@ const referencedIds = (js) => {
   return [...new Set(refs)];
 };
 
-test('panel: every element id used by panel.js exists in panel.html', { todo: 'BLOCKERS.md — panel.js/panel.html refactor mismatch (owner: dom-features)' }, () => {
+test('panel: every element id used by panel.js exists in panel.html', () => {
   const html = fs.readFileSync(PANEL_HTML, 'utf8');
   const js = fs.readFileSync(PANEL_JS, 'utf8');
   const ids = elementIds(html);
