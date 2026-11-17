@@ -361,3 +361,22 @@ test('playwright: modifiers and hasText filters narrow counts', async () => {
   }));
   assert.deepEqual(out, { first: 1, last: 1, second: 1, outOfRange: 0, filtered: 2, roleFiltered: 2 });
 });
+
+test('playwright: icon-only controls generate named role locators', async () => {
+  const local = await browser.newPage();
+  try {
+    await local.setContent(`<!doctype html><html><body>
+      <a id="icon-link" href="#"><svg aria-label="Icon link"></svg></a>
+      <button id="icon-button"><svg aria-label="Icon button"></svg></button>
+    </body></html>`);
+    await injectGenerators(local);
+    const out = await local.evaluate(() => ({
+      link: DI.playwright.generate(document.getElementById('icon-link')),
+      button: DI.playwright.generate(document.getElementById('icon-button'))
+    }));
+    assert.ok(out.link.some((item) => item.count === 1 && item.selector.includes("getByRole('link'") && item.selector.includes("name: 'Icon link'")));
+    assert.ok(out.button.some((item) => item.count === 1 && item.selector.includes("getByRole('button'") && item.selector.includes("name: 'Icon button'")));
+  } finally {
+    await local.close();
+  }
+});
