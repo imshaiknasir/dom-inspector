@@ -2448,6 +2448,7 @@
     if (state.savedBusy || state.healBusy) {
       return toast("Wait for the current check to finish", "bad");
     }
+    const wasContinuous = state.settings.continuous;
     state.settings = Object.assign({}, DEFAULT_SETTINGS, { collapsed: {} });
     state.filter = "";
     state.previousPayload = null;
@@ -2459,7 +2460,7 @@
     persistSettings();
     applySettings();
     renderAll();
-    if (state.picking) {
+    if (state.picking && wasContinuous) {
       sendToTab({ type: "DI_START", continuous: false }).catch(() => {});
     }
     toast("Panel settings reset");
