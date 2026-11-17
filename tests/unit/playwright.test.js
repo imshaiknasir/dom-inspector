@@ -273,3 +273,21 @@ test('playwright: shadow targets get an explicit locator chain', async () => {
   assert.ok(chain.selector.includes("locator('#shadowbtn')"), chain.selector);
   assert.equal(await page.evaluate((selector) => DI.playwright.countExpr(selector), chain.selector), 1);
 });
+
+test('playwright: regex role names with escaped slashes count and validate', async () => {
+  const out = await page.evaluate(() => {
+    const el = document.createElement('button');
+    el.textContent = 'Save/Changes';
+    document.body.appendChild(el);
+    const expr = "page.getByRole('button', { name: /Save\\/Changes/i })";
+    const result = {
+      count: DI.playwright.countExpr(expr),
+      validated: DI.validate.test('playwright', expr)
+    };
+    el.remove();
+    return result;
+  });
+  assert.equal(out.count, 1);
+  assert.equal(out.validated.ok, true);
+  assert.equal(out.validated.count, 1);
+});
