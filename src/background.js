@@ -28,7 +28,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
   }
   if (info.menuItemId === "di-copy-best") {
-    chrome.tabs.sendMessage(tab.id, { type: "DI_COPY_BEST" }).catch(() => {});
+    const options = info.frameId != null ? { frameId: info.frameId } : {};
+    chrome.tabs.sendMessage(tab.id, { type: "DI_COPY_BEST" }, options).catch(() => {});
   }
 });
 
