@@ -251,7 +251,9 @@
       const title = U.attr(frame, "title");
       if (title) return `frameLocator('[title="${title.replace(/"/g, '\\"')}"]')`;
       const src = (U.attr(frame, "src").split("?")[0].split("/").pop() || "");
-      return src ? `frameLocator('[src*="${src.replace(/"/g, '\\"')}"]')` : "frameLocator('iframe')";
+      if (src) return `frameLocator('[src*="${cssString(src)}"]')`;
+      const css = DI.css.best(frame);
+      return css && css.count === 1 ? `frameLocator(${quote(css.selector)})` : "frameLocator('iframe')";
     });
   };
 

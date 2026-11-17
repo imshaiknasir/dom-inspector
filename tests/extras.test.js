@@ -350,3 +350,29 @@ test('repair: a valid selector with repeated spaces is returned unchanged', asyn
   assert.equal(out.fixed.fixed, 'button[title="a  b"]');
   assert.equal(out.fixed.repaired, false);
 });
+
+test('playwright: unlabelled iframe gets a CSS-based frameLocator', async () => {
+  await page.evaluate(() => {
+    const frame = document.createElement('iframe');
+    frame.srcdoc = '<button id="plainframe-btn">Plain frame</button>';
+    document.body.appendChild(frame);
+  });
+  let target = null;
+  for (let i = 0; i < 50 && !target; i += 1) {
+    for (const frame of page.frames()) {
+      if (frame === page.mainFrame()) continue;
+      if (await frame.$('#plainframe-btn')) { target = frame; break; }
+    }
+    if (!target) await page.waitForTimeout(50);
+  }
+  assert.ok(target);
+  for (const file of GENERATOR_SCRIPTS) await target.addScriptTag({ path: file });
+  const out = await target.evaluate(() => ({
+    prefix: DI.playwright.framePrefix(),
+    css: DI.css.best(window.frameElement).selector
+  }));
+  assert.equal(out.prefix.length, 1);
+  assert.equal(out.prefix[0], `frameLocator('${out.css.replace(/'/g, "\\'")}')`);
+  assert.ok(out.css.includes('nth-of-type') || out.css.includes('iframe'));
+  await page.evaluate(() => document.querySelectorAll('iframe[srcdoc]')[1]?.remove());
+});

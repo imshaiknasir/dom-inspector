@@ -78,7 +78,9 @@
         const id = U.attr(frame, "id");
         if (id) return `#${U.cssEscape(id)}`;
         const name = U.attr(frame, "name");
-        return name ? `[name="${name.replace(/"/g, '\\"')}"]` : "iframe";
+        if (name) return `[name="${name.replace(/"/g, '\\"')}"]`;
+        const best = DI.css.best(frame);
+        return best && best.selector ? best.selector : "iframe";
       });
       out.push({ type: "selenium-frame", code: frameCss.map((sel) => `driver.switchTo().frame(driver.findElement(By.cssSelector(${q(sel)})))`).join("\n") });
     }
