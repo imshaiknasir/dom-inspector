@@ -344,3 +344,11 @@ test('panel actions: role state options filter the match set', { todo: 'role opt
     await statesPage.close();
   }
 });
+
+test('panel actions: locator hasText options narrow matches', { todo: 'panel-actions ignores locator(selector, { hasText })' }, async () => {
+  const out = await page.evaluate(() => ({
+    text: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn', { hasText: 'Edit' })", '', false).matched,
+    regex: DIPanel.pageAction('click', 'playwright', "page.locator('.rowbtn', { hasText: /Edit/ })", '', false).matched
+  }));
+  assert.deepEqual(out, { text: 2, regex: 2 });
+});
