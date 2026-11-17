@@ -55,7 +55,7 @@
     const wanted = U.normalizeText(value);
     const needle = exact ? wanted : wanted.toLowerCase();
     const out = new Set();
-    for (const el of U.deepEveryElement(doc, [])) {
+    for (const el of U.deepContentElements(doc, [])) {
       if (U.tagOf(el) === "label") {
         const text = U.normalizeText(el.textContent);
         if (exact ? text === wanted : text.toLowerCase().includes(needle)) {
@@ -90,7 +90,7 @@
   const labelTargetsRegex = (regex, doc = document) => {
     const out = new Set();
     const test = (text) => { regex.lastIndex = 0; return regex.test(text); };
-    for (const el of U.deepEveryElement(doc, [])) {
+    for (const el of U.deepContentElements(doc, [])) {
       if (U.tagOf(el) === "label") {
         if (test(U.normalizeText(el.textContent))) {
           const id = el.getAttribute("for");
@@ -151,7 +151,7 @@
       const spec = DI.playwright.parseTextFilter(textEngine[1]);
       if (!spec) return [];
       const quoted = /^(['"])[\s\S]*\1$/.test(textEngine[1].trim());
-      const all = U.deepEveryElement(doc, []);
+      const all = U.deepContentElements(doc, []);
       if (spec.regex) return all.filter((el) => DI.playwright.matchesTextRegexSmallest(el, spec.regex));
       return all.filter((el) => textMatches(el, spec.text, quoted));
     }
@@ -181,8 +181,9 @@
       if (regex) {
         try { re = new RegExp(regex[1].replace(/\\\//g, "/"), regex[2]); } catch (_) { re = null; }
       }
-      return U.deepEveryElement(doc, []).filter((el) => {
+      return U.deepContentElements(doc, []).filter((el) => {
         if (DI.playwright.implicitRole(el) !== role[1]) return false;
+        if (!DI.playwright.roleEligible(el)) return false;
         const actual = U.normalizeText(DI.playwright.accessibleName(el));
         if (re) { re.lastIndex = 0; return re.test(actual); }
         if (!name) return true;
@@ -200,15 +201,15 @@
     const textRegex = expr.match(/getByText\(\s*\/((?:\\.|[^/])+)\/([gimsuy]*)/);
     if (textRegex) {
       const re = DI.playwright.buildRegex(textRegex[1], textRegex[2]);
-      return re ? U.deepEveryElement(doc, []).filter((el) => DI.playwright.matchesTextRegexSmallest(el, re)) : [];
+      return re ? U.deepContentElements(doc, []).filter((el) => DI.playwright.matchesTextRegexSmallest(el, re)) : [];
     }
     const text = expr.match(/getByText\(\s*['"]((?:\\.|[^'"])+)['"]/);
-    if (text) return U.deepEveryElement(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
+    if (text) return U.deepContentElements(doc, []).filter((el) => textMatches(el, U.unescapeString(text[1]), /exact:\s*true/.test(expr)));
     const byAttr = (name, raw, exact = false, normalize = true) => {
       const value = U.unescapeString(raw);
       const wanted = normalize ? U.normalizeText(value) : String(value).trim();
       const needle = exact ? wanted : wanted.toLowerCase();
-      return U.deepEveryElement(doc, []).filter((el) => {
+      return U.deepContentElements(doc, []).filter((el) => {
         const rawActual = U.attr(el, name);
         const actual = normalize ? U.normalizeText(rawActual) : rawActual;
         return exact ? actual === needle : actual.toLowerCase().includes(needle);
@@ -225,7 +226,7 @@
     if (testIdRegex) {
       const re = DI.playwright.buildRegex(testIdRegex[1], testIdRegex[2]);
       if (!re) return [];
-      return U.deepEveryElement(doc, []).filter((el) => {
+      return U.deepContentElements(doc, []).filter((el) => {
         re.lastIndex = 0;
         return re.test(U.attr(el, "data-testid"));
       });
@@ -244,7 +245,7 @@
       const value = U.unescapeString(engine[2]);
       const mode = expr.includes(":has-text(") ? "has-text"
         : expr.includes(":text-is(") ? "text-is" : "text";
-      return U.deepEveryElement(doc, []).filter((el) => {
+      return U.deepContentElements(doc, []).filter((el) => {
         if (tag !== "*" && U.tagOf(el) !== tag) return false;
         // `:has-text` also matches ancestors; `:text`/`:text-is` keep the
         // smallest matching element, mirroring Playwright.

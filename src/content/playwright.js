@@ -3,6 +3,19 @@
   const DI = (globalThis.DI = globalThis.DI || {});
   const U = DI.util;
 
+  const SECTIONING = new Set(["ARTICLE", "ASIDE", "MAIN", "NAV", "SECTION"]);
+
+  const hasSectioningAncestor = (el) => {
+    let node = el.parentElement;
+    while (node) {
+      if (SECTIONING.has(node.tagName)) return true;
+      node = node.parentElement;
+    }
+    return false;
+  };
+
+  const hasAccessibleLabel = (el) => !!(U.attr(el, "aria-label") || U.attr(el, "aria-labelledby") || U.attr(el, "title"));
+
   const ROLE_MAP = {
     a: (el) => (el.hasAttribute("href") ? "link" : null),
     area: (el) => (el.hasAttribute("href") ? "link" : null),
@@ -13,16 +26,17 @@
     dialog: () => "dialog",
     fieldset: () => "group",
     figure: () => "figure",
-    footer: () => "contentinfo",
-    form: () => "form",
+    footer: (el) => (hasSectioningAncestor(el) ? null : "contentinfo"),
+    form: (el) => (hasAccessibleLabel(el) ? "form" : null),
     h1: () => "heading", h2: () => "heading", h3: () => "heading",
     h4: () => "heading", h5: () => "heading", h6: () => "heading",
-    header: () => "banner",
+    header: (el) => (hasSectioningAncestor(el) ? null : "banner"),
     hr: () => "separator",
     img: (el) => (el.getAttribute("alt") === "" ? null : "img"),
     input: (el) => {
       const type = (el.getAttribute("type") || "text").toLowerCase();
-      if (["button", "submit", "reset", "image"].includes(type)) return "button";
+      if (type === "hidden") return null;
+      if (["button", "submit", "reset", "image", "file"].includes(type)) return "button";
       if (type === "checkbox") return "checkbox";
       if (type === "radio") return "radio";
       if (type === "range") return "slider";
@@ -36,7 +50,7 @@
     ol: () => "list",
     option: () => "option",
     progress: () => "progressbar",
-    section: (el) => (el.hasAttribute("aria-label") ? "region" : null),
+    section: (el) => (hasAccessibleLabel(el) ? "region" : null),
     select: (el) => (el.multiple || Number(el.getAttribute("size") || 0) > 1 ? "listbox" : "combobox"),
     table: () => "table",
     tbody: () => "rowgroup",
@@ -77,6 +91,8 @@
     return wrapping ? U.normalizeText(wrapping.textContent) : "";
   };
 
+  const CONTENT_NAMED = ["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th", "summary"];
+
   const accessibleName = (el) => {
     const aria = U.attr(el, "aria-label");
     if (aria) return aria;
@@ -97,11 +113,30 @@
       const type = (U.attr(el, "type") || "text").toLowerCase();
       if (["button", "submit", "reset"].includes(type) && U.attr(el, "value")) return U.attr(el, "value");
     }
-    if (["button", "a", "h1", "h2", "h3", "h4", "h5", "h6", "option", "td", "th"].includes(tag)) {
-      return U.normalizeText(el.textContent);
+    // Natively content-named elements and custom widgets (role=button etc.)
+    // take their name from their contents when nothing earlier applied.
+    if (CONTENT_NAMED.includes(tag) || U.attr(el, "role")) {
+      const content = U.normalizeText(el.textContent);
+      if (content) return content;
     }
     return U.attr(el, "placeholder") || U.attr(el, "title") || "";
   };
+
+  /* Playwright excludes aria-hidden subtrees and closed/hidden widgets. */
+  const isAriaHidden = (el) => {
+    let node = el;
+    while (node) {
+      if (node.nodeType === 1 && (node.getAttribute("aria-hidden") || "").toLowerCase() === "true") return true;
+      if (node.parentElement) node = node.parentElement;
+      else {
+        const root = node.getRootNode ? node.getRootNode() : null;
+        node = root && root.host ? root.host : null;
+      }
+    }
+    return false;
+  };
+
+  const roleEligible = (el) => U.isVisible(el) && !isAriaHidden(el);
 
   const textMatches = (el, value, exact) => {
     const own = U.normalizeText(el.textContent);
@@ -119,10 +154,11 @@
     return true;
   };
 
-  const allElements = (root) => U.deepEveryElement(root, []);
+  const allElements = (root) => U.deepContentElements(root, []);
 
   const countRole = (role, name, exact, root) => allElements(root).filter((el) => {
     if (implicitRole(el) !== role) return false;
+    if (!roleEligible(el)) return false;
     if (!name) return true;
     const actual = U.normalizeText(accessibleName(el));
     const wanted = exact ? U.normalizeText(name) : U.normalizeText(name).toLowerCase();
@@ -266,7 +302,8 @@
         const re = buildRegex(regex[1], regex[2]);
         if (!re) return 0;
         return allElements(root).filter((el) =>
-          implicitRole(el) === role[1] && testRegex(re, U.normalizeText(accessibleName(el)))).length;
+          implicitRole(el) === role[1] && roleEligible(el) &&
+          testRegex(re, U.normalizeText(accessibleName(el)))).length;
       }
       return countRole(role[1], name ? U.unescapeString(name[1]) : "", exact, root);
     }
@@ -564,6 +601,7 @@
   DI.playwright = {
     implicitRole, accessibleName, labelledByText, countExpr, countHasText,
     parseTextFilter, matchesHasText, matchesTextRegexSmallest, buildRegex,
+    isAriaHidden, roleEligible,
     generate, best, framePrefix, toPython, toJava, toCSharp
   };
 })();

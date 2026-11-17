@@ -90,6 +90,18 @@
     return out;
   };
 
+  const NON_CONTENT = /^(script|style|noscript|template|head|title|meta|link|base)$/i;
+
+  /* Deep element list without non-rendered containers (text/role scans). */
+  const deepContentElements = (root = document, out = []) => {
+    for (const node of root.querySelectorAll("*")) {
+      if (NON_CONTENT.test(node.tagName)) continue;
+      out.push(node);
+      if (node.shadowRoot) deepContentElements(node.shadowRoot, out);
+    }
+    return out;
+  };
+
   const isInShadow = (el) => {
     const root = el.getRootNode ? el.getRootNode() : null;
     return !!(root && root.host);
@@ -151,6 +163,7 @@
     countIn,
     deepQueryAll,
     deepEveryElement,
+    deepContentElements,
     isInShadow,
     shadowHosts,
     iframeChain,
