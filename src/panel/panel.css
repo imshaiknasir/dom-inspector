@@ -629,6 +629,13 @@ select { cursor: pointer; }
 .toast.ok { border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
 .toast.bad { border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
 
+@media (max-width: 560px) {
+  #di-heal-card .section-head,
+  #di-saved-card .section-head { flex-wrap: wrap; row-gap: 6px; }
+  #di-heal-card .saved-tools,
+  #di-saved-card .saved-tools { margin-left: 0; width: 100%; }
+}
+
 /* ---------- Narrow side-panel tweaks ---------- */
 
 @media (max-width: 420px) {
