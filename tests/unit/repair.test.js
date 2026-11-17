@@ -27,6 +27,10 @@ test('repair: normalize cleans quotes, whitespace and unbalanced delimiters', as
       'div[title=\'x',
       'button[data-testid=\'save-btn\'',
       'a[href="x',
+      'div[title="a]b"]',
+      'div[title="a[b"]',
+      "div[title=']']",
+      'div:not([title="a)b"])',
       '  ',
       ''
     ];
@@ -43,6 +47,10 @@ test('repair: normalize cleans quotes, whitespace and unbalanced delimiters', as
   assert.equal(byInput['div[title=\'x'], "div[title='x']");
   assert.equal(byInput['button[data-testid=\'save-btn\''], "button[data-testid='save-btn']");
   assert.equal(byInput['a[href="x'], 'a[href="x"]');
+  assert.equal(byInput['div[title="a]b"]'], 'div[title="a]b"]');
+  assert.equal(byInput['div[title="a[b"]'], 'div[title="a[b"]');
+  assert.equal(byInput["div[title=']']"], "div[title=']']");
+  assert.equal(byInput['div:not([title="a)b"])'], 'div:not([title="a)b"])');
   assert.equal(byInput['  '], '');
   assert.equal(byInput[''], '');
 });
