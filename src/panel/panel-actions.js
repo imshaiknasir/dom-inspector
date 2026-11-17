@@ -531,6 +531,8 @@
                 nodes = [];
               } else if (parsed && parsed.regex) {
                 nodes = allElements().filter((node) => textMatches(node, "", false, parsed.regex));
+              } else if (parsed && parsed.invalid) {
+                nodes = [];
               } else if (parsed && /^['"]/.test(text) && parsed.end === text.length) {
                 nodes = allElements().filter((node) => textMatches(node, parsed.value, true));
               } else {
