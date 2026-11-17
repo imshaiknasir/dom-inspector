@@ -221,9 +221,14 @@
       }
       const css = safe(() => DI.css.best(el), null);
       const xp = safe(() => DI.xpath.best(el), null);
-      const value = css && css.count === 1 ? css.selector
-        : xp && xp.count === 1 ? xp.xpath
-          : (css && css.selector) || (xp && xp.xpath) || "";
+      const needsContext = U.isInShadow(el) || U.iframeChain().length > 0;
+      const pw = needsContext
+        ? (safe(() => DI.playwright.generate(el), []) || []).find((item) => item.count === 1)
+        : null;
+      const value = pw ? pw.selector
+        : css && css.count === 1 ? css.selector
+          : xp && xp.count === 1 ? xp.xpath
+            : (css && css.selector) || (xp && xp.xpath) || "";
       if (!value) {
         sendResponse({ ok: false, error: "No locator generated" });
         return true;
