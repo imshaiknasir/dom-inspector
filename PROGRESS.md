@@ -80,7 +80,7 @@ not shipped). Last updated 17 Nov 2026.
 | Click / Hover / Type action tester | partial | best-effort via `chrome.scripting`; one frame, open roots only |
 | Playwright `await` toggle | done | JavaScript output only |
 | Scroll DOM / show matching node | partial | test highlights and scrolls to first match |
-| Attribute filter / row visibility checkboxes | todo | filter input covers text filtering only |
+| Attribute filter / row visibility checkboxes | partial | text + strategy filters (ID/attribute/class/text/path/semantic); no per-attribute generation filter |
 | Batch/POM multi-column table, XLS import/export | partial | saved list + JSON/CSV export; no grid/spreadsheet import |
 | Batch selector healing | done | paste lines, check counts, flag broken, fix via repair engine, JSON/CSV report |
 | Fix-selector repair loop | done | `content/repair.js`; panel batch fix verifies every suggestion |
@@ -132,6 +132,7 @@ not shipped). Last updated 17 Nov 2026.
 - `11ab1e4` recent pick history in the popup
 - `1382440` saved locators → Playwright page-object snippet
 - `ad3b49f` sanitize persisted settings and reserved POM method names
+- `683f880` strategy filter for locator rows
 - `e47ee2b` popup keyboard shortcuts
 
 ## Next candidates

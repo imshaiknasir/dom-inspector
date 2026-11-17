@@ -37,8 +37,9 @@ based on the behavioural analysis in `../selectorshub/analysis/`.
   an accent border.
 - **Per-row actions** — Test & highlight, edit in tester, save, copy.
 - **Section actions** — copy every visible locator in that section.
-- **Toolbar** — text filter, unique-only mode, collapse/expand all, copy all,
-  JSON export and settings reset.
+- **Toolbar** — text filter, strategy filter (ID, attribute, class, text, path,
+  semantic), unique-only mode, collapse/expand all, copy all, JSON export and
+  settings reset.
 - **Playwright language switch** — JavaScript, Python, Java and C#. JavaScript
   can be prefixed with `await`. Python/Java/C# output is a best-effort
   translation of the generated JavaScript locator.
