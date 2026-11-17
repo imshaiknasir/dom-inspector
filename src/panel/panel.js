@@ -1252,7 +1252,7 @@
         } catch (_) { /* fall through */ }
       }
     }
-    return state.payload && state.payload.url ? state.payload.url : "";
+    return state.payloadTopUrl || (state.payload && state.payload.url ? state.payload.url : "");
   };
 
   const samePage = (left, right) => !left || !right || pageKey(left) === pageKey(right);
