@@ -1449,16 +1449,22 @@
   };
 
   const mergeSavedEntries = (incoming) => {
-    const existing = new Set(state.saved.map((entry) => entry.key || (entry.type + "::" + (entry.testValue || entry.value))));
+    const existing = new Set();
+    for (const entry of state.saved) {
+      if (entry.key) existing.add(entry.key);
+      existing.add(entry.type + "::" + (entry.testValue || entry.value));
+    }
     const added = [];
     for (const raw of incoming.slice(0, 500)) {
       if (!raw || typeof raw !== "object" || typeof raw.value !== "string" || !raw.value.trim()) continue;
       const type = typeof raw.type === "string" && raw.type ? raw.type : "css";
       const testType = ["css", "xpath", "playwright"].includes(raw.testType) ? raw.testType : null;
       const testValue = typeof raw.testValue === "string" && raw.testValue ? raw.testValue : null;
-      const key = typeof raw.key === "string" && raw.key ? raw.key : (type + "::" + (testValue || raw.value));
-      if (existing.has(key)) continue;
+      const canonical = type + "::" + (testValue || raw.value);
+      const key = typeof raw.key === "string" && raw.key ? raw.key : canonical;
+      if (existing.has(key) || existing.has(canonical)) continue;
       existing.add(key);
+      existing.add(canonical);
       added.push({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7) + "-" + added.length,
         key,
