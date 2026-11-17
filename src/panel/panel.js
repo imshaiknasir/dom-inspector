@@ -2872,7 +2872,8 @@
         }
         if (changes["di:panel:focus"]) {
           const focus = changes["di:panel:focus"].newValue;
-          if (!focus || typeof focus !== "object" || Date.now() - (focus.at || 0) > 60000) {
+          if (!focus || typeof focus !== "object") return;
+          if (Date.now() - (focus.at || 0) > 60000) {
             removeStore("di:panel:focus");
             return;
           }
