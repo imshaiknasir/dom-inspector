@@ -47,10 +47,14 @@ chrome.action.onClicked.addListener(async (tab) => {
 if (chrome.commands && chrome.commands.onCommand) {
   chrome.commands.onCommand.addListener(async (command) => {
     if (command !== "start-pick") return;
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || tab.id == null) return;
-    if (tab.windowId != null) chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
-    chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || tab.id == null) return;
+      if (tab.windowId != null) await chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => {});
+      await chrome.tabs.sendMessage(tab.id, { type: "DI_START" }).catch(() => {});
+    } catch (_) {
+      /* No active tab or restricted page. */
+    }
   });
 }
 
