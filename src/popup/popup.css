@@ -186,6 +186,7 @@ button { cursor: pointer; }
   overflow: auto;
   scrollbar-width: thin;
 }
+.loc-url { font-size: 9.8px; color: var(--muted-2); overflow-wrap: anywhere; }
 .loc-row .btn { flex: none; }
 .pill {
   display: inline-flex;

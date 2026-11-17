@@ -248,9 +248,10 @@
       code.title = value;
       main.appendChild(code);
       const count = entry.css ? entry.cssCount : entry.xpath ? entry.xpathCount : entry.playwrightCount;
-      const meta = [type, typeof count === "number" ? `${count} match${count === 1 ? "" : "es"}` : "", entry.url || ""]
+      const meta = [type, typeof count === "number" ? `${count} match${count === 1 ? "" : "es"}` : ""]
         .filter(Boolean).join(" · ");
       main.appendChild(el("span", "loc-label", meta));
+      if (entry.url) main.appendChild(el("span", "loc-url", entry.url));
       row.appendChild(main);
       row.appendChild(copyButton("Copy", value));
       rowsBox.appendChild(row);
