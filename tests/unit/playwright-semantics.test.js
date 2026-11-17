@@ -303,42 +303,65 @@ test('panel actions: icon and caption accessible names resolve', { todo: 'panel-
   }
 });
 
-test('panel actions: role state options filter the match set', { todo: 'role options ignore checked/disabled/includeHidden/level' }, async () => {
+const STATES_FIXTURE = `<!doctype html><html><body>
+  <input type="checkbox" id="c1" checked aria-label="Term one">
+  <input type="checkbox" id="c2" aria-label="Term two">
+  <input type="checkbox" id="c3" hidden aria-label="Hidden term">
+  <button id="b1" disabled>Disabled</button>
+  <button id="b2">Enabled</button>
+  <h1>Top</h1><h2>Second</h2>
+</body></html>`;
+
+const STATES_EXPRS = [
+  "page.getByRole('checkbox', { checked: true })",
+  "page.getByRole('checkbox', { checked: false })",
+  "page.getByRole('button', { disabled: true })",
+  "page.getByRole('button', { disabled: false })",
+  "page.getByRole('checkbox', { includeHidden: true })",
+  "page.getByRole('heading', { level: 2 })"
+];
+
+const openStatesFixture = async () => {
   const statesPage = await browser.newPage();
+  await statesPage.setContent(STATES_FIXTURE);
+  await injectGenerators(statesPage);
+  await statesPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
+  return statesPage;
+};
+
+const statesRealCounts = async (statesPage) => ([
+  await statesPage.getByRole('checkbox', { checked: true }).count(),
+  await statesPage.getByRole('checkbox', { checked: false }).count(),
+  await statesPage.getByRole('button', { disabled: true }).count(),
+  await statesPage.getByRole('button', { disabled: false }).count(),
+  await statesPage.getByRole('checkbox', { includeHidden: true }).count(),
+  await statesPage.getByRole('heading', { level: 2 }).count()
+]);
+
+test('playwright: role state options filter the match set', async () => {
+  const statesPage = await openStatesFixture();
   try {
-    await statesPage.setContent(`<!doctype html><html><body>
-      <input type="checkbox" id="c1" checked aria-label="Term one">
-      <input type="checkbox" id="c2" aria-label="Term two">
-      <input type="checkbox" id="c3" hidden aria-label="Hidden term">
-      <button id="b1" disabled>Disabled</button>
-      <button id="b2">Enabled</button>
-      <h1>Top</h1><h2>Second</h2>
-    </body></html>`);
-    await injectGenerators(statesPage);
-    await statesPage.addScriptTag({ path: path.join(ROOT, 'src/panel/panel-actions.js') });
-    const exprs = [
-      "page.getByRole('checkbox', { checked: true })",
-      "page.getByRole('checkbox', { checked: false })",
-      "page.getByRole('button', { disabled: true })",
-      "page.getByRole('button', { disabled: false })",
-      "page.getByRole('checkbox', { includeHidden: true })",
-      "page.getByRole('heading', { level: 2 })"
-    ];
-    const real = [
-      await statesPage.getByRole('checkbox', { checked: true }).count(),
-      await statesPage.getByRole('checkbox', { checked: false }).count(),
-      await statesPage.getByRole('button', { disabled: true }).count(),
-      await statesPage.getByRole('button', { disabled: false }).count(),
-      await statesPage.getByRole('checkbox', { includeHidden: true }).count(),
-      await statesPage.getByRole('heading', { level: 2 }).count()
-    ];
-    for (let index = 0; index < exprs.length; index += 1) {
-      const [count, validated, panel] = await statesPage.evaluate((expr) => [
+    const real = await statesRealCounts(statesPage);
+    for (let index = 0; index < STATES_EXPRS.length; index += 1) {
+      const [count, validated] = await statesPage.evaluate((expr) => [
         DI.playwright.countExpr(expr),
-        DI.validate.test('playwright', expr).count,
-        DIPanel.pageAction('click', 'playwright', expr, '', false).matched
-      ], exprs[index]);
-      assert.deepEqual([count, validated, panel], [real[index], real[index], real[index]], exprs[index]);
+        DI.validate.test('playwright', expr).count
+      ], STATES_EXPRS[index]);
+      assert.deepEqual([count, validated], [real[index], real[index]], STATES_EXPRS[index]);
+    }
+  } finally {
+    await statesPage.close();
+  }
+});
+
+test('panel actions: role state options filter the match set', { todo: 'panel-actions ignores checked/disabled/includeHidden/level options' }, async () => {
+  const statesPage = await openStatesFixture();
+  try {
+    const real = await statesRealCounts(statesPage);
+    for (let index = 0; index < STATES_EXPRS.length; index += 1) {
+      const panel = await statesPage.evaluate((expr) =>
+        DIPanel.pageAction('click', 'playwright', expr, '', false).matched, STATES_EXPRS[index]);
+      assert.equal(panel, real[index], STATES_EXPRS[index]);
     }
   } finally {
     await statesPage.close();
