@@ -936,6 +936,18 @@ test('panel exports saved locators as CSV and imports them back', async () => {
   expect(row).toContain('"#save"');
   expect(row).toContain('"https://example.test/a,b"');
 
+  const jsonPromise = extensionPage.waitForEvent('download');
+  await extensionPage.evaluate(() => document.getElementById('di-saved-json').click());
+  const jsonDownload = await jsonPromise;
+  expect(jsonDownload.suggestedFilename()).toMatch(/^dom-inspector-saved-.*\.json$/);
+  const exported = JSON.parse(fs.readFileSync(await jsonDownload.path(), 'utf8'));
+  expect(exported).toMatchObject({ extension: 'DOM Inspector' });
+  expect(exported.saved.length).toBe(1);
+  expect(exported.saved[0]).toMatchObject({
+    name: 'Save, "main"', type: 'css', value: '#save', count: 1,
+    url: 'https://example.test/a,b', savedAt: 1700000000000
+  });
+
   await extensionPage.evaluate(() => chrome.storage.local.remove('di:panel:saved'));
   await extensionPage.reload();
   await expect.poll(() => extensionPage.evaluate(() =>
