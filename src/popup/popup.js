@@ -9,7 +9,7 @@
   const HISTORY_KEY = "di:panel:history";
   const FOCUS_KEY = "di:panel:focus";
 
-  const state = { payload: null, saved: [], history: [], busy: false };
+  const state = { payload: null, saved: [], history: [], historyExpanded: false, busy: false };
 
   const setStatus = (text, tone) => {
     const node = $("pop-status");
@@ -219,17 +219,21 @@
     const card = $("pop-history-card");
     const rowsBox = $("pop-history-rows");
     const current = lastKey();
-    const entries = state.history
+    const all = state.history
       .slice()
       .sort((a, b) => (b.at || 0) - (a.at || 0))
       .filter((entry) => {
         const key = (entry.url || "") + "\n" + (entry.css || "") + "\n" + (entry.xpath || "");
         return key !== current;
-      })
-      .slice(0, 4);
-    card.hidden = entries.length === 0;
+      });
+    const entries = state.historyExpanded ? all : all.slice(0, 4);
+    card.hidden = all.length === 0;
     rowsBox.textContent = "";
     $("pop-history-meta").textContent = String(state.history.length);
+    const more = $("pop-history-more");
+    more.hidden = all.length <= 4;
+    more.textContent = state.historyExpanded ? "Show less" : `Show all (${all.length})`;
+    more.setAttribute("aria-expanded", state.historyExpanded ? "true" : "false");
     for (const entry of entries) {
       const row = el("div", "loc-row");
       const main = el("div", "loc-main");
@@ -388,10 +392,16 @@
   $("pop-last-test").addEventListener("click", openTester);
   $("pop-heal").addEventListener("click", openHealing);
   $("pop-refresh").addEventListener("click", load);
+  $("pop-history-more").addEventListener("click", () => {
+    state.historyExpanded = !state.historyExpanded;
+    renderHistory();
+  });
+
   $("pop-history-clear").addEventListener("click", async () => {
     try {
       if (api && api.storage && api.storage.local) await api.storage.local.remove(HISTORY_KEY);
       state.history = [];
+      state.historyExpanded = false;
       render();
       setStatus("Pick history cleared");
     } catch (error) {
