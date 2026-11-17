@@ -21,7 +21,8 @@
     collapsed: {},
     driver: "",
     driverBase: "css",
-    healText: ""
+    healText: "",
+    strategy: "all"
   };
 
   const GROUPS = [
@@ -568,7 +569,25 @@
   /* Row rendering                                                    */
   /* ---------------------------------------------------------------- */
 
+  const rowStrategy = (row) => {
+    if (row.scope === "Selenium" || row.scope === "Formats") return "other";
+    if (row.scope === "Playwright") {
+      return /^getby/i.test(row.label || "") ? "semantic" : "path";
+    }
+    const label = String(row.label || "").toLowerCase();
+    if (label.includes("attr:") || label.startsWith("contains:")) return "attr";
+    if (label === "id" || label === "id+tag" || label === "parent-id") return "id";
+    if (label === "class" || label === "classes" || label === "tag+class") return "class";
+    if (label.includes("text")) return "text";
+    if (label.includes("path") || label.includes("positional") || label.includes("absolute") ||
+        label.includes("indexed") || label.includes("nth") || label.includes("ancestor") ||
+        label.includes("descendant") || label.includes("sibling") || label.includes("following") ||
+        label.includes("preceding") || label.includes("common-ancestor")) return "path";
+    return "other";
+  };
+
   const matchesFilter = (row) => {
+    if (state.settings.strategy !== "all" && rowStrategy(row) !== state.settings.strategy) return false;
     if (!state.filter) return true;
     const haystack = [row.value, row.raw, row.label, row.type, row.scope]
       .filter(Boolean).join(" ").toLowerCase();
@@ -1752,6 +1771,7 @@
     $("di-await").disabled = state.settings.lang !== "js";
     $("di-unique").checked = !!state.settings.unique;
     $("di-continuous").checked = !!state.settings.continuous;
+    $("di-strategy").value = state.settings.strategy;
     $("di-driver-base").value = state.settings.driverBase;
     $("di-driver-template").value = state.settings.driver;
     if ($("di-heal-input").value !== (state.settings.healText || "")) {
@@ -1853,6 +1873,14 @@
 
     $("di-unique").addEventListener("change", (event) => {
       state.settings.unique = event.target.checked;
+      persistSettings();
+      state.countNodes = new Map();
+      for (const group of GROUPS) renderGroup(group);
+      refreshSaveButtons();
+    });
+
+    $("di-strategy").addEventListener("change", (event) => {
+      state.settings.strategy = event.target.value;
       persistSettings();
       state.countNodes = new Map();
       for (const group of GROUPS) renderGroup(group);
@@ -2066,6 +2094,8 @@
     merged.driverBase = merged.driverBase === "xpath" ? "xpath" : "css";
     merged.driver = typeof merged.driver === "string" ? merged.driver : "";
     merged.healText = typeof merged.healText === "string" ? merged.healText : "";
+    merged.strategy = ["all", "id", "attr", "class", "text", "path", "semantic", "other"].includes(merged.strategy)
+      ? merged.strategy : "all";
     merged.collapsed = merged.collapsed && typeof merged.collapsed === "object"
       ? Object.keys(merged.collapsed).reduce((out, key) => {
         out[key] = !!merged.collapsed[key];

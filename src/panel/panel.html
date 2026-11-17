@@ -35,6 +35,16 @@
           <input id="di-unique" type="checkbox" />
           <span>Unique only</span>
         </label>
+        <select id="di-strategy" class="strategy-select" aria-label="Filter by locator strategy" title="Filter by strategy">
+          <option value="all">All strategies</option>
+          <option value="id">ID</option>
+          <option value="attr">Attribute</option>
+          <option value="class">Class</option>
+          <option value="text">Text</option>
+          <option value="path">Path / axes</option>
+          <option value="semantic">Semantic</option>
+          <option value="other">Other</option>
+        </select>
         <div class="tool-buttons">
           <button id="di-expand" class="btn small" type="button" title="Expand or collapse every section">Collapse all</button>
           <button id="di-ref-set" class="btn small" type="button" title="Pick a reference element, then pick the target for axes XPath">Axes ref</button>

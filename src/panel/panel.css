@@ -200,6 +200,7 @@ input[type="text"]:focus, input[type="search"]:focus, select:focus {
 select { cursor: pointer; }
 
 .tool-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.strategy-select { padding: 4px 7px; font-size: 11px; border-radius: 7px; max-width: 140px; }
 
 /* ---------- Layout and cards ---------- */
 
