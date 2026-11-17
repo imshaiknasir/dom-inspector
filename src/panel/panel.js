@@ -78,6 +78,7 @@
     filter: "",
     picking: false,
     contentAvailable: null,
+    pickMode: "element",
     autoCounted: new Set(),
     payloadSeq: 0,
     countNodes: new Map(),
@@ -1866,6 +1867,7 @@
   const startPicker = async () => {
     try {
       await sendToTab({ type: "DI_START", continuous: !!state.settings.continuous });
+      state.pickMode = "element";
       state.picking = true;
       state.contentAvailable = true;
       setHint("");
@@ -2113,6 +2115,7 @@
   const startReference = async () => {
     try {
       await sendToTab({ type: "DI_START", continuous: false, mode: "reference" });
+      state.pickMode = "reference";
       state.picking = true;
       updatePickerUi();
       setStatus("Pick the reference element for axes XPath…");
@@ -2635,7 +2638,7 @@
     persistSettings();
     applySettings();
     renderAll();
-    if (state.picking && wasContinuous) {
+    if (state.picking && wasContinuous && state.pickMode === "element") {
       sendToTab({ type: "DI_START", continuous: false }).catch(() => {});
     }
     toast("Panel settings reset");
@@ -2739,7 +2742,11 @@
       state.settings.continuous = event.target.checked;
       persistSettings();
       if (state.picking) {
-        sendToTab({ type: "DI_START", continuous: state.settings.continuous }).catch(() => {});
+        sendToTab({
+          type: "DI_START",
+          continuous: state.settings.continuous,
+          mode: state.pickMode
+        }).catch(() => {});
       }
       toast(state.settings.continuous ? "Continuous picking enabled" : "Single-pick mode");
     });
@@ -3007,6 +3014,7 @@
           }
           renderAll();
           const ref = message.payload;
+          state.pickMode = "element";
           setStatus(`Reference: ${ref.tag || "element"}${ref.id ? "#" + ref.id : ""} — now pick the target element.`);
           sendToTab({ type: "DI_START", continuous: !!state.settings.continuous, mode: "element" })
             .then(() => { state.picking = true; updatePickerUi(); })
