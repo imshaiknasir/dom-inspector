@@ -210,7 +210,7 @@
         label: typeof raw.label === "string" ? raw.label : "",
         error: typeof raw.error === "string" ? raw.error : "",
         url: typeof raw.url === "string" ? raw.url : "",
-        savedAt: typeof raw.savedAt === "number" ? raw.savedAt : Date.now()
+        savedAt: typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) ? raw.savedAt : Date.now()
       });
     }
     return out;
