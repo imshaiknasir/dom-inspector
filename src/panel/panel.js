@@ -2866,7 +2866,12 @@
             : [];
         }
         if (changes["di:panel:focus"]) {
-          const target = applyFocusPayload(changes["di:panel:focus"].newValue, true);
+          const focus = changes["di:panel:focus"].newValue;
+          if (!focus || typeof focus !== "object" || Date.now() - (focus.at || 0) > 60000) {
+            removeStore("di:panel:focus");
+            return;
+          }
+          const target = applyFocusPayload(focus, true);
           if (target) removeStore("di:panel:focus");
         }
       });
