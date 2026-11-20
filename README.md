@@ -11,10 +11,6 @@ A clean-room Manifest V3 Chrome extension for QA engineers and SDETs. Click an e
 
 It is an independent open-source alternative to tools like SelectorsHub. It is not affiliated with SelectorsHub, and it does not use that project's code, assets, names, or branding.
 
-<!-- TODO: Record a short demo GIF of picking an element and copying a Playwright locator, then replace the placeholder below. -->
-
-> **Demo GIF needed.** A short screen recording belongs here: pick an element, show live match counts, and copy a Playwright or Selenium locator. Save it as `docs/demo.gif` and replace this note with `![DOM Inspector demo](docs/demo.gif)`.
-
 ## Why
 
 Chrome DevTools can copy a CSS path or an XPath, but it will not tell you whether that selector is unique, and it will not give you a Playwright `getByRole` or a Selenium `By.*` snippet. DOM Inspector is built for the locators you actually paste into Playwright, Selenium, and Cypress tests.
