@@ -49,7 +49,12 @@ const READ_ONLY = {
 };
 
 const createServer = () => {
-  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
+  const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION }, {
+    instructions:
+      'Use list_elements to discover targets, generate_locators to create a locator for a known element, ' +
+      'verify_locator to check an existing locator, and heal_locator only when a locator is broken or ' +
+      'matches several elements. Always check verify_locator.unique or heal_locator.verified.unique before trusting a locator.'
+  });
 
   server.registerTool('generate_locators', {
     title: 'Generate verified locators',

@@ -81,7 +81,7 @@ In the panel:
 
 ## MCP server
 
-The repository includes a local [Model Context Protocol](https://modelcontextprotocol.io) server in `mcp/` so coding agents can generate, verify, and heal locators against real pages. It speaks MCP over stdio, uses the official `@modelcontextprotocol/sdk`, and injects the extension's own `src/content` modules into Playwright Chromium. Nothing is sent to a remote service.
+The repository includes a local [Model Context Protocol](https://modelcontextprotocol.io) server in `mcp/` so coding agents can generate, verify, and heal locators against real pages. It speaks MCP over stdio, uses the official `@modelcontextprotocol/sdk`, and injects the extension's own `src/content` modules into Playwright Chromium. Locator results are computed locally; the server only fetches the page URL you pass to it, and that page runs its own JavaScript as it would in a browser.
 
 ```bash
 npm install

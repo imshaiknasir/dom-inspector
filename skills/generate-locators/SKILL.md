@@ -39,6 +39,54 @@ page: call `list_elements` first.
 | `timeoutMs` | integer 1000–120000 | no | `15000` | Navigation/evaluation timeout. |
 | `viewport` | `{ "width"?: int, "height"?: int }` | no | `1280×800` | Viewport. |
 
+## Machine-readable input schema
+
+This is the exact schema advertised by `tools/list` (descriptions omitted).
+
+```json
+{
+  "type": "object",
+  "required": ["target"],
+  "additionalProperties": false,
+  "properties": {
+    "url": { "type": "string", "minLength": 1 },
+    "html": { "type": "string", "minLength": 1 },
+    "waitUntil": { "type": "string", "enum": ["load", "domcontentloaded", "networkidle", "commit"] },
+    "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 120000 },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 200, "maximum": 4000 },
+        "height": { "type": "integer", "minimum": 200, "maximum": 4000 }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "css": { "type": "string", "minLength": 1 },
+        "xpath": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "exact": { "type": "boolean" },
+        "playwright": { "type": "string", "minLength": 1 },
+        "coordinates": {
+          "type": "object",
+          "required": ["x", "y"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "index": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "maxCandidates": { "type": "integer", "minimum": 1, "maximum": 50 }
+  }
+}
+```
+
 ## Example call
 
 ```json

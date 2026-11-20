@@ -223,6 +223,14 @@ test('verify_locator: unique, non-unique, and missing results', { timeout: 60000
   assert.equal(many.data.matches.length, 2);
   assert.match(many.data.advice, /heal_locator/);
 
+  const xpath = await call('verify_locator', {
+    url: baseURL,
+    locator: "//button[@id='save']"
+  });
+  assert.equal(xpath.data.type, 'xpath');
+  assert.equal(xpath.data.matchCount, 1);
+  assert.equal(xpath.data.unique, true);
+
   const playwright = await call('verify_locator', {
     url: baseURL,
     locator: "page.getByRole('button', { name: 'Save changes', exact: true })"
@@ -252,6 +260,19 @@ test('heal_locator: a unique input is reported valid without a rewrite', { timeo
   assert.equal(data.fixed, '#save');
   assert.equal(data.verified.unique, true);
   assert.equal(data.previous.matchCount, 1);
+});
+
+test('heal_locator: prefer chooses the output format for broken input', { timeout: 60000 }, async () => {
+  const { data } = await call('heal_locator', {
+    url: baseURL,
+    locator: '#sav',
+    prefer: 'playwright'
+  });
+  assert.equal(data.ok, true);
+  assert.equal(data.status, 'healed');
+  assert.match(data.fixed, /^page\./);
+  assert.match(data.fixed, /getByTestId|getByRole|getByText|locator/);
+  assert.equal(data.verified.unique, true);
 });
 
 test('heal_locator: repairs a broken selector and re-verifies it', { timeout: 60000 }, async () => {

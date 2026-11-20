@@ -37,6 +37,35 @@ name), `getByLabel`, `getByPlaceholder`, `getByText`, `getByAltText`,
 `:has-text`, `:text`, `:text-is`, `.first()`, `.last()`, `.nth()`, and
 `.filter({ hasText })`.
 
+## Machine-readable input schema
+
+This is the exact schema advertised by `tools/list` (descriptions omitted).
+
+```json
+{
+  "type": "object",
+  "required": ["locator"],
+  "additionalProperties": false,
+  "properties": {
+    "locator": { "type": "string", "minLength": 1 },
+    "type": { "type": "string", "enum": ["auto", "css", "xpath", "playwright"] },
+    "maxMatches": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "url": { "type": "string", "minLength": 1 },
+    "html": { "type": "string", "minLength": 1 },
+    "waitUntil": { "type": "string", "enum": ["load", "domcontentloaded", "networkidle", "commit"] },
+    "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 120000 },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 200, "maximum": 4000 },
+        "height": { "type": "integer", "minimum": 200, "maximum": 4000 }
+      }
+    }
+  }
+}
+```
+
 ## Example call
 
 ```json

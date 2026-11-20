@@ -408,14 +408,16 @@
 
     if (verified.elements.length === 1) {
       const analysis = M.analyze(verified.elements[0]);
+      const preferred = recommend(analysis, prefer);
+      const choice = preferred || { format: verified.type, value: repaired };
       return {
         ok: true,
         status: statusFrom(repair),
         reason: repair.repaired ? "broken" : "valid",
-        fixed: repaired,
-        type: verified.type,
+        fixed: choice.value,
+        type: choice.format,
         previous: { locator: value, type: current.type, matchCount: 0, unique: false },
-        choice: { format: verified.type, value: repaired },
+        choice,
         analysis,
         repair
       };

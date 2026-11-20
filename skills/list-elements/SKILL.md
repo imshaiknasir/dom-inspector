@@ -37,6 +37,34 @@ The default selector covers `a[href]`, `area[href]`, `button`,
 `input:not([type="hidden"])`, `select`, `textarea`, `summary`, `details`,
 contenteditable hosts, and the common interactive ARIA roles.
 
+## Machine-readable input schema
+
+This is the exact schema advertised by `tools/list` (descriptions omitted).
+
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "selector": { "type": "string", "minLength": 1 },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+    "includeHidden": { "type": "boolean" },
+    "url": { "type": "string", "minLength": 1 },
+    "html": { "type": "string", "minLength": 1 },
+    "waitUntil": { "type": "string", "enum": ["load", "domcontentloaded", "networkidle", "commit"] },
+    "timeoutMs": { "type": "integer", "minimum": 1000, "maximum": 120000 },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": { "type": "integer", "minimum": 200, "maximum": 4000 },
+        "height": { "type": "integer", "minimum": 200, "maximum": 4000 }
+      }
+    }
+  }
+}
+```
+
 ## Example call
 
 ```json
