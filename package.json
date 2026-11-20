@@ -7,7 +7,9 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test --test-concurrency=1 tests/*.test.js tests/unit/*.test.js",
     "test:e2e": "playwright test",
-    "install:browsers": "playwright install chromium"
+    "install:browsers": "playwright install chromium",
+    "mcp:start": "node mcp/server.js",
+    "test:mcp": "node --test --test-concurrency=1 tests/mcp/*.test.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1",
@@ -15,5 +17,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
   }
 }
