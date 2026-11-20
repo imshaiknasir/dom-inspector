@@ -24,13 +24,17 @@ Last updated: 20 Nov 2026
 - Verified locally: `test:unit` (245 pass, 5 known todo), `test:e2e` (54 pass)
   and `test:mcp` (13 pass).
 
+- Wrote `skills/README.md` plus `skills/{list-elements,generate-locators,verify-locator,heal-locator,locator-workflow}/SKILL.md`
+  with exact tool names, argument tables, call/response examples, decision
+  rules, and install/config snippets for Claude Code, Codex, OpenCode, Cursor.
+- Updated `README.md` with MCP server and Skill map sections, and documented
+  `npm run test:mcp`.
+
 ## In progress
 
-- Skill map and install/config documentation.
+- Final verification and push.
 
 ## Next
 
-- Write `skills/*/SKILL.md` plus `skills/README.md` (install/config snippets
-  for Claude Code, Codex, OpenCode, Cursor).
-- Update `README.md` with MCP server and Skill map sections.
-- Commit and push, then verify GitHub Actions with `gh run list`.
+- Re-run unit, e2e and MCP suites before the next commit; push; check
+  `gh run list --limit 3` for a green workflow.

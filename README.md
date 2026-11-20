@@ -79,6 +79,50 @@ In the panel:
 - `Esc` clears the focused filter, stops an active picker, or clears tester highlights.
 - `Enter` in the tester runs Test & highlight; in a saved name field it commits the name; in “Text to type” it runs Type.
 
+## MCP server
+
+The repository includes a local [Model Context Protocol](https://modelcontextprotocol.io) server in `mcp/` so coding agents can generate, verify, and heal locators against real pages. It speaks MCP over stdio, uses the official `@modelcontextprotocol/sdk`, and injects the extension's own `src/content` modules into Playwright Chromium. Nothing is sent to a remote service.
+
+```bash
+npm install
+npm run install:browsers   # Playwright Chromium
+npm run mcp:start          # stdio server; diagnostics on stderr
+```
+
+| Tool | What it does |
+| --- | --- |
+| `generate_locators` | Find an element by CSS, XPath, text, Playwright expression, or viewport coordinates and return ranked CSS, XPath, Playwright, Selenium, and Cypress locators with live counts. |
+| `verify_locator` | Test an existing locator and report its type, match count, uniqueness, parser error, and matching elements. |
+| `heal_locator` | Normalize/repair a broken locator, or pick one of several matches by index and regenerate a unique, re-verified locator. |
+| `list_elements` | List visible interactive elements, including open shadow roots and same-origin iframes, with role, accessible name, text, and best locators. |
+
+Point your MCP client at the absolute path of `mcp/server.js`. Claude Code and Cursor, for example:
+
+```json
+{
+  "mcpServers": {
+    "dom-inspector": {
+      "command": "node",
+      "args": ["/absolute/path/to/dom-inspector/mcp/server.js"]
+    }
+  }
+}
+```
+
+Codex and OpenCode snippets, exact argument schemas, and example calls/responses are in the [skill map](skills/README.md).
+
+## Skill map
+
+`skills/` contains agent-facing skills that make the generate / verify / heal decision explicit:
+
+- [skills/list-elements](skills/list-elements/SKILL.md) — discover controls before targeting one.
+- [skills/generate-locators](skills/generate-locators/SKILL.md) — produce framework-ready locators for a known element.
+- [skills/verify-locator](skills/verify-locator/SKILL.md) — check count, uniqueness, and parser errors.
+- [skills/heal-locator](skills/heal-locator/SKILL.md) — repair broken input or disambiguate repeated matches.
+- [skills/locator-workflow](skills/locator-workflow/SKILL.md) — the full decision tree and safe retry loop.
+
+The [top-level skill map](skills/README.md) includes install/config snippets for Claude Code, Codex, OpenCode, and Cursor, plus the rule for when to generate, verify, or heal instead of guessing.
+
 ## Locator coverage
 
 - **CSS** — id, tag+id, `data-testid` / `data-test-id` / `data-test` / `data-cy`, name, aria-label, placeholder, alt, title, role, type, filtered classes, parent-id path, ancestor path, and absolute `nth-of-type` path. Generated-looking ids and classes (long hashes, CSS-in-JS tokens, UUID-like values) are skipped, and every candidate is counted on the live page.
@@ -110,9 +154,10 @@ npm run install:browsers   # once, for the end-to-end suite
 npm test                   # unit suites, then extension e2e
 npm run test:unit          # tests/*.test.js and tests/unit/*.test.js
 npm run test:e2e           # tests/e2e/*.spec.js
+npm run test:mcp           # MCP server through the SDK stdio client
 ```
 
-The unit suites cover CSS ranking and generated-class filtering, XPath (relative, absolute, indexed, text, axes, SVG, shadow), Playwright locators and counts, Selenium/Cypress formats, validation, iframe `frameLocator` generation, utilities, manifest integrity, and panel/popup/devtools contracts (every id used by the scripts exists in the markup). The e2e spec launches Chromium with `--load-extension`, drives the real picker, and covers the popup, axes reference, right-click copy, repair, batch healing, and saved-locator flows.
+The unit suites cover CSS ranking and generated-class filtering, XPath (relative, absolute, indexed, text, axes, SVG, shadow), Playwright locators and counts, Selenium/Cypress formats, validation, iframe `frameLocator` generation, utilities, manifest integrity, and panel/popup/devtools contracts (every id used by the scripts exists in the markup). The e2e spec launches Chromium with `--load-extension`, drives the real picker, and covers the popup, axes reference, right-click copy, repair, batch healing, and saved-locator flows. The MCP suite starts the stdio server with the official SDK client and exercises every tool against fixture pages loaded over HTTP.
 
 Current suite: **250 unit cases** (245 pass, 5 tracked as `todo` probes for remaining Playwright action-runner parity) and **54 e2e cases** (one is an expected failure: whitespace-only saved locator values are still accepted). Those gaps are listed below.
 
