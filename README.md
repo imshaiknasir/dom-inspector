@@ -174,4 +174,4 @@ The extension requests `activeTab`, `scripting`, `storage`, `sidePanel`, `clipbo
 
 ## License
 
-This repository does not include a LICENSE file yet. That should be added before the project is widely redistributed.
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Sekh Nasir.
