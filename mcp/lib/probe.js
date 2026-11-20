@@ -62,8 +62,13 @@
     };
   };
 
-  const frameLocators = () => {
-    try { return DI.playwright.framePrefix(); } catch (_) { return []; }
+  const frameLocators = (el) => {
+    try {
+      const win = el && el.ownerDocument && el.ownerDocument.defaultView;
+      return DI.playwright.framePrefix(win || window);
+    } catch (_) {
+      return [];
+    }
   };
 
   const candidateRow = (item, valueKey) => ({
@@ -153,7 +158,7 @@
 
     const analysis = {
       element: describe(el),
-      frameLocators: frameLocators(),
+      frameLocators: frameLocators(el),
       css: {
         best: bestOf(cssCandidates),
         candidates: cssCandidates
@@ -187,7 +192,7 @@
           ? { value: playwright.selector, matchCount: playwright.count, unique: playwright.count === 1 }
           : null
       },
-      frameLocators: frameLocators()
+      frameLocators: frameLocators(el)
     };
   };
 
@@ -224,6 +229,7 @@
     if (target.css) {
       out.type = "css";
       try {
+        document.querySelectorAll(target.css);
         out.elements = U.deepQueryAll(target.css, document).filter((node) => node && node.nodeType === 1);
         out.count = out.elements.length;
       } catch (error) {
@@ -471,6 +477,7 @@
     const max = Math.max(1, Math.min(Number(limit) || 25, 200));
     let matches;
     try {
+      document.querySelectorAll(wanted);
       matches = U.deepEveryElement(document).filter((el) => {
         try { return el.matches(wanted); } catch (_) { return false; }
       });

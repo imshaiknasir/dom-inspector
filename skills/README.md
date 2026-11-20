@@ -74,7 +74,6 @@ Project `.mcp.json` (or the same `mcpServers` block in user config):
 {
   "mcpServers": {
     "dom-inspector": {
-      "type": "stdio",
       "command": "node",
       "args": ["/absolute/path/to/dom-inspector/mcp/server.js"]
     }

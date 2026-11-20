@@ -131,9 +131,14 @@ unique example.
   one element matched.
 - `type` is the detected or forced language. Keep it for the next call when you
   use `heal_locator`.
-- `matches` is capped by `maxMatches`; `matchCount` is the true count across
-  the inspected page and same-origin frames.
-- `frame` names the frame URL when the match came from a same-origin iframe.
+- `matches` is capped by `maxMatches`; `matchCount` is the true count in the
+  frame that resolved the locator. CSS/XPath resolution falls back to a
+  same-origin iframe when the main frame has no match, so counts are not
+  aggregated across several frames.
+- `frame` names the child frame URL when resolution fell back into a
+  same-origin iframe. A `frameLocator(...)` Playwright expression is resolved
+  from the main frame and may report `frame: null` while still matching inside
+  the frame.
 - `error` is a parser/runtime message; it is not thrown as a tool error.
 
 ## Decision rules

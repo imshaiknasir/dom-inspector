@@ -105,6 +105,21 @@ const injectFrame = async (frame) => {
   }
 };
 
+/* Late or lazily created frames may miss the eager injection pass. Retry
+ * once after injecting the shared modules into that frame. */
+const evaluateFrame = async (frame, fn, arg) => {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await frame.evaluate(fn, arg);
+    } catch (error) {
+      if (attempt === 1) throw error;
+      try { await injectFrame(frame); } catch (_) { /* still try the call once more */ }
+      await sleep(50);
+    }
+  }
+  return undefined;
+};
+
 const waitForStableFrames = async (page, timeoutMs = 2000) => {
   const deadline = Date.now() + timeoutMs;
   let previous = -1;
@@ -170,7 +185,7 @@ const findTarget = async (page, target) => {
     if (target.coordinates && !isMain) continue;
     let result;
     try {
-      result = await frame.evaluate(({ target: raw, limit: max }) =>
+      result = await evaluateFrame(frame, ({ target: raw, limit: max }) =>
         globalThis.DIMCP.analyzeTarget(raw, max), { target, limit });
     } catch (error) {
       lastError = error;
@@ -181,6 +196,7 @@ const findTarget = async (page, target) => {
         frame,
         frameIndex: isMain ? 0 : page.frames().indexOf(frame),
         matchCount: result.matchCount,
+        selectedIndex: result.selectedIndex,
         type: result.type,
         analysis: result.analysis
       };
@@ -200,7 +216,7 @@ const verifyInPage = async (page, type, locator, maxMatches) => {
   for (const frame of frameList(page)) {
     let result;
     try {
-      result = await frame.evaluate(({ type: rawType, locator: rawLocator, maxMatches: max }) =>
+      result = await evaluateFrame(frame, ({ type: rawType, locator: rawLocator, maxMatches: max }) =>
         globalThis.DIMCP.verify(rawType, rawLocator, max), { type, locator, maxMatches });
     } catch (_) {
       continue;
@@ -225,7 +241,7 @@ const healInPage = async (page, locator, type, index, prefer) => {
   for (const frame of frameList(page)) {
     let result;
     try {
-      result = await frame.evaluate(({ locator: rawLocator, type: rawType, index: at, prefer: chosen }) =>
+      result = await evaluateFrame(frame, ({ locator: rawLocator, type: rawType, index: at, prefer: chosen }) =>
         globalThis.DIMCP.heal(rawLocator, rawType, at, chosen), { locator, type, index, prefer });
     } catch (error) {
       last = { ok: false, status: 'error', error: error.message };
@@ -246,17 +262,18 @@ const listInPage = async (page, selector, limit, includeHidden) => {
   const errors = [];
   for (const frame of frameList(page)) {
     const remaining = limit - elements.length;
-    if (remaining <= 0) break;
     let result;
     try {
-      result = await frame.evaluate(({ selector: rawSelector, limit: max, includeHidden: hidden }) =>
-        globalThis.DIMCP.list(rawSelector, max, hidden), { selector, limit: remaining, includeHidden });
+      result = await evaluateFrame(frame, ({ selector: rawSelector, limit: max, includeHidden: hidden }) =>
+        globalThis.DIMCP.list(rawSelector, Math.max(1, max), hidden),
+      { selector, limit: remaining > 0 ? remaining : 1, includeHidden });
     } catch (_) {
       continue;
     }
     framesScanned += 1;
     if (result.error) errors.push(result.error);
     total += result.count;
+    if (remaining <= 0) continue;
     for (const element of result.elements.slice(0, remaining)) {
       elements.push({
         ...element,

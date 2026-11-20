@@ -30,11 +30,14 @@ Last updated: 20 Nov 2026
 - Updated `README.md` with MCP server and Skill map sections, and documented
   `npm run test:mcp`.
 
+- Final verification: `npm test` passes end to end — 245 unit pass (5 known
+  todo), 54 e2e pass, and 16 MCP cases pass.
+
 ## In progress
 
-- Final verification and push.
+- None.
 
 ## Next
 
-- Re-run unit, e2e and MCP suites before the next commit; push; check
+- No open work. To resume after a change, re-run `npm test` and check
   `gh run list --limit 3` for a green workflow.

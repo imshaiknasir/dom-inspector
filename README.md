@@ -151,7 +151,7 @@ Plain JavaScript, HTML, and CSS. There is no bundler, TypeScript, or compile ste
 ```bash
 npm install
 npm run install:browsers   # once, for the end-to-end suite
-npm test                   # unit suites, then extension e2e
+npm test                   # unit, extension e2e, then MCP suites
 npm run test:unit          # tests/*.test.js and tests/unit/*.test.js
 npm run test:e2e           # tests/e2e/*.spec.js
 npm run test:mcp           # MCP server through the SDK stdio client

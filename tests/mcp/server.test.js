@@ -122,6 +122,18 @@ test('generate_locators: text target resolves the smallest matching element', { 
   assert.match(data.playwright.best.value, /getByRole\('button'|getByText\('Nested label'/);
 });
 
+test('generate_locators: target.index selects among repeated matches', { timeout: 60000 }, async () => {
+  const html = '<!doctype html><button class="item">First</button><button class="item">Second</button>';
+  const { data } = await call('generate_locators', {
+    html,
+    target: { css: '.item', index: 1 }
+  });
+  assert.equal(data.target.matchCount, 2);
+  assert.equal(data.target.selectedIndex, 1);
+  assert.equal(data.element.text, 'Second');
+  assert.equal(data.css.best.unique, true);
+});
+
 test('generate_locators: viewport coordinates pierce open shadow roots', { timeout: 60000 }, async () => {
   const html = `<!doctype html>
     <button id="hit" style="position:absolute;left:20px;top:20px;width:140px;height:40px">Hit</button>
@@ -193,6 +205,15 @@ test('verify_locator: parser errors are reported and not thrown', { timeout: 600
   assert.ok(data.error);
 });
 
+test('heal_locator: a unique input is reported valid without a rewrite', { timeout: 60000 }, async () => {
+  const { data } = await call('heal_locator', { url: baseURL, locator: '#save' });
+  assert.equal(data.ok, true);
+  assert.equal(data.status, 'valid');
+  assert.equal(data.fixed, '#save');
+  assert.equal(data.verified.unique, true);
+  assert.equal(data.previous.matchCount, 1);
+});
+
 test('heal_locator: repairs a broken selector and re-verifies it', { timeout: 60000 }, async () => {
   const { data } = await call('heal_locator', {
     url: baseURL,
@@ -248,16 +269,30 @@ test('list_elements: returns visible interactive elements with best locators', {
   assert.ok(ids.includes('save'));
   assert.ok(ids.includes('email'));
   assert.ok(ids.includes('shadowbtn'));
+  assert.ok(ids.includes('inner'));
   const save = data.elements.find((element) => element.id === 'save');
   assert.equal(save.accessibleName, 'Save changes');
   assert.equal(save.locators.css.value, '#save');
   assert.equal(save.locators.css.unique, true);
+  const inner = data.elements.find((element) => element.id === 'inner');
+  assert.ok(inner.frame);
+  assert.deepEqual(inner.frameLocators, ["frameLocator('#frame')"]);
   assert.ok(save.locators.playwright.value);
   const hidden = await call('list_elements', {
     html: '<!doctype html><button id="shown">Shown</button><button id="hidden" style="display:none">Hidden</button>',
     limit: 10
   });
   assert.deepEqual(hidden.data.elements.map((element) => element.id), ['shown']);
+});
+
+test('list_elements: an invalid selector is an input error', { timeout: 60000 }, async () => {
+  const { result, data } = await call('list_elements', {
+    html: '<!doctype html><div>Hello</div>',
+    selector: 'div['
+  });
+  assert.equal(result.isError, true);
+  assert.equal(data.errorType, 'invalid-input');
+  assert.ok(data.error);
 });
 
 test('input validation: url/html exclusivity and target selection fail closed', { timeout: 60000 }, async () => {
