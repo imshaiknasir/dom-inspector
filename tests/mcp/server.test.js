@@ -14,6 +14,7 @@ const FIXTURE = fs.readFileSync(path.join(ROOT, 'tests', 'fixture.html'), 'utf8'
 
 let client;
 let server;
+let crossServer;
 let baseURL;
 let stderr = '';
 
@@ -28,10 +29,21 @@ const call = async (name, args) => {
 const toolNames = ['generate_locators', 'verify_locator', 'heal_locator', 'list_elements'];
 
 before(async () => {
+  crossServer = http.createServer((request, response) => {
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    response.end('<!doctype html><button id="cross-only">Cross only</button>');
+  });
+  await new Promise((resolve) => crossServer.listen(0, '127.0.0.1', resolve));
+  const crossURL = `http://127.0.0.1:${crossServer.address().port}/`;
   server = http.createServer((request, response) => {
     if (request.url === '/favicon.ico') {
       response.writeHead(204);
       response.end();
+      return;
+    }
+    if (request.url === '/cross-frame') {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.end(`<!doctype html><iframe id="cross" src="${crossURL}"></iframe>`);
       return;
     }
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
@@ -54,6 +66,7 @@ before(async () => {
 after(async () => {
   if (client) await client.close().catch(() => {});
   if (server) await new Promise((resolve) => server.close(resolve));
+  if (crossServer) await new Promise((resolve) => crossServer.close(resolve));
   if (process.env.DI_MCP_DEBUG) process.stderr.write(stderr);
 });
 
@@ -95,6 +108,11 @@ test('generate_locators: CSS target on a URL returns all five formats', { timeou
   assert.equal(data.cypress.css, "cy.get('#save')");
   assert.ok(data.cypress.snippets.some((row) => row.type === 'cypress-xpath'));
   assert.equal(data.recommended.value, data.playwright.best.value);
+  assert.equal(data.locators.css, '#save');
+  assert.equal(data.locators.xpath, "//*[@id='save']");
+  assert.match(data.locators.playwright, /getByTestId\('save-btn'\)|getByRole\('button'/);
+  assert.match(data.locators.selenium, /By\.cssSelector\('#save'\)/);
+  assert.equal(data.locators.cypress, "cy.get('#save')");
 });
 
 test('generate_locators: XPath target on raw HTML', { timeout: 60000 }, async () => {
@@ -120,6 +138,16 @@ test('generate_locators: text target resolves the smallest matching element', { 
   assert.equal(data.element.id, 'nested');
   assert.equal(data.target.method, 'text');
   assert.match(data.playwright.best.value, /getByRole\('button'|getByText\('Nested label'/);
+});
+
+test('generate_locators: Playwright target expressions are accepted', { timeout: 60000 }, async () => {
+  const { data } = await call('generate_locators', {
+    html: '<!doctype html><button id="pw">Playwright target</button>',
+    target: { playwright: "page.getByRole('button', { name: 'Playwright target' })" }
+  });
+  assert.equal(data.target.method, 'playwright');
+  assert.equal(data.element.id, 'pw');
+  assert.equal(data.css.best.value, '#pw');
 });
 
 test('generate_locators: target.index selects among repeated matches', { timeout: 60000 }, async () => {
@@ -165,6 +193,18 @@ test('generate_locators: targets inside same-origin frames get frame locators', 
   assert.deepEqual(data.frameLocators, ["frameLocator('#frame')"]);
   assert.match(data.playwright.best.value, /frameLocator\('#frame'\)/);
   assert.match(data.selenium.frame, /switchTo\(\)\.frame/);
+});
+
+test('cross-origin frames are excluded instead of returning an unscoped locator', { timeout: 60000 }, async () => {
+  const listing = await call('list_elements', { url: baseURL + 'cross-frame' });
+  assert.equal(listing.data.totalMatched, 0);
+  assert.equal(listing.data.framesScanned, 1);
+  const generated = await call('generate_locators', {
+    url: baseURL + 'cross-frame',
+    target: { css: '#cross-only' }
+  });
+  assert.equal(generated.result.isError, true);
+  assert.match(generated.data.error, /No element matched/);
 });
 
 test('verify_locator: unique, non-unique, and missing results', { timeout: 60000 }, async () => {

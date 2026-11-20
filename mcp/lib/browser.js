@@ -86,9 +86,42 @@ const closeBrowser = async () => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const frameList = (page) => {
+const frameAccess = new WeakMap();
+
+/* A frame reached only through cross-origin ancestors cannot be addressed by
+ * a top-level locator, so treat it as out of scope rather than return a
+ * locator that would not resolve in a test runner. */
+const frameIsAccessible = async (frame) => {
+  const cached = frameAccess.get(frame);
+  const url = frame.url();
+  if (cached && cached.url === url) return cached.accessible;
+  let accessible = false;
+  try {
+    accessible = await frame.evaluate(() => !!window.frameElement);
+  } catch (_) {
+    accessible = false;
+  }
+  frameAccess.set(frame, { url, accessible });
+  return accessible;
+};
+
+const usableFrames = async (page) => {
   const main = page.mainFrame();
-  return [main, ...page.frames().filter((frame) => frame !== main)];
+  const out = [main];
+  for (const frame of page.frames()) {
+    if (frame === main) continue;
+    let node = frame;
+    let accessible = true;
+    while (node && node !== main) {
+      if (!(await frameIsAccessible(node))) {
+        accessible = false;
+        break;
+      }
+      node = node.parentFrame();
+    }
+    if (accessible) out.push(frame);
+  }
+  return out;
 };
 
 const injectFrame = async (frame) => {
@@ -180,7 +213,7 @@ const withPage = async (input, fn) => {
 const findTarget = async (page, target) => {
   const limit = Number.isInteger(target.maxCandidates) ? target.maxCandidates : 12;
   let lastError = null;
-  for (const frame of frameList(page)) {
+  for (const frame of await usableFrames(page)) {
     const isMain = frame === page.mainFrame();
     if (target.coordinates && !isMain) continue;
     let result;
@@ -213,7 +246,7 @@ const findTarget = async (page, target) => {
 };
 
 const verifyInPage = async (page, type, locator, maxMatches) => {
-  for (const frame of frameList(page)) {
+  for (const frame of await usableFrames(page)) {
     let result;
     try {
       result = await evaluateFrame(frame, ({ type: rawType, locator: rawLocator, maxMatches: max }) =>
@@ -238,7 +271,7 @@ const verifyInPage = async (page, type, locator, maxMatches) => {
 
 const healInPage = async (page, locator, type, index, prefer) => {
   let last = null;
-  for (const frame of frameList(page)) {
+  for (const frame of await usableFrames(page)) {
     let result;
     try {
       result = await evaluateFrame(frame, ({ locator: rawLocator, type: rawType, index: at, prefer: chosen }) =>
@@ -260,7 +293,7 @@ const listInPage = async (page, selector, limit, includeHidden) => {
   let total = 0;
   let framesScanned = 0;
   const errors = [];
-  for (const frame of frameList(page)) {
+  for (const frame of await usableFrames(page)) {
     const remaining = limit - elements.length;
     let result;
     try {

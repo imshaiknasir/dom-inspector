@@ -31,7 +31,7 @@ Last updated: 20 Nov 2026
   `npm run test:mcp`.
 
 - Final verification: `npm test` passes end to end — 245 unit pass (5 known
-  todo), 54 e2e pass, and 16 MCP cases pass.
+  todo), 54 e2e pass, and 18 MCP cases pass.
 
 ## In progress
 

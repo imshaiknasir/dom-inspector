@@ -109,10 +109,26 @@ const assertTarget = (target) => {
   }
 };
 
+const primaryLocators = (analysis) => {
+  if (!analysis) {
+    return { css: null, xpath: null, playwright: null, selenium: null, cypress: null };
+  }
+  return {
+    css: analysis.css && analysis.css.best ? analysis.css.best.value : null,
+    xpath: analysis.xpath && analysis.xpath.best ? analysis.xpath.best.value : null,
+    playwright: analysis.playwright && analysis.playwright.best ? analysis.playwright.best.value : null,
+    selenium: analysis.selenium
+      ? analysis.selenium.snippets.css || analysis.selenium.snippets.xpath || null
+      : null,
+    cypress: analysis.cypress ? analysis.cypress.css || analysis.cypress.xpath || null : null
+  };
+};
+
 const formatAnalysis = (analysis) => {
   if (!analysis) {
     return {
       element: null,
+      locators: primaryLocators(null),
       css: null,
       xpath: null,
       playwright: null,
@@ -124,6 +140,7 @@ const formatAnalysis = (analysis) => {
   return {
     element: analysis.element,
     frameLocators: analysis.frameLocators,
+    locators: primaryLocators(analysis),
     css: analysis.css,
     xpath: analysis.xpath,
     playwright: analysis.playwright,
@@ -159,12 +176,11 @@ const generateLocators = async (input) => {
       matchCount: found.matchCount,
       selectedIndex: found.selectedIndex || 0,
       frameIndex: found.frameIndex,
-      frameUrl: found.frame
-        ? found.frame.url() === page.url ? null : found.frame.url()
-        : null
+      frameUrl: found.frameIndex > 0 && found.frame ? found.frame.url() : null
     },
     element: analysis.element,
     frameLocators: analysis.frameLocators,
+    locators: primaryLocators(analysis),
     css: analysis.css,
     xpath: analysis.xpath,
     playwright: analysis.playwright,

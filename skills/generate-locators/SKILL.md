@@ -130,6 +130,13 @@ Trimmed: one candidate per family, long attribute maps removed.
       { "type": "cypress-css", "code": "cy.get('#checkout')" }
     ]
   },
+  "locators": {
+    "css": "#checkout",
+    "xpath": "//*[@id='checkout']",
+    "playwright": "page.getByTestId('checkout-btn')",
+    "selenium": "driver.findElement(By.cssSelector('#checkout'))",
+    "cypress": "cy.get('#checkout')"
+  },
   "recommended": { "format": "playwright", "value": "page.getByTestId('checkout-btn')" }
 }
 ```
@@ -139,6 +146,8 @@ Trimmed: one candidate per family, long attribute maps removed.
 - `recommended` is the best unique locator using the extension ranking.
   `playwright.best`, `css.best`, and `xpath.best` are each the best unique
   (or highest-ranked) candidate in that family.
+- `locators` is a convenience object with one primary value per framework:
+  `css`, `xpath`, `playwright`, `selenium`, and `cypress`.
 - `unique: false` means that candidate matched more than one element. Prefer a
   candidate with `unique: true`, or call `heal_locator` with the intended
   index if nothing is unique.
