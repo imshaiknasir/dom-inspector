@@ -1,217 +1,177 @@
 # DOM Inspector
 
-A clean-room Manifest V3 Chrome extension that picks an element and produces
-verified locators for CSS, XPath, Playwright, Selenium, Cypress, JavaScript and
-jQuery. Every locator is resolved against the live page with a match count, and
-the same polished panel works as a DevTools sidebar pane and as a Chrome side
-panel.
+Pick an element on any page and copy verified locators for Playwright, Selenium, Cypress, CSS, and XPath.
 
-No code, assets, names or branding from SelectorsHub were used. The build is
-based on the behavioural analysis in `../selectorshub/analysis/`.
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3)
+[![Chrome 116+](https://img.shields.io/badge/Chrome-116%2B-4285F4?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions)
+[![Tests](https://img.shields.io/badge/tests-245%20unit%20%2B%2054%20e2e-brightgreen)](#development-and-tests)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+
+A clean-room Manifest V3 Chrome extension for QA engineers and SDETs. Click an element, and the panel lists ranked locators that have already been resolved against the live page, each with a match count and a unique / no-match badge.
+
+It is an independent open-source alternative to tools like SelectorsHub. It is not affiliated with SelectorsHub, and it does not use that project's code, assets, names, or branding.
+
+<!-- TODO: Record a short demo GIF of picking an element and copying a Playwright locator, then replace the placeholder below. -->
+
+> **Demo GIF needed.** A short screen recording belongs here: pick an element, show live match counts, and copy a Playwright or Selenium locator. Save it as `docs/demo.gif` and replace this note with `![DOM Inspector demo](docs/demo.gif)`.
+
+## Why
+
+Chrome DevTools can copy a CSS path or an XPath, but it will not tell you whether that selector is unique, and it will not give you a Playwright `getByRole` or a Selenium `By.*` snippet. DOM Inspector is built for the locators you actually paste into Playwright, Selenium, and Cypress tests.
+
+Everything runs on your machine. There are no accounts, ads, analytics, remote scripts, or license checks.
+
+## Features
+
+- **Pick from the page** — hover to highlight, click to inspect. Works in open shadow roots and same-origin iframes. Cancel with **Stop** or `Esc`. Continuous picking stays on until you stop it.
+- **Verified locators** — CSS, XPath, Playwright, Selenium, Cypress, JavaScript, jQuery, and testRigor. Each row shows the value, the strategy, a live match count, and whether it is unique.
+- **Automation-ready snippets** — Playwright `getBy*` locators in JavaScript, Python, Java, and C# (Java and C# are best-effort translations of the JavaScript locator). Selenium `By.*`. Cypress `cy.get` / `cy.xpath`, plus shadow-root and frame-switch snippets.
+- **Same panel in two places** — a DevTools Elements sidebar pane and a Chrome side panel, plus a compact toolbar popup for pick, recent history, and saved locators.
+- **Test, highlight, and repair** — paste a CSS, XPath, or Playwright locator to get a live count and highlight matches. **Fix** runs a local repair engine and keeps a replacement only after it re-validates as unique. Click, Hover, and Type actions are available as a best-effort check.
+- **Axes reference** — pick a reference element, then a target, and get axes XPath (descendant, ancestor, siblings, following/preceding, common ancestor) with counts.
+- **Batch selector healing** — paste one selector per line, flag broken or non-unique rows, and replace flagged ones with a verified unique suggestion. Export the report as JSON or CSV.
+- **Saved locators** — a local list you can rename, filter, reorder, re-check, repair, and import or export as JSON or CSV. Download a Playwright page-object snippet from the saved entries.
+- **Right-click copy** — the page context menu can pick an element or copy its best selector.
+- **Local and private** — settings, history, and saved locators stay in Chrome storage. Light and dark themes follow the browser colour scheme.
 
 ## Install (load unpacked)
 
+The extension is not on the Chrome Web Store yet. There is no build step: the repository root is the unpacked extension (it contains `manifest.json`).
+
+```bash
+git clone https://github.com/imshaiknasir/dom-inspector.git
+```
+
 1. Open `chrome://extensions`.
-2. Enable **Developer mode**.
-3. Click **Load unpacked** and select this folder (`dom-inspector-extension`).
-4. Open a normal `http(s)` page (not a blank tab, `chrome://` page or the Web
-   Store, where content scripts cannot run).
-5. Click the toolbar icon to open the compact popup, or open DevTools → Elements
-   → **DOM Inspector** sidebar pane. The popup can open the side panel.
-6. Press **Pick element**, hover the page and click a node. Use **Stop** or
-   `Esc` to cancel. Reload an already-open tab after installing or updating the
-   extension so the content script is present.
+2. Turn on **Developer mode**.
+3. Click **Load unpacked** and select the cloned `dom-inspector` folder.
+4. Open a normal `http(s)` page. Content scripts cannot run on a new-tab page, `chrome://` URLs, or the Chrome Web Store.
+5. Click the toolbar icon for the popup, or open DevTools → Elements → **DOM Inspector**. The popup can also open the side panel.
+6. Reload any tab that was already open before you installed or updated the extension.
 
-## Panel tour
+Chrome 116 or newer is required. Other Chromium browsers such as Edge or Brave may load the unpacked folder, but the extension is developed and tested for Chrome.
 
-- **Toolbar popup** — start picking, open the panel, jump to batch healing,
-  review the last picked element, an expandable list of latest distinct picks
-  and recent saved locators, and copy any value. **Test** sends the best locator to the panel
-  tester. Shortcuts: `P` pick, `O` open panel, `H` batch healing, `R` refresh,
-  `T` test best, `C` copy all last locators.
-- **Selected element** — tag, id, classes, implicit role, accessible name, text,
-  visibility, URL, iframe depth, shadow-host chain, shadow CSS chain and frame
-  XPath. When the same page is picked twice, a collapsible diff shows locators
-  added, removed or whose counts changed.
-- **Locator sections** — CSS, XPath, Playwright, Selenium and
-  Cypress/JS/jQuery. Each row shows the generated value, its strategy, a live
-  match count and `unique` / `no match` state. The best candidate is marked with
-  an accent border.
-- **Per-row actions** — Test & highlight, edit in tester, save, copy.
-- **Section actions** — copy every visible locator in that section.
-- **Toolbar** — text filter, strategy filter (ID, attribute, class, text, path,
-  semantic), unique-only mode, collapse/expand all, copy all, JSON export and
-  settings reset.
-- **Playwright language switch** — JavaScript, Python, Java and C#. JavaScript
-  can be prefixed with `await`. Python/Java/C# output is a best-effort
-  translation of the generated JavaScript locator.
-- **Test a locator** — paste CSS, XPath or Playwright, get an auto-detected type,
-  a debounced live count, and Test & highlight. **Fix** repairs a broken locator
-  through the page repair engine, replaces the tester value and re-validates it.
-  Click / Hover / Type actions run against the page, searching open shadow roots
-  and same-origin frames. They accept CSS, XPath, Playwright `getBy*`
-  (including string/regex arguments), `locator()` chains, `.first()`,
-  `.last()`, `.nth()`, `.filter({hasText})` with string/regex text, and the
-  `css=`, `xpath=` and `text=` engines. `:visible` is honoured by filtering
-  hidden matches. Role/label/test-id matching follows the generator's
-  accessible-name semantics. Action testing is best-effort and reported
-  honestly when a field is not typable or nothing matches.
-- **Axes reference** — press **Axes ref**, pick a reference element, then pick
-  the target. The panel lists axes XPath from the reference (descendant,
-  ancestor, siblings, following/preceding, common ancestor), with counts and a
-  clear-reference action.
-- **Batch selector healing** — paste one selector per line, check all against
-  the page, flag broken or non-unique rows, and run **Fix flagged** to get a
-  verified unique replacement from the repair engine. Copy or export the report
-  as JSON/CSV.
-- **Driver command template** — build a runnable command from the best CSS or
-  XPath using `{selector}` (legacy `xpathvalue` / `cssvalue` select their own
-  value), with Selenium Java/Python, Cypress, Playwright and TestNG presets.
-  Substituted values are escaped for the surrounding single, double or
-  backtick quote context.
-- **Saved locators** — a small locator/POM list stored locally. Rename entries,
-  filter, reorder, re-check every saved locator's live count, re-test, edit,
-  copy, delete, import JSON/CSV, export JSON/CSV, clear the list, or download a
-  Playwright page-object snippet (`POM`) generated from the saved locators.
-  Each saved row shows its source URL. When a re-check flags a broken entry, a **Fix** action repairs it in place
-  with a verified unique CSS/XPath/Playwright replacement. Check, Test and Fix
-  stay scoped to the entry's saved source page; entries from other pages are
-  skipped/refused so they are never rewritten against the wrong DOM. Saved code
-  snippets that are not locators (Cypress/JS/jQuery/frame helpers) are kept and
-  exported but skipped by Check. CSV exports neutralise spreadsheet formulas
-  (cells starting with `=`, `+`, `-`, `@`, tab or newline get an apostrophe
-  prefix), and CSV import removes that prefix again.
-- **Right-click copy** — the page context menu can pick an element or copy its
-  best selector through the worker.
-- **Persistence** — language, await, unique-only, continuous picking, collapsed
-  sections, driver template, batch-healing input and saved locators survive
-  panel reloads. The last pick is restored from the service worker/session
-  storage; every new pick is also added to a small recent-pick history used by
-  the popup (restored picks are not duplicated), and open panel/popup surfaces
-  stay in sync through storage events.
-- **Themes** — light and dark follow the browser colour scheme.
+Keyboard shortcuts (Chrome may ask you to confirm them at `chrome://extensions/shortcuts`):
 
-### Keyboard
+| Shortcut | Action |
+| --- | --- |
+| `Alt+Shift+D` | Open DOM Inspector |
+| `Alt+Shift+P` | Start picking an element |
 
-- `Esc` clears the focused row or saved-locator filter, stops an active picker, or
-  clears highlights while the tester is focused.
-- `Enter` in the tester runs Test & highlight; in the saved-name field it
-  commits the name.
-- `Enter` in the “Text to type” field runs the Type action.
-- Popup: `P` pick, `O` open panel, `H` batch healing, `R` refresh, `T` test the
-  best locator in the panel, `C` copy the locators shown for the last pick.
+## Usage
+
+1. Press **Pick element** (or `P` in the popup, or `Alt+Shift+P`).
+2. Hover the page and click the node you want. Use **Stop** or `Esc` to cancel.
+3. Review the ranked locators in the panel. The best candidate is marked with an accent border.
+4. Copy a row, or use **Test & highlight** / **Fix** on a locator you already have.
+
+### Panel
+
+- **Selected element** — tag, id, classes, implicit role, accessible name, text, visibility, URL, iframe depth, and shadow/frame context. Picking the same page twice shows a collapsible diff of locators that were added, removed, or whose counts changed.
+- **Locator sections** — CSS, XPath, Playwright, Selenium, and Cypress/JS/jQuery. Filter by text or strategy (ID, attribute, class, text, path, semantic), switch on unique-only mode, collapse sections, copy all visible rows, or export JSON.
+- **Playwright language switch** — JavaScript, Python, Java, and C#. JavaScript can be prefixed with `await`.
+- **Tester** — paste CSS, XPath, or Playwright; the type is auto-detected. Counts update as you type. **Fix** repairs a broken locator through the page repair engine. Click / Hover / Type search open shadow roots and same-origin frames, and accept CSS, XPath, Playwright `getBy*` (string or regex arguments), `locator()` chains, `.first()`, `.last()`, `.nth()`, `.filter({hasText})`, and the `css=`, `xpath=`, and `text=` engines. `:visible` filters hidden matches. Action testing is best-effort and reports honestly when a field is not typable or nothing matches.
+- **Driver command template** — build a runnable command from the best CSS or XPath using `{selector}`, with Selenium Java/Python, Cypress, Playwright, and TestNG presets. Values are escaped for the surrounding quotes.
+- **Saved locators** — Check, Test, and Fix stay scoped to each entry's saved source page, so a locator is never rewritten against the wrong DOM. Code snippets that are not locators are kept and exported but skipped by Check. CSV exports prefix formula-like cells (`=`, `+`, `-`, `@`, tab, or newline) with an apostrophe; import removes that prefix again.
+
+### Popup and keyboard
+
+In the popup: `P` pick, `O` open the panel, `H` batch healing, `R` refresh, `T` test the best locator, `C` copy the locators for the last pick.
+
+In the panel:
+
+- `Esc` clears the focused filter, stops an active picker, or clears tester highlights.
+- `Enter` in the tester runs Test & highlight; in a saved name field it commits the name; in “Text to type” it runs Type.
 
 ## Locator coverage
 
-- **CSS:** id, tag+id, `data-testid` / `data-test` / `data-cy`, name,
-  aria-label, placeholder, alt, title, role, type, filtered classes, parent-id
-  path, ancestor path and absolute `nth-of-type` path. Dynamic ids/classes are
-  filtered and every candidate is verified for uniqueness.
-- **XPath:** id, `data-*` and common attributes, exact/contains/starts-with
-  text, own text, positional path anchored on an id, absolute path, indexed
-  `(expr)[n]`, and axes (descendant, ancestor, following/preceding sibling,
-  following, preceding, common ancestor). SVG uses `local-name()` / `name()`.
-  Same-origin iframe chains are described. XPath inside a shadow root is
-  explicitly unavailable, matching browser behaviour.
-- **Playwright:** `getByTestId`, `getByRole` (exact and case-insensitive regex
-  name), `getByLabel`, `getByPlaceholder`, `getByText`, `getByAltText`,
-  `getByTitle`, CSS/ID `locator`, engine pseudo-classes (`:visible`,
-  `:has-text`, `:text-is`, `:text`), `frameLocator` chains and `.nth()` fallback
-  when nothing is unique. Counts come from a local DOM engine.
-- **Other formats:** Selenium `By.id`, `By.name`, `By.className`, `By.tagName`,
-  `By.linkText`, `By.partialLinkText`, `By.cssSelector`, `By.xpath`; Cypress
-  `cy.get` / `cy.xpath` / shadow chain; testRigor label path; JS
-  `document.querySelector` and `document.evaluate`; jQuery; Selenium
-  frame-switch and open-shadow-root snippets.
+- **CSS** — id, tag+id, `data-testid` / `data-test-id` / `data-test` / `data-cy`, name, aria-label, placeholder, alt, title, role, type, filtered classes, parent-id path, ancestor path, and absolute `nth-of-type` path. Generated-looking ids and classes (long hashes, CSS-in-JS tokens, UUID-like values) are skipped, and every candidate is counted on the live page.
+- **XPath** — id, `data-*` and common attributes, exact / contains / starts-with text, own text, a positional path anchored on an id, absolute path, indexed `(expr)[n]`, and axes. SVG nodes use `local-name()` / `name()`. Same-origin iframe chains are described. XPath inside a shadow root is unavailable, which matches browser behaviour.
+- **Playwright** — `getByTestId`, `getByRole` (exact and case-insensitive regex name), `getByLabel`, `getByPlaceholder`, `getByText`, `getByAltText`, `getByTitle`, CSS/ID `locator`, engine pseudo-classes (`:visible`, `:has-text`, `:text-is`, `:text`), `frameLocator` chains, and a `.nth()` fallback when nothing is unique. Counts come from a local DOM engine, not from a Playwright test run.
+- **Other formats** — Selenium `By.id`, `By.name`, `By.className`, `By.tagName`, `By.linkText`, `By.partialLinkText`, `By.cssSelector`, `By.xpath`; Cypress `cy.get` / `cy.xpath` / shadow chain; testRigor label path; `document.querySelector` and `document.evaluate`; jQuery; Selenium frame-switch and open-shadow-root snippets.
 
-## Architecture
+## How it compares
 
-```
-manifest.json
-  background service worker   side-panel behaviour + last-pick cache
-  content scripts (all frames)
-    util.js         escaping, deep query, shadow/iframe helpers
-    css.js          ranked CSS candidates
-    xpath.js        XPath variants + axes
-    playwright.js   Playwright generation + local counting engine
-    formats.js      Selenium/Cypress/JS/jQuery/frame/shadow snippets
-    validate.js     detection, validation, highlighting
-    repair.js       normalize + best-match selector repair loop
-    picker.js       overlay, picking, axes reference, message bridge
-  devtools page → Elements sidebar pane
-  popup/
-    popup.html         toolbar popup markup
-    popup.css          compact popup styling
-    popup.js           pick/open panel/recent locators/copy
-  panel/
-    panel.html         shared DevTools + side-panel markup
-    panel.css          responsive light/dark design
-    panel.js           panel controller, locator rendering, batch healing
-    panel-converters.js Playwright language converters
-    panel-actions.js   self-contained page action runner
-```
+Facts you can check in this repository or in Chrome itself. This is not a feature-parity chart against commercial tools.
 
-Messages used by the panel/popup: `DI_START`, `DI_STOP`, `DI_TEST`, `DI_CLEAR`,
-`DI_CLEAR_REFERENCE`, `DI_PING` to the content script; `DI_ELEMENT` and
-`DI_REFERENCE` from content to the panel/worker; `DI_GET_LAST` to the worker;
-`DI_COPY_BEST` from the worker's context menu. Panel and popup state is stored
-under `di:panel:*` keys in `chrome.storage.local`; the last pick uses
-`chrome.storage.session`. Batch repair calls the content repair engine through
-`chrome.scripting` and verifies every suggested fix before showing it.
+| | DOM Inspector | Chrome DevTools “Copy selector” / “Copy XPath” |
+| --- | --- | --- |
+| Live match count and unique / no-match badge | Yes | No |
+| Playwright `getBy*` locators | Yes (JS, plus best-effort Python, Java, and C#) | No |
+| Selenium `By.*` and Cypress snippets | Yes | No |
+| Selector repair and batch healing | Yes, local, re-validated before display | No |
+| Saved locators and a Playwright POM snippet | Yes, stored locally | No |
+| Runs without a network account | Yes | Yes (built into Chrome) |
+| Chrome Web Store listing | Not published yet; load unpacked | Built into Chrome |
 
-## Permissions and privacy
+## Development and tests
 
-`activeTab`, `scripting`, `storage`, `sidePanel`, `clipboardWrite`,
-`contextMenus` and host access to `<all_urls>` are needed to inspect the active
-page, run locator actions, open the side panel, provide right-click actions and
-copy results. Everything runs locally. There are no ads, accounts, analytics,
-remote code, licence checks or network calls.
-
-## Tests
-
-Tests use Node's test runner and Playwright. No TypeScript or build step is
-involved; the e2e spec launches its own Chromium with `--load-extension`.
+Plain JavaScript, HTML, and CSS. There is no bundler, TypeScript, or compile step. Node.js 20 or newer is required for the test suite.
 
 ```bash
 npm install
-npm run install:browsers   # once, for the e2e suite
+npm run install:browsers   # once, for the end-to-end suite
 npm test                   # unit suites, then extension e2e
-npm run test:unit          # tests/*.test.js + tests/unit/*.test.js
+npm run test:unit          # tests/*.test.js and tests/unit/*.test.js
 npm run test:e2e           # tests/e2e/*.spec.js
 ```
 
-Unit coverage includes CSS ranking/dynamic-class filtering, XPath
-relative/absolute/indexed/text/axes/SVG/shadow behaviour, Playwright
-test-id/role/label/regex locators and counts, Selenium/Cypress formats,
-validation errors, iframe `frameLocator` generation, utilities, manifest
-integrity and the panel contract (every id used by `panel.js` exists in
-`panel.html`, no duplicate ids, local scripts exist). The e2e spec loads the
-unpacked extension, drives the real picker and checks the cached payload.
+The unit suites cover CSS ranking and generated-class filtering, XPath (relative, absolute, indexed, text, axes, SVG, shadow), Playwright locators and counts, Selenium/Cypress formats, validation, iframe `frameLocator` generation, utilities, manifest integrity, and panel/popup/devtools contracts (every id used by the scripts exists in the markup). The e2e spec launches Chromium with `--load-extension`, drives the real picker, and covers the popup, axes reference, right-click copy, repair, batch healing, and saved-locator flows.
 
-The panel and popup were additionally smoke-tested in headless Chrome with a
-stubbed extension API: rendering, counts, language switching, filtering,
-saved-locator actions, tester validation, page actions, batch healing and
-popup copy. Current status: 236 unit checks (232 passing, 4 tracked as `todo`
-parity probes for the remaining Playwright engine work) and 50/50 extension
-e2e checks pass, including real-extension coverage for the popup, axes
-reference, right-click bridge, repair and batch healing.
+Current suite: **250 unit cases** (245 pass, 5 tracked as `todo` probes for remaining Playwright action-runner parity) and **54 e2e cases** (one is an expected failure: whitespace-only saved locator values are still accepted). Those gaps are listed below.
 
-## Known gaps
+```
+manifest.json
+  background service worker     side-panel behaviour and last-pick cache
+  content scripts (all frames)
+    util.js         escaping, deep query, shadow/iframe helpers
+    css.js          ranked CSS candidates
+    xpath.js        XPath variants and axes
+    playwright.js   Playwright generation and local counting engine
+    formats.js      Selenium, Cypress, JS, jQuery, frame, and shadow snippets
+    validate.js     detection, validation, highlighting
+    repair.js       selector repair loop
+    picker.js       overlay, picking, axes reference, message bridge
+  devtools page  →  Elements sidebar pane
+  popup/            toolbar popup
+  panel/            shared DevTools and side-panel UI
+```
 
-- Batch healing accepts pasted lines and exports JSON/CSV, but does not import
-  spreadsheets; its repair suggestions are heuristic when a selector cannot be
-  normalized. Saved-locator Fix uses the same repair engine and only reports a
-  replacement after re-validating it as unique. Recorder/TestCase Studio,
-  login, ads and cloud features are intentionally absent.
-- Saved locators are a lightweight POM list; there is no editable
-  multi-column POM grid or spreadsheet import.
-- Java/C# Playwright option objects are best-effort translations, not compiler
-  verification. Regex role output assumes the right `Pattern` / `Regex` import.
-- Playwright role/name matching is a local DOM approximation, not the full ARIA
-  algorithm or Playwright actionability model; counts can differ from a real
-  Playwright run.
-- Action testing runs in one matching frame and cannot reach cross-origin
-  frames or closed shadow roots. Batch repair uses heuristic token matching when
-  a selector cannot be normalized into a valid one.
-- Closed shadow roots and cross-origin iframes remain inaccessible, as in
-  browsers generally.
+## Limitations
+
+- Closed shadow roots and cross-origin iframes are inaccessible, as in browsers generally. XPath cannot target nodes inside a shadow root.
+- Playwright role, name, and text matching is a local DOM approximation, not the full ARIA algorithm or Playwright's actionability model. Counts can differ from a real Playwright run.
+- Java and C# Playwright option objects are best-effort translations, not compiler-checked output. Regex role output assumes the right `Pattern` / `Regex` import.
+- Action testing runs in one matching frame and cannot reach cross-origin frames or closed shadow roots. It is best-effort when a control is hidden, disabled, or not typable.
+- Batch healing accepts pasted lines and exports JSON/CSV, but does not import spreadsheets. Repair suggestions are heuristic when a selector cannot be normalized. A fix is shown only after it re-validates as unique.
+- Saved locators are a lightweight list, not an editable multi-column POM grid, and there is no XLS import or export.
+- Five unit tests in the panel action runner remain `todo` (hidden-role filtering, some accessible names, extended roles, role state options, and `locator(selector, { hasText })`). One e2e case is marked as an expected failure for whitespace-only saved values.
+
+## Roadmap
+
+Grounded in the current gaps, not a wish list:
+
+- Closer Playwright action and ARIA parity (the remaining `todo` cases above).
+- Multi-column POM grid and XLS import/export (JSON/CSV and reorder already work).
+- Per-attribute generation filters and per-row visibility controls.
+- Aggregate Playwright counts and actions across frames, with a clearer choose-frame flow.
+
+A recorder or Test Case Studio is out of scope for now.
+
+## Contributing
+
+Bug reports and pull requests are welcome, especially around locator accuracy, Playwright parity, and tests.
+
+1. Fork the repository and create a branch.
+2. Load the unpacked folder in Chrome and keep the relevant unit or e2e coverage up to date.
+3. Run `npm test` before you open a pull request.
+
+Please do not add a build step, TypeScript, or remote network calls to the extension itself.
+
+## Privacy and permissions
+
+The extension requests `activeTab`, `scripting`, `storage`, `sidePanel`, `clipboardWrite`, `contextMenus`, and host access to `<all_urls>` so it can inspect the active page, run locator actions, open the side panel, offer right-click actions, and copy results. All of that stays on your computer.
+
+## License
+
+This repository does not include a LICENSE file yet. That should be added before the project is widely redistributed.
